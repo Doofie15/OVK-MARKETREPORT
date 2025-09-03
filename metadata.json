@@ -1,0 +1,5 @@
+{
+  "name": "Wool & Mohair Market Report",
+  "description": "An interactive, public report for weekly wool and mohair auction results, providing market overviews, price curves, buyer participation, and top sales data.",
+  "requestFramePermissions": []
+}

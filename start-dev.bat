@@ -1,0 +1,6 @@
+@echo off
+echo Starting Wool & Mohair Market Platform Development Server...
+echo.
+echo Using direct path to vite to avoid folder name issues...
+"node_modules\.bin\vite"
+pause
