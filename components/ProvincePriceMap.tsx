@@ -94,10 +94,18 @@ const SouthAfricaMap = ({ data, onMouseMove, hoveredId, getColor }: {
 }
 
 const Tooltip: React.FC<{ province: ProvinceAveragePrice }> = ({ province }) => (
-    <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg z-10 text-center">
-        <p className="font-bold text-brand-primary text-md">{province.name}</p>
-        <p className="text-xl font-semibold text-accent">{province.avg_price.toFixed(2)}
-            <span className="text-sm text-gray-600 font-normal"> ZAR/kg</span>
+    <div className="p-3 rounded-lg shadow-lg z-10 text-center" 
+         style={{ 
+           background: 'var(--bg-tertiary)', 
+           border: '1px solid var(--border-primary)',
+           boxShadow: 'var(--shadow-lg)'
+         }}>
+        <p className="font-bold text-md mb-1" style={{ color: 'var(--text-primary)' }}>
+          {province.name}
+        </p>
+        <p className="text-xl font-semibold" style={{ color: 'var(--accent-primary)' }}>
+          R{province.avg_price.toFixed(2)}
+          <span className="text-sm font-normal ml-1" style={{ color: 'var(--text-muted)' }}>/kg</span>
         </p>
     </div>
 );
@@ -138,31 +146,64 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
 
     return (
         <div>
-            <h3 className="text-lg font-bold text-brand-primary mb-4">Average Price by Province</h3>
-            <div className="relative flex flex-col md:flex-row items-center gap-4">
+            <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+              Average Price by Province
+            </h3>
+            
+            <div className="relative flex flex-col md:flex-row items-center gap-6">
                 <div className="w-full md:w-3/4" onMouseLeave={handleMouseLeave}>
-                    <SouthAfricaMap 
-                        data={data} 
-                        onMouseMove={handleMouseMove} 
-                        hoveredId={hoveredId}
-                        getColor={getColor}
-                    />
+                    <div className="p-4 rounded-lg" style={{ background: 'var(--bg-hover)' }}>
+                      <SouthAfricaMap 
+                          data={data} 
+                          onMouseMove={handleMouseMove} 
+                          hoveredId={hoveredId}
+                          getColor={getColor}
+                      />
+                    </div>
                 </div>
+                
                 <div className="w-full md:w-1/4">
-                    <div className="p-4 rounded-md bg-gray-50 border">
-                        <p className="text-sm font-semibold text-gray-700 mb-2">Price Legend (ZAR/kg)</p>
-                        <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-500">{minPrice.toFixed(0)}</span>
+                    <div className="p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                            </svg>
+                          </div>
+                          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            Price Legend
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                                <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                                  R{minPrice.toFixed(0)}
+                                </span>
                                 <div 
-                                    className="flex-1 h-4 rounded-full" 
+                                    className="flex-1 h-3 rounded-full" 
                                     style={{background: `linear-gradient(to right, ${colors.join(',')})`}}
                                 ></div>
-                                <span className="text-xs text-gray-500">{maxPrice.toFixed(0)}</span>
+                                <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                                  R{maxPrice.toFixed(0)}
+                                </span>
                             </div>
-                            <div className="text-xs text-gray-600 text-center">
-                                Lower prices = Lighter blue<br/>
-                                Higher prices = Darker blue
+                            
+                            <div className="text-xs text-center p-3 rounded-lg" style={{ 
+                              background: 'var(--bg-hover)',
+                              color: 'var(--text-muted)' 
+                            }}>
+                                <div>💧 Lower prices = Lighter blue</div>
+                                <div>🔵 Higher prices = Darker blue</div>
+                            </div>
+                            
+                            <div className="pt-3" style={{ borderTop: '1px solid var(--border-primary)' }}>
+                              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                Range: R{(maxPrice - minPrice).toFixed(0)}/kg
+                              </div>
+                              <div className="text-xs" style={{ color: 'var(--accent-primary)' }}>
+                                Avg: R{(data.reduce((sum, p) => sum + p.avg_price, 0) / data.length).toFixed(2)}/kg
+                              </div>
                             </div>
                         </div>
                     </div>

@@ -12,6 +12,7 @@ A comprehensive React-based web application for tracking and analyzing wool and 
 - **Interactive Auction Selection**: Choose between different auction weeks to view detailed reports
 - **Key Performance Indicators**: Track total lots, volume, average prices, and total value with YTD comparisons
 - **Market Benchmarks**: Monitor certified, all-Merino, and AWEX pricing benchmarks
+- **Enhanced Market Overview**: Professional information board displaying live exchange rates, next auction countdown, and RWS premium data
 - **Micron Price Analysis**: Visualize price trends across different wool micron categories (Fine, Medium, Strong)
 
 ### 📈 Analytics & Insights
@@ -145,9 +146,11 @@ The application uses Tailwind CSS for styling. Maintain consistency by:
 ## 📱 Responsive Design
 
 The application is fully responsive and optimized for:
-- **Desktop**: Full dashboard with multi-column layouts
-- **Tablet**: Adapted layouts with optimized spacing
-- **Mobile**: Single-column layouts with touch-friendly interactions
+- **Desktop**: Full dashboard with multi-column layouts and comprehensive market overview
+- **Tablet**: Adapted layouts with smart column spanning and optimized spacing
+- **Mobile**: Single-column layouts with touch-friendly interactions and compact information display
+- **Mobile Landscape**: Maintains three-column layout for efficient use of horizontal space
+- **Touch Optimization**: Minimum 32px touch targets and mobile-friendly font scaling
 
 ## 🚀 Deployment
 

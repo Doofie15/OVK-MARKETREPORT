@@ -53,13 +53,13 @@ const getIndicatorTitle = (type: Indicator['type']) => {
 const getIndicatorIcon = (type: string) => {
     switch (type) {
         case 'Total Lots':
-            return <CubeIcon className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />;
+            return <CubeIcon className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />;
         case 'Total Volume':
-            return <ChartBarIcon className="w-6 h-6" style={{ color: 'var(--accent-secondary)' }} />;
+            return <ChartBarIcon className="w-4 h-4" style={{ color: 'var(--accent-secondary)' }} />;
         case 'Total Value':
-            return <BanknotesIcon className="w-6 h-6" style={{ color: 'var(--accent-success)' }} />;
+            return <BanknotesIcon className="w-4 h-4" style={{ color: 'var(--accent-success)' }} />;
         default:
-            return <ChartBarIcon className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />;
+            return <ChartBarIcon className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />;
     }
 };
 
@@ -74,32 +74,35 @@ const IndicatorCard: React.FC<{
 
     return (
         <div className="metric-card">
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
                     {getIndicatorIcon(title)}
-                    <div>
-                        <p className="metric-label">{title}</p>
-                        {ytdValue && (
-                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                                YTD: {ytdValue}
-                            </p>
-                        )}
-                    </div>
+                    <p className="text-xs font-medium text-gray-600">{title}</p>
                 </div>
                 {change !== undefined && (
-                    <div className={`status-indicator ${isPositive ? 'success' : 'error'}`}>
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                         {isPositive ? <TrendingUpIcon className="w-3 h-3" /> : <TrendingDownIcon className="w-3 h-3" />}
                         {Math.abs(change)}%
                     </div>
                 )}
             </div>
             
-            <div className="metric-value">
-                {value}
-                <span className="text-lg font-normal ml-2" style={{ color: 'var(--text-muted)' }}>
+            <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {value}
+                </span>
+                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     {unit}
                 </span>
             </div>
+            
+            {ytdValue && (
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                    YTD: {ytdValue}
+                </p>
+            )}
         </div>
     );
 };
@@ -115,20 +118,15 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
     const filteredIndicators = indicators.filter(ind => ind.type !== 'avg_price');
     
     return (
-        <section className="section">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center">
-                    <ChartBarIcon className="w-6 h-6 text-white" />
+        <div>
+            <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <ChartBarIcon className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                    <h2 className="text-title gradient-text">MARKET OVERVIEW</h2>
-                    <p className="text-small" style={{ color: 'var(--text-muted)' }}>
-                        Current trading period performance metrics
-                    </p>
-                </div>
+                <h2 className="text-sm font-bold gradient-text">MARKET OVERVIEW</h2>
             </div>
             
-            <div className="grid-responsive cols-2 lg-cols-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {filteredIndicators.map(indicator => (
                     <IndicatorCard
                         key={indicator.type}
@@ -161,7 +159,7 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                     />
                 ))}
             </div>
-        </section>
+        </div>
     );
 };
 

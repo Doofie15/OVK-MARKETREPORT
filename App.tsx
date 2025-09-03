@@ -5,16 +5,17 @@ import Header from './components/Header';
 import AuctionSelector from './components/AuctionSelector';
 import IndicatorsGrid from './components/IndicatorsGrid';
 import MicronPriceChart from './components/MicronPriceChart';
+import AuctionComparison from './components/AuctionComparison';
+import MarketOverview from './components/MarketOverview';
 import TopSalesTable from './components/TopSalesTable';
-import CurrencyDisplay from './components/CurrencyDisplay';
 import InsightsCard from './components/InsightsCard';
 import MarketTrends from './components/MarketTrends';
 import BuyerListTable from './components/BuyerListTable';
 import BuyerShareChart from './components/BuyerShareChart';
 import BrokersGrid from './components/BrokersGrid';
 import TopPerformers from './components/TopPerformers';
-import VolumeAnalytics from './components/VolumeAnalytics';
-import ProfileSection from './components/ProfileSection';
+
+
 import AuctionsList from './components/admin/AuctionsList';
 import AdminForm from './components/admin/AdminForm';
 
@@ -71,6 +72,24 @@ const App: React.FC = () => {
     reports.find(report => report.auction.week_id === selectedWeekId), 
     [reports, selectedWeekId]
   );
+
+  const previousReport: AuctionReport | undefined = useMemo(() => {
+    const currentIndex = reports.findIndex(r => r.auction.week_id === selectedWeekId);
+    return currentIndex > 0 ? reports[currentIndex - 1] : 
+           currentIndex === 0 && reports.length > 1 ? reports[1] : undefined;
+  }, [selectedWeekId, reports]);
+
+  const rwsPremium = useMemo(() => {
+    if (!activeReport?.yearly_average_prices) return 0;
+    
+    const rwsPrice = activeReport.yearly_average_prices.find(p => p.label.includes('RWS'))?.value || 0;
+    const nonRwsPrice = activeReport.yearly_average_prices.find(p => p.label.includes('Non-RWS'))?.value || 0;
+    
+    if (nonRwsPrice > 0) {
+      return ((rwsPrice - nonRwsPrice) / nonRwsPrice) * 100;
+    }
+    return 0;
+  }, [activeReport]);
   
   const topSalesForActiveReport = useMemo((): TopSale[] => {
       if (!activeReport) return [];
@@ -113,86 +132,49 @@ const App: React.FC = () => {
               onWeekChange={setSelectedWeekId}
             />
             {activeReport ? (
-              <div className="space-y-8 mt-8">
+              <div className="space-y-4">
                 <IndicatorsGrid 
                   indicators={activeReport.indicators} 
                   benchmarks={activeReport.benchmarks}
                   yearly_average_prices={activeReport.yearly_average_prices}
                 />
                 
-                <ProfileSection />
-                
-                <div className="grid-responsive cols-1 lg-cols-3 gap-8">
-                  <div className="lg:col-span-1">
+                <div className="grid lg:grid-cols-3 gap-4">
+                  <div>
                     <InsightsCard insights={activeReport.insights} />
                   </div>
                   <div className="lg:col-span-2">
-                    <CurrencyDisplay currencies={activeReport.currencies} />
+                    <MarketOverview 
+                      currencies={activeReport.currencies}
+                      rwsPremium={rwsPremium}
+                    />
                   </div>
                 </div>
                 
-                <MicronPriceChart data={activeReport.micron_prices} />
-                
-                <VolumeAnalytics />
-                
-                <div className="grid-responsive cols-1 lg-cols-2 gap-8">
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <MicronPriceChart data={activeReport.micron_prices} />
                   <BuyerShareChart data={activeReport.buyers.slice(0, 6)} />
-                  <div className="chart-container">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h2 className="text-title" style={{ color: 'var(--text-primary)' }}>
-                          EMERGING TRENDS
-                        </h2>
-                        <p className="text-small" style={{ color: 'var(--text-muted)' }}>
-                          Market intelligence and insights
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-                        <div className="w-2 h-2 rounded-full bg-green-400 mt-2"></div>
-                        <div>
-                          <p className="text-body" style={{ color: 'var(--text-primary)' }}>
-                            Demand for sustainable wool products rises.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 mt-2"></div>
-                        <div>
-                          <p className="text-body" style={{ color: 'var(--text-primary)' }}>
-                            Supply chain stability and ethical sourcing.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2"></div>
-                        <div>
-                          <p className="text-body" style={{ color: 'var(--text-primary)' }}>
-                            New interest in Southeast Asia client growth potential.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
+
+                <AuctionComparison 
+                  currentData={activeReport.micron_prices}
+                  previousData={previousReport?.micron_prices}
+                />
+
+
+                <MarketTrends data={activeReport.trends} />
                 
-                <div className="grid-responsive cols-1 lg-cols-3 gap-8">
+                <div className="grid lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-2">
                     <BuyerListTable data={activeReport.buyers} />
                   </div>
-                  <div className="lg:col-span-1">
+                  <div>
                     <BrokersGrid data={activeReport.brokers} />
                   </div>
                 </div>
                 
                 <TopSalesTable data={topSalesForActiveReport.slice(0, 5)} />
-                <MarketTrends data={activeReport.trends} />
+                
                 <TopPerformers 
                   topSales={topSalesForActiveReport}
                   provincialProducers={activeReport.provincial_producers}
@@ -222,17 +204,17 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-secondary)' }}>
       <Header 
         onToggleAdminView={() => setViewMode(viewMode === 'report' ? 'admin_list' : 'report')} 
         viewMode={viewMode} 
       />
-      <main className="container mx-auto p-4 md:p-8">
-        <div className="fade-in-up">
+      <main className="container mx-auto px-4 py-4">
+        <div className="space-y-4">
           {renderContent()}
         </div>
       </main>
-      <footer className="text-center py-6" style={{ color: 'var(--text-muted)' }}>
+      <footer className="text-center py-3 text-sm border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-primary)' }}>
         <p>&copy; {new Date().getFullYear()} OVK Wool & Mohair Market Platform. All rights reserved.</p>
       </footer>
     </div>
