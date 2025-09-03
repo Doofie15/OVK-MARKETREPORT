@@ -49,24 +49,46 @@ const flagMap: Record<Currency['code'], React.ReactNode> = {
 
 const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ currencies }) => {
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex items-center">
-      <div className="w-full flex justify-around items-center">
+    <div className="card p-6 h-full">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-title" style={{ color: 'var(--text-primary)' }}>
+            CURRENCY EXCHANGE
+          </h2>
+          <p className="text-small" style={{ color: 'var(--text-muted)' }}>
+            Live exchange rates vs ZAR
+          </p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {currencies.map(({ code, value, change }) => {
-            const isPositive = change >= 0;
-            const changeColor = isPositive ? 'text-green-600' : 'text-red-600';
-            return (
-                <div key={code} className="flex items-center space-x-3">
-                    {flagMap[code]}
-                    <div>
-                        <p className="text-lg font-bold text-brand-primary">
-                            R{value.toFixed(2)}
-                        </p>
-                        <p className={`text-sm font-semibold ${changeColor}`}>
-                            {isPositive ? '+' : ''}{change.toFixed(1)}%
-                        </p>
-                    </div>
+          const isPositive = change >= 0;
+          return (
+            <div key={code} className="flex items-center gap-4 p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <div className="flex-shrink-0">
+                {flagMap[code]}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                    {code}/ZAR
+                  </span>
+                  <div className={`status-indicator ${isPositive ? 'success' : 'error'}`}>
+                    {isPositive ? '+' : ''}{change.toFixed(1)}%
+                  </div>
                 </div>
-            )
+                <div className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  R{value.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          );
         })}
       </div>
     </div>

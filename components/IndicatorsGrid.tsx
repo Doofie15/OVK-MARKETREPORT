@@ -1,15 +1,33 @@
 import React from 'react';
 import type { Indicator, Benchmark, YearlyAveragePrice } from '../types';
 
-const ArrowUpIcon: React.FC<{className: string}> = ({className}) => (
-    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+const TrendingUpIcon: React.FC<{className: string}> = ({className}) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.94" />
     </svg>
 );
 
-const ArrowDownIcon: React.FC<{className: string}> = ({className}) => (
-    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+const TrendingDownIcon: React.FC<{className: string}> = ({className}) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.511l-5.511-3.182" />
+    </svg>
+);
+
+const BanknotesIcon: React.FC<{className: string}> = ({className}) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
+const CubeIcon: React.FC<{className: string}> = ({className}) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+);
+
+const ChartBarIcon: React.FC<{className: string}> = ({className}) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
     </svg>
 );
 
@@ -32,6 +50,19 @@ const getIndicatorTitle = (type: Indicator['type']) => {
 }
 
 
+const getIndicatorIcon = (type: string) => {
+    switch (type) {
+        case 'Total Lots':
+            return <CubeIcon className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />;
+        case 'Total Volume':
+            return <ChartBarIcon className="w-6 h-6" style={{ color: 'var(--accent-secondary)' }} />;
+        case 'Total Value':
+            return <BanknotesIcon className="w-6 h-6" style={{ color: 'var(--accent-success)' }} />;
+        default:
+            return <ChartBarIcon className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />;
+    }
+};
+
 const IndicatorCard: React.FC<{
     title: string;
     value: string;
@@ -40,28 +71,35 @@ const IndicatorCard: React.FC<{
     ytdValue?: string;
 }> = ({ title, value, unit, change, ytdValue }) => {
     const isPositive = change !== undefined && change >= 0;
-    const changeColor = isPositive ? 'text-green-600' : 'text-red-600';
-    const bgColor = isPositive ? 'bg-green-100' : 'bg-red-100';
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between h-full">
-            <div>
-                <p className="text-sm font-medium text-gray-500">{title}</p>
-                <p className="text-2xl font-bold text-brand-primary mt-1">
-                    {value} <span className="text-lg font-normal text-gray-600">{unit}</span>
-                </p>
-                {ytdValue && (
-                  <p className="text-xs text-gray-500 mt-1">
-                      YTD: {ytdValue}
-                  </p>
+        <div className="metric-card">
+            <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    {getIndicatorIcon(title)}
+                    <div>
+                        <p className="metric-label">{title}</p>
+                        {ytdValue && (
+                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                                YTD: {ytdValue}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                {change !== undefined && (
+                    <div className={`status-indicator ${isPositive ? 'success' : 'error'}`}>
+                        {isPositive ? <TrendingUpIcon className="w-3 h-3" /> : <TrendingDownIcon className="w-3 h-3" />}
+                        {Math.abs(change)}%
+                    </div>
                 )}
             </div>
-            {change !== undefined ? (
-                <div className={`mt-2 inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-sm font-medium ${bgColor} ${changeColor}`}>
-                    {isPositive ? <ArrowUpIcon className="w-4 h-4 mr-1" /> : <ArrowDownIcon className="w-4 h-4 mr-1" />}
-                    {Math.abs(change)}%
-                </div>
-            ) : <div className="mt-2 h-[22px]" /> /* Placeholder for alignment */}
+            
+            <div className="metric-value">
+                {value}
+                <span className="text-lg font-normal ml-2" style={{ color: 'var(--text-muted)' }}>
+                    {unit}
+                </span>
+            </div>
         </div>
     );
 };
@@ -77,9 +115,20 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
     const filteredIndicators = indicators.filter(ind => ind.type !== 'avg_price');
     
     return (
-        <div>
-            <h2 className="text-xl font-bold text-brand-primary mb-4">Market Overview</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        <section className="section">
+            <div className="flex items-center gap-3 mb-8">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center">
+                    <ChartBarIcon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                    <h2 className="text-title gradient-text">MARKET OVERVIEW</h2>
+                    <p className="text-small" style={{ color: 'var(--text-muted)' }}>
+                        Current trading period performance metrics
+                    </p>
+                </div>
+            </div>
+            
+            <div className="grid-responsive cols-2 lg-cols-4">
                 {filteredIndicators.map(indicator => (
                     <IndicatorCard
                         key={indicator.type}
@@ -102,7 +151,7 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                         unit={price.unit}
                     />
                 ))}
-                 {benchmarks.map(benchmark => (
+                {benchmarks.map(benchmark => (
                     <IndicatorCard
                         key={benchmark.label}
                         title={benchmark.label}
@@ -112,7 +161,7 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                     />
                 ))}
             </div>
-        </div>
+        </section>
     );
 };
 
