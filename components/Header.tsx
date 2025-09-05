@@ -2,7 +2,7 @@ import React from 'react';
 
 interface HeaderProps {
   onToggleAdminView: () => void;
-  viewMode: 'report' | 'admin_list' | 'admin_form';
+  viewMode: 'report' | 'admin';
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleAdminView, viewMode }) => {

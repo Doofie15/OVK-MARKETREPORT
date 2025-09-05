@@ -23,9 +23,12 @@ A comprehensive React-based web application for tracking and analyzing wool and 
 - **Provincial Analysis**: Geographic breakdown of average prices and top producers by South African provinces
 
 ### 🛠️ Administrative Tools
+- **Cape Wools Data Capture**: Comprehensive form system for capturing all Cape Wools weekly report data
+- **Tabbed Data Entry**: Organized sections for auction details, market indices, currency exchange, supply statistics, and micron price comparisons
 - **Report Management**: Create and edit auction reports with comprehensive data entry forms
 - **Data Validation**: Built-in validation for market data consistency
 - **Historical Tracking**: Maintain complete auction history with automatic YTD calculations
+- **Advanced Analytics**: Support for certified vs non-certified price comparisons and market trend analysis
 
 ## 🏗️ Architecture
 
@@ -38,11 +41,21 @@ A comprehensive React-based web application for tracking and analyzing wool and 
 ### Project Structure
 ```
 ├── App.tsx                 # Main application component with routing logic
-├── types.ts               # TypeScript interfaces for all data structures
+├── types.ts               # TypeScript interfaces for all data structures (including Cape Wools schema)
 ├── constants.ts           # Mock data and configuration constants
+├── data/                  # Data management layer
+│   ├── service.ts         # Auction data service for CRUD operations
+│   ├── storage.ts         # Local storage management
+│   ├── transformers.ts    # Data transformation utilities
+│   └── models.ts          # Data model definitions
 ├── components/            # Reusable UI components
 │   ├── admin/            # Administrative interface components
 │   │   ├── AdminForm.tsx # Comprehensive data entry form
+│   │   ├── AuctionDataCaptureForm.tsx # Cape Wools data capture form with tabbed interface
+│   │   ├── AdminDashboard.tsx # Main admin dashboard
+│   │   ├── AdminLayout.tsx # Admin layout wrapper
+│   │   ├── AdminSidebar.tsx # Navigation sidebar
+│   │   ├── CSVImport.tsx # CSV data import functionality
 │   │   └── AuctionsList.tsx # Auction management list
 │   ├── IndicatorsGrid.tsx    # KPI display grid
 │   ├── MicronPriceChart.tsx # Price vs micron visualization
@@ -96,12 +109,22 @@ A comprehensive React-based web application for tracking and analyzing wool and 
 
 The application manages comprehensive auction data including:
 
-- **Auction Details**: Week information, dates, catalogue names
+### Core Auction Data
+- **Auction Details**: Week information, dates, catalogue names, sale numbers, auction centers
 - **Market Indicators**: Volume, pricing, and performance metrics
 - **Buyer Analytics**: Market share and purchasing patterns
 - **Producer Performance**: Top farms by province with pricing data
 - **Quality Metrics**: Micron specifications and certification status
 - **Geographic Data**: Provincial breakdowns and district information
+
+### Cape Wools Integration
+- **Market Indices**: Merino indicator, certified indicator, AWEX EMI with change percentages
+- **Currency Exchange**: ZAR/USD, ZAR/EUR, ZAR/JPY, ZAR/GBP, USD/AUD rates
+- **Supply Statistics**: Offered bales, sold bales, clearance rates
+- **Price Analysis**: Highest price lots with micron and bale details
+- **Certified Share**: Merino percentage offered vs sold
+- **Greasy Statistics**: Turnover, bales, and mass data
+- **Micron Price Comparisons**: Certified vs non-certified price analysis with percentage differences
 
 ## 🎯 Use Cases
 
@@ -110,6 +133,9 @@ The application manages comprehensive auction data including:
 - Analyze buyer behavior and market share shifts
 - Monitor price movements across different wool qualities
 - Generate insights for market reports
+- Capture comprehensive Cape Wools data for advanced analytics
+- Compare certified vs non-certified pricing trends
+- Monitor currency exchange impacts on pricing
 
 ### For Farmers & Producers
 - Benchmark performance against provincial averages
@@ -122,6 +148,33 @@ The application manages comprehensive auction data including:
 - Track buyer preferences and market demand
 - Analyze pricing trends for strategic planning
 - Generate client performance reports
+
+## 📝 Cape Wools Data Capture
+
+The application includes a comprehensive data capture form specifically designed to handle all data points from Cape Wools weekly reports:
+
+### Form Structure
+- **Tabbed Interface**: Organized into 9 logical sections for efficient data entry
+- **Auto-calculation**: Automatic percentage difference calculations for micron price comparisons
+- **Data Validation**: Built-in validation for required fields and data consistency
+- **Compact Design**: Optimized for efficient data entry while maintaining usability
+
+### Data Sections
+1. **Auction Details**: Sale number, date, catalogue, auction center, PDF filename
+2. **Market Indices**: Merino/certified indicators, AWEX EMI, change percentages
+3. **Currency Exchange**: All major currency pairs with high precision
+4. **Supply & Statistics**: Bales, clearance rates, highest prices, certified share, greasy stats
+5. **Micron Prices**: Basic prices and certified vs non-certified comparisons
+6. **Buyers & Brokers**: Market participation and catalogue offerings
+7. **Provincial Data**: Top producers by province with detailed metrics
+8. **Market Insights**: Commentary and analysis
+9. **Review & Save**: Data completeness summary and final validation
+
+### Key Features
+- **Full Cape Wools Compatibility**: Captures all data points from the official Cape Wools schema
+- **Real-time Validation**: Immediate feedback on data completeness and accuracy
+- **Flexible Data Entry**: Support for both manual entry and bulk data import
+- **Historical Tracking**: Maintains complete audit trail of all data changes
 
 ## 🔧 Development
 

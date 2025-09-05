@@ -35,3 +35,5 @@ To use your logo files instead of the generated SVG:
 
 ## Need Help?
 The current SVG logo can be customized by editing `components/OVKLogo.tsx`
+
+

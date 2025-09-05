@@ -1,3 +1,70 @@
+// Cape Wools specific interfaces
+export interface SaleInfo {
+  sale_number: string;
+  sale_date: string;
+  season: string;
+  auction_center: string;
+  report_pdf_filename: string;
+}
+
+export interface MarketIndices {
+  merino_indicator_cents_clean: number;
+  certified_indicator_cents_clean: number;
+  change_merino_pct: number;
+  change_certified_pct: number;
+  awex_emi_cents_clean: number;
+}
+
+export interface CurrencyFX {
+  ZAR_USD: number;
+  ZAR_EUR: number;
+  ZAR_JPY: number;
+  ZAR_GBP: number;
+  USD_AUD: number;
+}
+
+export interface SupplyStats {
+  offered_bales: number;
+  sold_bales: number;
+  clearance_rate_pct: number;
+}
+
+export interface HighestPrice {
+  price_cents_clean: number;
+  micron: number;
+  bales: number;
+}
+
+export interface CapeWoolsBuyer {
+  buyer: string;
+  bales: number;
+  share_pct: number;
+}
+
+export interface CertifiedShare {
+  merino_pct_offered: number;
+  merino_pct_sold: number;
+}
+
+export interface GreasyStats {
+  turnover_rand: number;
+  bales: number;
+  mass_kg: number;
+}
+
+export interface MicronPriceComparison {
+  micron: number;
+  non_cert_clean_zar_per_kg: number;
+  cert_clean_zar_per_kg: number;
+  pct_difference: number;
+}
+
+export interface MicronPriceComparisonData {
+  rows: MicronPriceComparison[];
+  notes: string;
+}
+
+// Enhanced Auction interface to include Cape Wools fields
 export interface Auction {
   commodity: 'wool' | 'mohair';
   season_label: string;
@@ -6,6 +73,10 @@ export interface Auction {
   week_end: string;
   auction_date: string;
   catalogue_name: string;
+  // Cape Wools fields
+  sale_number?: string;
+  auction_center?: string;
+  report_pdf_filename?: string;
 }
 
 export interface Indicator {
@@ -115,4 +186,13 @@ export interface AuctionReport {
   yearly_average_prices?: YearlyAveragePrice[];
   provincial_producers: ProvincialProducerData[];
   province_avg_prices: ProvinceAveragePrice[];
+  
+  // Cape Wools specific fields
+  market_indices?: MarketIndices;
+  currency_fx?: CurrencyFX;
+  supply_stats?: SupplyStats;
+  highest_price?: HighestPrice;
+  certified_share?: CertifiedShare;
+  greasy_stats?: GreasyStats;
+  micron_price_comparison?: MicronPriceComparisonData;
 }
