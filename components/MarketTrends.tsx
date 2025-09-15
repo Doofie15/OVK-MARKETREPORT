@@ -19,8 +19,25 @@ const ModernTrendChart: React.FC<{
   const dataKey2025 = isZAR ? '2025_zar' : '2025_usd';
   const dataKey2024 = isZAR ? '2024_zar' : '2024_usd';
   
-  const primaryColor = isCertified ? '#1e40af' : '#10b981';
-  const secondaryColor = isCertified ? '#3b82f6' : '#34d399';
+  // Use specific colors for different chart types
+  const isAWEX = title.includes('AWEX');
+  const isExchangeRate = title.includes('EXCHANGE RATE');
+  
+  let primaryColor, secondaryColor;
+  
+  if (isAWEX) {
+    // Australian colors
+    primaryColor = '#00843D'; // Australian green
+    secondaryColor = '#FFD700'; // Australian gold
+  } else if (isExchangeRate) {
+    // South Africa (green) and USA (blue) colors
+    primaryColor = '#007A4D'; // South African green
+    secondaryColor = '#002868'; // USA blue
+  } else {
+    // Default colors
+    primaryColor = isCertified ? '#1e40af' : '#10b981';
+    secondaryColor = isCertified ? '#3b82f6' : '#34d399';
+  }
 
   const chartSeries = [
     {
@@ -162,36 +179,12 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
         <h2 className="text-sm font-bold gradient-text">2 YEAR MARKET TRENDS</h2>
       </div>
 
-      {/* ZAR Trends */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-5 h-5 rounded bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-            <span className="text-xs font-bold text-white">R</span>
-          </div>
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            South African Rand (ZAR)
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="ZAR" type="CERTIFIED" />
-          <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex} currency="ZAR" type="ALL-MERINO" />
-        </div>
-      </div>
-
-      {/* USD Trends */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-            <span className="text-xs font-bold text-white">$</span>
-          </div>
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            US Dollar (USD)
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="USD" type="CERTIFIED" />
-          <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex} currency="USD" type="ALL-MERINO" />
-        </div>
+      {/* All 4 Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="ZAR" type="CERTIFIED" />
+        <ModernTrendChart title="ALL MERINO 2 YEAR TREND" data={data.non_rws} currency="ZAR" type="ALL-MERINO" />
+        <ModernTrendChart title="EXCHANGE RATE 2 YEAR TREND" data={data.rws} currency="USD" type="CERTIFIED" />
+        <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex} currency="USD" type="ALL-MERINO" />
       </div>
     </div>
   );
