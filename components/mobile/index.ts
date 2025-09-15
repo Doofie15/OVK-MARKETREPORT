@@ -8,3 +8,4 @@ export { default as MobileBuyerShareChart } from './MobileBuyerShareChart';
 export { default as MobileTopPerformers } from './MobileTopPerformers';
 export { default as MobileProvincialTopProducers } from './MobileProvincialTopProducers';
 export { default as MobileProvincePriceMap } from './MobileProvincePriceMap';
+export { default as SamsungS25Optimizer } from './SamsungS25Optimizer';
