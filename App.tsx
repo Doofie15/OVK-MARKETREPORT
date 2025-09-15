@@ -14,6 +14,13 @@ import BuyerListTable from './components/BuyerListTable';
 import BuyerShareChart from './components/BuyerShareChart';
 import BrokersGrid from './components/BrokersGrid';
 import TopPerformers from './components/TopPerformers';
+import { 
+  MobileLayout, 
+  MobileBrokersGrid, 
+  MobileMarketTrends, 
+  MobileBuyerShareChart,
+  MobileTopPerformers
+} from './components/mobile';
 
 // Admin components
 import AdminLayout from './components/admin/AdminLayout';
@@ -248,12 +255,12 @@ const App: React.FC = () => {
           onWeekChange={setSelectedWeekId}
         />
         {activeReport ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Prominent Auction Title */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-6 text-white shadow-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-4 sm:p-6 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                     {activeReport.auction.catalogue_name || `Auction ${activeReport.auction.week_id}`}
                   </h1>
                   <div className="flex items-center gap-2 text-blue-100">
@@ -283,11 +290,11 @@ const App: React.FC = () => {
               yearly_average_prices={activeReport.yearly_average_prices}
             />
             
-            <div className="grid lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <InsightsCard insights={activeReport.insights} />
               </div>
-              <div className="lg:col-span-2">
+              <div className="xl:col-span-2">
                 <MarketOverview 
                   currencies={activeReport.currencies}
                   rwsPremium={rwsPremium}
@@ -295,8 +302,8 @@ const App: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid lg:grid-cols-3 gap-4 items-stretch">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 items-stretch">
+              <div className="xl:col-span-2">
                 <MicronPriceChart 
                   data={activeReport.micron_prices} 
                   previousData={previousReport?.micron_prices}
@@ -306,7 +313,11 @@ const App: React.FC = () => {
                 />
               </div>
               <div className="flex flex-col">
-                <BuyerShareChart data={activeReport.buyers.slice(0, 6)} />
+                <MobileLayout
+                  mobileComponent={<MobileBuyerShareChart data={activeReport.buyers.slice(0, 6)} />}
+                >
+                  <BuyerShareChart data={activeReport.buyers.slice(0, 6)} />
+                </MobileLayout>
               </div>
             </div>
 
@@ -315,20 +326,38 @@ const App: React.FC = () => {
               previousData={previousReport?.micron_prices}
             />
 
-            <MarketTrends data={activeReport.trends} />
+            <MobileLayout
+              mobileComponent={<MobileMarketTrends data={activeReport.trends} />}
+            >
+              <MarketTrends data={activeReport.trends} />
+            </MobileLayout>
             
             <div className="equal-height-cards">
               <BuyerListTable data={activeReport.buyers} />
-              <BrokersGrid data={activeReport.brokers} />
+              <MobileLayout
+                mobileComponent={<MobileBrokersGrid data={activeReport.brokers} />}
+              >
+                <BrokersGrid data={activeReport.brokers} />
+              </MobileLayout>
             </div>
             
             <TopSalesTable data={topSalesForActiveReport.slice(0, 10)} />
             
-            <TopPerformers 
-              topSales={topSalesForActiveReport}
-              provincialProducers={activeReport.provincial_producers}
-              provinceAvgPrices={activeReport.province_avg_prices}
-            />
+            <MobileLayout
+              mobileComponent={
+                <MobileTopPerformers 
+                  topSales={topSalesForActiveReport}
+                  provincialProducers={activeReport.provincial_producers}
+                  provinceAvgPrices={activeReport.province_avg_prices}
+                />
+              }
+            >
+              <TopPerformers 
+                topSales={topSalesForActiveReport}
+                provincialProducers={activeReport.provincial_producers}
+                provinceAvgPrices={activeReport.province_avg_prices}
+              />
+            </MobileLayout>
           </div>
         ) : (
           <div className="text-center py-20">

@@ -161,7 +161,7 @@ const ModernTrendChart: React.FC<{
         options={options}
         series={chartSeries}
         type="line"
-        height={window.innerWidth < 768 ? 180 : 220}
+        height={window.innerWidth < 640 ? 200 : window.innerWidth < 1024 ? 240 : 280}
       />
     </div>
   );
@@ -180,7 +180,7 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
       </div>
 
       {/* All 4 Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="ZAR" type="CERTIFIED" />
         <ModernTrendChart title="ALL MERINO 2 YEAR TREND" data={data.non_rws} currency="ZAR" type="ALL-MERINO" />
         <ModernTrendChart title="EXCHANGE RATE 2 YEAR TREND" data={data.rws} currency="USD" type="CERTIFIED" />

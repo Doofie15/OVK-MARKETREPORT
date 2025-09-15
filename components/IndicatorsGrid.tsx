@@ -190,7 +190,7 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                 <h2 className="text-sm font-bold gradient-text">MARKET OVERVIEW</h2>
             </div>
             
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
                 {orderedCards.map((card, index) => {
                     if (card.type === 'indicator') {
                         const indicator = card.data;

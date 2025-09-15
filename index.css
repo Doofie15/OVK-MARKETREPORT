@@ -1,5 +1,51 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Mobile Optimizations for Samsung S24 and iPhone 16+ */
+@media (max-width: 640px) {
+  .card {
+    padding: 0.75rem;
+  }
+  
+  .chart-container {
+    min-height: 200px;
+  }
+  
+  /* Improve touch targets */
+  button, .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Optimize text sizes for mobile */
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Samsung S24 Ultra and similar large phones */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .chart-container {
+    min-height: 240px;
+  }
+}
+
+/* Enhanced Mobile Touch Targets */
+@media (max-width: 768px) {
+  .card.clickable {
+    @apply min-h-[44px];
+  }
+  
+  .table-cell {
+    @apply py-3;
+  }
+}
+
 :root {
   /* Light Theme Colors - Professional */
   --bg-primary: #ffffff;

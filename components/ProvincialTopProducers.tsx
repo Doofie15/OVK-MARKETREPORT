@@ -56,21 +56,23 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
                       POS
                     </th>
                     <th className="text-left font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
-                      PRODUCER NAME
+                      <span className="hidden sm:inline">PRODUCER NAME</span>
+                      <span className="sm:hidden">PRODUCER</span>
                     </th>
-                    <th className="text-left font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
+                    <th className="text-left font-semibold px-2 py-1 hidden sm:table-cell" style={{ color: 'var(--text-muted)' }}>
                       DISTRICT
                     </th>
-                    <th className="text-center font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
+                    <th className="text-center font-semibold px-2 py-1 hidden md:table-cell" style={{ color: 'var(--text-muted)' }}>
                       DESC
                     </th>
                     <th className="text-center font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
                       MICRON
                     </th>
                     <th className="text-right font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
-                      PRICE/KG
+                      <span className="hidden sm:inline">PRICE/KG</span>
+                      <span className="sm:hidden">PRICE</span>
                     </th>
-                    <th className="text-center font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
+                    <th className="text-center font-semibold px-2 py-1 hidden md:table-cell" style={{ color: 'var(--text-muted)' }}>
                       CERTIFIED
                     </th>
                   </tr>
@@ -84,16 +86,21 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
                         </span>
                       </td>
                       <td className="px-2 py-1">
-                        <span className="font-medium text-xs" style={{ color: 'var(--text-primary)' }}>
-                          {producer.name}
-                        </span>
+                        <div>
+                          <span className="font-medium text-xs" style={{ color: 'var(--text-primary)' }}>
+                            {producer.name}
+                          </span>
+                          <div className="sm:hidden text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            {producer.district} • {producer.description}
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-2 py-1">
+                      <td className="px-2 py-1 hidden sm:table-cell">
                         <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {producer.district}
                         </span>
                       </td>
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-2 py-1 text-center hidden md:table-cell">
                         <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {producer.description}
                         </span>
@@ -104,11 +111,21 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
                         </span>
                       </td>
                       <td className="px-2 py-1 text-right">
-                        <span className="font-bold text-sm" style={{ color: 'var(--accent-primary)' }}>
-                          {producer.price.toFixed(2)}
-                        </span>
+                        <div>
+                          <span className="font-bold text-sm" style={{ color: 'var(--accent-primary)' }}>
+                            {producer.price.toFixed(2)}
+                          </span>
+                          {producer.certified === 'RWS' && (
+                            <div className="md:hidden text-xs px-1 py-0.5 rounded mt-1" style={{ 
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              color: 'var(--accent-success)'
+                            }}>
+                              RWS
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-2 py-1 text-center hidden md:table-cell">
                         {producer.certified === 'RWS' ? (
                           <span className="text-xs px-1 py-0.5 rounded" style={{ 
                             background: 'rgba(16, 185, 129, 0.1)',

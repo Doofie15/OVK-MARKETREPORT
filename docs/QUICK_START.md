@@ -42,21 +42,31 @@ npm run dev
 - View current auction data and KPIs
 - Navigate between different auction weeks
 - Analyze market trends and insights
+- **Mobile**: Touch-optimized interface with swipe navigation
 
 ### 2. Buyer Analysis
 - Review top buyers and market share
 - Track buyer performance over time
 - Compare auction vs YTD data
+- **Mobile**: Mobile-optimized buyer share charts and tables
 
 ### 3. Administrative Functions
 - Click "Admin Panel" to access data entry
 - Create new auction reports
 - Import/export data
+- **Mobile**: Responsive admin forms with mobile-friendly inputs
 
 ### 4. Data Visualization
 - Interactive charts and graphs
 - Provincial price mapping
 - Market trend analysis
+- **Mobile**: Touch-friendly charts with mobile-specific interactions
+
+### 5. Mobile Experience
+- **Responsive Design**: Automatic layout switching based on screen size
+- **Touch Optimization**: Gesture support and touch-friendly controls
+- **Mobile Components**: Dedicated mobile versions of all major features
+- **Breakpoint Detection**: Smart switching at 768px breakpoint
 
 ## 📊 Sample Data
 

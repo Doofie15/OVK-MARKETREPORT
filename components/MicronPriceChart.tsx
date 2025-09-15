@@ -242,7 +242,7 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
         
       </div>
       
-      <div className="flex-1">
+      <div className="flex-1 min-h-[200px] sm:min-h-[240px] lg:min-h-[280px]">
         <Chart
           options={options}
           series={series}
