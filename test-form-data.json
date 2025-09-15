@@ -194,12 +194,12 @@
     },
     "yearly_average_prices": [
       {
-        "label": "RWS Avg Price (YTD)",
+        "label": "Certified Wool Avg Price (YTD)",
         "value": 187.50,
         "unit": "ZAR/kg"
       },
       {
-        "label": "Non-RWS Avg Price (YTD)",
+        "label": "All - Merino Wool Avg Price (YTD)",
         "value": 184.20,
         "unit": "ZAR/kg"
       }

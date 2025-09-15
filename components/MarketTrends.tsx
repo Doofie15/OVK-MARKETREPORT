@@ -11,16 +11,16 @@ const ModernTrendChart: React.FC<{
   title: string; 
   data: TrendPoint[]; 
   currency: 'ZAR' | 'USD';
-  type: 'RWS' | 'NON-RWS';
+  type: 'CERTIFIED' | 'ALL-MERINO';
 }> = ({ title, data, currency, type }) => {
   const isZAR = currency === 'ZAR';
-  const isRWS = type === 'RWS';
+  const isCertified = type === 'CERTIFIED';
   
   const dataKey2025 = isZAR ? '2025_zar' : '2025_usd';
   const dataKey2024 = isZAR ? '2024_zar' : '2024_usd';
   
-  const primaryColor = isRWS ? '#1e40af' : '#10b981';
-  const secondaryColor = isRWS ? '#3b82f6' : '#34d399';
+  const primaryColor = isCertified ? '#1e40af' : '#10b981';
+  const secondaryColor = isCertified ? '#3b82f6' : '#34d399';
 
   const chartSeries = [
     {
@@ -46,7 +46,9 @@ const ModernTrendChart: React.FC<{
       background: 'transparent',
       fontFamily: 'Inter, sans-serif',
       toolbar: { show: false },
-      animations: { enabled: true, easing: 'easeinout', speed: 800 }
+      animations: { enabled: true, speed: 800 },
+      zoom: { enabled: false },
+      selection: { enabled: false }
     },
     colors: [primaryColor, secondaryColor],
     stroke: {
@@ -98,7 +100,7 @@ const ModernTrendChart: React.FC<{
       fontSize: '10px',
       fontWeight: 500,
       labels: { colors: '#475569' },
-      markers: { radius: 3 }
+      markers: { size: 3 }
     },
     dataLabels: { enabled: false }
   };
@@ -109,10 +111,10 @@ const ModernTrendChart: React.FC<{
 
   return (
     <div className="chart-container">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
         <div className="flex items-center gap-2">
           <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
-            isRWS 
+            isCertified 
               ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
               : 'bg-gradient-to-br from-indigo-500 to-indigo-600'
           }`}>
@@ -130,7 +132,7 @@ const ModernTrendChart: React.FC<{
           </div>
         </div>
         
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Current 2025</div>
           <div className="text-sm font-bold" style={{ color: primaryColor }}>
             {current2025.toFixed(2)} {currency}
@@ -142,7 +144,7 @@ const ModernTrendChart: React.FC<{
         options={options}
         series={chartSeries}
         type="line"
-        height={220}
+        height={window.innerWidth < 768 ? 180 : 220}
       />
     </div>
   );
@@ -150,7 +152,7 @@ const ModernTrendChart: React.FC<{
 
 const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,7 +163,7 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
       </div>
 
       {/* ZAR Trends */}
-      <div className="mb-4">
+      <div>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-5 h-5 rounded bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
             <span className="text-xs font-bold text-white">R</span>
@@ -170,9 +172,9 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
             South African Rand (ZAR)
           </h3>
         </div>
-        <div className="grid lg:grid-cols-2 gap-4">
-          <ModernTrendChart title="RWS 2 YEAR TREND" data={data.rws} currency="ZAR" type="RWS" />
-          <ModernTrendChart title="NON-RWS 2 YEAR TREND" data={data.non_rws} currency="ZAR" type="NON-RWS" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="ZAR" type="CERTIFIED" />
+          <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex} currency="ZAR" type="ALL-MERINO" />
         </div>
       </div>
 
@@ -186,9 +188,9 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
             US Dollar (USD)
           </h3>
         </div>
-        <div className="grid lg:grid-cols-2 gap-4">
-          <ModernTrendChart title="RWS 2 YEAR TREND" data={data.rws} currency="USD" type="RWS" />
-          <ModernTrendChart title="NON-RWS 2 YEAR TREND" data={data.non_rws} currency="USD" type="NON-RWS" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="USD" type="CERTIFIED" />
+          <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex} currency="USD" type="ALL-MERINO" />
         </div>
       </div>
     </div>

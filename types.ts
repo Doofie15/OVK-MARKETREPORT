@@ -54,13 +54,51 @@ export interface GreasyStats {
 
 export interface MicronPriceComparison {
   micron: number;
-  non_cert_clean_zar_per_kg: number;
-  cert_clean_zar_per_kg: number;
-  pct_difference: number;
+  non_cert_clean_zar_per_kg: number | null;
+  cert_clean_zar_per_kg: number | null;
+  pct_difference: number | null;
 }
 
 export interface MicronPriceComparisonData {
   rows: MicronPriceComparison[];
+  notes: string;
+}
+
+// Company-specific data interfaces
+export interface TopClientPrice {
+  price_per_kg: number;
+  clean_price: number;
+  lot_size: number;
+  lot_type: string;
+  micron: number;
+  producer: string;
+  buyer: string;
+}
+
+export interface ClientPerformance {
+  producer_name: string;
+  farm_name: string;
+  region: string;
+  total_bales: number;
+  average_price: number;
+  highest_price: number;
+  micron_range: string;
+  certified_percentage: number;
+  lot_types: string;
+  top_lot_details: string;
+}
+
+export interface AgencyMetrics {
+  total_clients_served: number;
+  total_volume_handled: number;
+  average_client_price: number;
+  premium_achieved: number;
+}
+
+export interface CompanyData {
+  top_client_price: TopClientPrice;
+  client_performance: ClientPerformance[];
+  agency_metrics: AgencyMetrics;
   notes: string;
 }
 
@@ -98,6 +136,8 @@ export interface MicronPrice {
   bucket_micron: string;
   category: 'Fine' | 'Medium' | 'Strong';
   price_clean_zar_per_kg: number;
+  certified_price_clean_zar_per_kg?: number;
+  all_merino_price_clean_zar_per_kg?: number;
 }
 
 export interface Buyer {
@@ -122,7 +162,26 @@ export interface TopSale {
 export interface BrokerData {
   name: string;
   catalogue_offering: number;
+  withdrawn_before_sale: number;
+  wool_offered: number;
+  withdrawn_during_sale: number;
+  passed: number;
+  not_sold: number;
+  sold: number;
+  sold_pct: number;
   sold_ytd: number;
+  // Previous week data for comparison
+  previous_week?: {
+    catalogue_offering: number;
+    withdrawn_before_sale: number;
+    wool_offered: number;
+    withdrawn_during_sale: number;
+    passed: number;
+    not_sold: number;
+    sold: number;
+    sold_pct: number;
+    sold_ytd: number;
+  };
 }
 
 export interface Currency {
@@ -142,6 +201,7 @@ export interface TrendPoint {
 export interface TrendData {
   rws: TrendPoint[];
   non_rws: TrendPoint[];
+  awex: TrendPoint[];
 }
 
 export interface YearlyAveragePrice {
@@ -154,6 +214,8 @@ export interface ProvincialProducer {
   position: number;
   name: string;
   district: string;
+  producer_number?: string;
+  no_bales?: number;
   price: number;
   description?: string;
   micron?: number;
@@ -195,4 +257,7 @@ export interface AuctionReport {
   certified_share?: CertifiedShare;
   greasy_stats?: GreasyStats;
   micron_price_comparison?: MicronPriceComparisonData;
+  
+  // Company-specific data
+  company_data?: CompanyData;
 }

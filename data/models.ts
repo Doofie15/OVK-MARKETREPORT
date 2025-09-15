@@ -29,6 +29,8 @@ export interface Sale {
   next_sale_date?: string; // e.g. '2025-09-10'
   next_sale_bales?: number; // e.g. 5,165
   
+  is_draft?: boolean; // Whether this is a draft or final report
+  
   created_at: string;
 }
 

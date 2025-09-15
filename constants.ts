@@ -54,7 +54,7 @@ export const BLANK_REPORT: Omit<AuctionReport, 'top_sales'> = {
       { code: "EUR", value: 0, change: 0 }
   ],
   insights: '',
-  trends: { rws: [], non_rws: [] },
+  trends: { rws: [], non_rws: [], awex: [] },
   yearly_average_prices: [],
   provincial_producers: [],
   province_avg_prices: [],
@@ -75,7 +75,7 @@ export const MOCK_REPORTS: AuctionReport[] = [
       {"type":"total_lots","unit":"bales","value":10250,"value_ytd": 50123,"pct_change":5.2},
       {"type":"total_volume","unit":"MT","value":1550.8,"value_ytd": 7580.4,"pct_change":3.1},
       {"type":"avg_price","unit":"ZAR/kg","value":181.45,"pct_change":-2.3},
-      {"type":"total_value","unit":"ZAR M","value":281.4,"pct_change":0.7}
+      {"type":"total_value","unit":"ZAR M","value":281.4,"value_ytd": 1250.8,"pct_change":0.7}
     ],
     "benchmarks": [
       {"label":"Certified","price":184.35,"currency":"ZAR/kg clean","day_change_pct":1.4},
@@ -83,17 +83,17 @@ export const MOCK_REPORTS: AuctionReport[] = [
       {"label":"AWEX","price":12.61,"currency":"USD/kg clean","day_change_pct":0.6}
     ],
     "yearly_average_prices": [
-      {"label": "RWS Avg Price (YTD)", "value": 188.50, "unit": "ZAR/kg"},
-      {"label": "Non-RWS Avg Price (YTD)", "value": 175.20, "unit": "ZAR/kg"}
+      {"label": "Certified Wool Avg Price (YTD)", "value": 188.50, "unit": "ZAR/kg"},
+      {"label": "All - Merino Wool Avg Price (YTD)", "value": 175.20, "unit": "ZAR/kg"}
     ],
     "micron_prices": [
-      {"bucket_micron":"17","category":"Fine","price_clean_zar_per_kg":225.50},
-      {"bucket_micron":"18","category":"Fine","price_clean_zar_per_kg":210.00},
-      {"bucket_micron":"19","category":"Fine","price_clean_zar_per_kg":195.70},
-      {"bucket_micron":"20","category":"Medium","price_clean_zar_per_kg":182.40},
-      {"bucket_micron":"21","category":"Medium","price_clean_zar_per_kg":175.00},
-      {"bucket_micron":"22","category":"Strong","price_clean_zar_per_kg":168.20},
-      {"bucket_micron":"23","category":"Strong","price_clean_zar_per_kg":160.10}
+      {"bucket_micron":"17","category":"Fine","price_clean_zar_per_kg":225.50,"certified_price_clean_zar_per_kg":228.20,"all_merino_price_clean_zar_per_kg":222.80},
+      {"bucket_micron":"18","category":"Fine","price_clean_zar_per_kg":210.00,"certified_price_clean_zar_per_kg":212.50,"all_merino_price_clean_zar_per_kg":207.50},
+      {"bucket_micron":"19","category":"Fine","price_clean_zar_per_kg":195.70,"certified_price_clean_zar_per_kg":198.20,"all_merino_price_clean_zar_per_kg":193.20},
+      {"bucket_micron":"20","category":"Medium","price_clean_zar_per_kg":182.40,"certified_price_clean_zar_per_kg":184.80,"all_merino_price_clean_zar_per_kg":180.00},
+      {"bucket_micron":"21","category":"Medium","price_clean_zar_per_kg":175.00,"certified_price_clean_zar_per_kg":177.30,"all_merino_price_clean_zar_per_kg":172.70},
+      {"bucket_micron":"22","category":"Strong","price_clean_zar_per_kg":168.20,"certified_price_clean_zar_per_kg":170.40,"all_merino_price_clean_zar_per_kg":166.00},
+      {"bucket_micron":"23","category":"Strong","price_clean_zar_per_kg":160.10,"certified_price_clean_zar_per_kg":162.20,"all_merino_price_clean_zar_per_kg":158.00}
     ],
     "buyers": [
       {"buyer":"BKB PINNACLE FIBRES","share_pct":24.89, "cat": 1556, "bales_ytd": 4419},
@@ -122,7 +122,8 @@ export const MOCK_REPORTS: AuctionReport[] = [
     "insights": "The market continued to deliver steady results this week, ending dearer on all micron groups. Strong demand from key markets contributed to positive price movements, particularly for certified fine wool. The next auction is scheduled for 10 September 2025.",
     "trends": {
       "rws": generateTrendData(180, 10),
-      "non_rws": generateTrendData(170, 9.5)
+      "non_rws": generateTrendData(170, 9.5),
+      "awex": generateTrendData(0, 12.5) // AWEX is typically in USD
     },
     "provincial_producers": [
         { province: 'Eastern Cape', producers: [
@@ -260,7 +261,7 @@ export const MOCK_REPORTS: AuctionReport[] = [
       {"type":"total_lots","unit":"bales","value":9830,"value_ytd": 40000,"pct_change":-1.5},
       {"type":"total_volume","unit":"MT","value":1504.1,"value_ytd": 6000.0,"pct_change":-0.8},
       {"type":"avg_price","unit":"ZAR/kg","value":185.72,"pct_change":1.1},
-      {"type":"total_value","unit":"ZAR M","value":279.3,"pct_change":0.3}
+      {"type":"total_value","unit":"ZAR M","value":279.3,"value_ytd": 1180.5,"pct_change":0.3}
     ],
     "benchmarks": [
       {"label":"Certified","price":181.80,"currency":"ZAR/kg clean","day_change_pct":-0.5},
@@ -268,17 +269,17 @@ export const MOCK_REPORTS: AuctionReport[] = [
       {"label":"AWEX","price":12.54,"currency":"USD/kg clean","day_change_pct":-0.1}
     ],
     "yearly_average_prices": [
-        {"label": "RWS Avg Price (YTD)", "value": 185.90, "unit": "ZAR/kg"},
-        {"label": "Non-RWS Avg Price (YTD)", "value": 172.10, "unit": "ZAR/kg"}
+        {"label": "Certified Wool Avg Price (YTD)", "value": 185.90, "unit": "ZAR/kg"},
+        {"label": "All - Merino Wool Avg Price (YTD)", "value": 172.10, "unit": "ZAR/kg"}
     ],
     "micron_prices": [
-      {"bucket_micron":"17","category":"Fine","price_clean_zar_per_kg":220.10},
-      {"bucket_micron":"18","category":"Fine","price_clean_zar_per_kg":205.80},
-      {"bucket_micron":"19","category":"Fine","price_clean_zar_per_kg":191.50},
-      {"bucket_micron":"20","category":"Medium","price_clean_zar_per_kg":179.90},
-      {"bucket_micron":"21","category":"Medium","price_clean_zar_per_kg":172.30},
-      {"bucket_micron":"22","category":"Strong","price_clean_zar_per_kg":165.40},
-      {"bucket_micron":"23","category":"Strong","price_clean_zar_per_kg":158.00}
+      {"bucket_micron":"17","category":"Fine","price_clean_zar_per_kg":220.10,"certified_price_clean_zar_per_kg":222.80,"all_merino_price_clean_zar_per_kg":217.40},
+      {"bucket_micron":"18","category":"Fine","price_clean_zar_per_kg":205.80,"certified_price_clean_zar_per_kg":208.30,"all_merino_price_clean_zar_per_kg":203.30},
+      {"bucket_micron":"19","category":"Fine","price_clean_zar_per_kg":191.50,"certified_price_clean_zar_per_kg":194.00,"all_merino_price_clean_zar_per_kg":189.00},
+      {"bucket_micron":"20","category":"Medium","price_clean_zar_per_kg":179.90,"certified_price_clean_zar_per_kg":182.30,"all_merino_price_clean_zar_per_kg":177.50},
+      {"bucket_micron":"21","category":"Medium","price_clean_zar_per_kg":172.30,"certified_price_clean_zar_per_kg":174.60,"all_merino_price_clean_zar_per_kg":170.00},
+      {"bucket_micron":"22","category":"Strong","price_clean_zar_per_kg":165.40,"certified_price_clean_zar_per_kg":167.60,"all_merino_price_clean_zar_per_kg":163.20},
+      {"bucket_micron":"23","category":"Strong","price_clean_zar_per_kg":158.00,"certified_price_clean_zar_per_kg":160.10,"all_merino_price_clean_zar_per_kg":155.90}
     ],
     "buyers": [
       {"buyer":"BKB PINNACLE FIBRES","share_pct":23.5, "cat": 1490, "bales_ytd": 4210},
@@ -305,7 +306,8 @@ export const MOCK_REPORTS: AuctionReport[] = [
     "insights": "A slightly softer market this week with minor pullbacks in key benchmarks. Overall volume was lower, consistent with the holiday period. Demand is expected to pick up in the new year.",
     "trends": {
       "rws": generateTrendData(178, 9.8),
-      "non_rws": generateTrendData(168, 9.3)
+      "non_rws": generateTrendData(168, 9.3),
+      "awex": generateTrendData(0, 12.2) // AWEX is typically in USD
     },
      "provincial_producers": [
         { province: 'Eastern Cape', producers: [

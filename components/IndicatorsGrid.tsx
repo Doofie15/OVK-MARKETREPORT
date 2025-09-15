@@ -73,8 +73,8 @@ const IndicatorCard: React.FC<{
     const isPositive = change !== undefined && change >= 0;
 
     return (
-        <div className="metric-card">
-            <div className="flex items-center justify-between mb-2">
+        <div className="metric-card h-28 flex flex-col justify-between p-4">
+            <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     {getIndicatorIcon(title)}
                     <p className="text-xs font-medium text-gray-600">{title}</p>
@@ -89,20 +89,24 @@ const IndicatorCard: React.FC<{
                 )}
             </div>
             
-            <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {value}
-                </span>
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    {unit}
-                </span>
+            <div className="flex flex-col">
+                <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                        {value}
+                    </span>
+                    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                        {unit}
+                    </span>
+                </div>
+                
+                <div className="h-4">
+                    {ytdValue && (
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            YTD: {ytdValue}
+                        </p>
+                    )}
+                </div>
             </div>
-            
-            {ytdValue && (
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    YTD: {ytdValue}
-                </p>
-            )}
         </div>
     );
 };
@@ -117,6 +121,66 @@ interface IndicatorsGridProps {
 const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks, yearly_average_prices }) => {
     const filteredIndicators = indicators.filter(ind => ind.type !== 'avg_price');
     
+    // Create ordered array of cards based on the requested order
+    const orderedCards = [];
+    
+    // 1. Total Lots
+    const totalLots = filteredIndicators.find(ind => ind.type === 'total_lots');
+    if (totalLots) orderedCards.push({
+        type: 'indicator',
+        data: totalLots
+    });
+    
+    // 2. Total Volume
+    const totalVolume = filteredIndicators.find(ind => ind.type === 'total_volume');
+    if (totalVolume) orderedCards.push({
+        type: 'indicator',
+        data: totalVolume
+    });
+    
+    // 3. Total Value
+    const totalValue = filteredIndicators.find(ind => ind.type === 'total_value');
+    if (totalValue) orderedCards.push({
+        type: 'indicator',
+        data: totalValue
+    });
+    
+    // 4. AWEX
+    const awex = benchmarks.find(b => b.label === 'AWEX');
+    if (awex) orderedCards.push({
+        type: 'benchmark',
+        data: awex
+    });
+    
+    // 5. Certified
+    const certified = benchmarks.find(b => b.label === 'Certified');
+    if (certified) orderedCards.push({
+        type: 'benchmark',
+        data: certified
+    });
+    
+    // 6. All Merino
+    const allMerino = benchmarks.find(b => b.label === 'All-Merino');
+    if (allMerino) orderedCards.push({
+        type: 'benchmark',
+        data: allMerino
+    });
+    
+    // 7. All Merino Avg (YTD)
+    const allMerinoYtd = yearly_average_prices?.find(p => p.label.includes('All - Merino Wool'));
+    if (allMerinoYtd) orderedCards.push({
+        type: 'yearly_price',
+        data: allMerinoYtd
+    });
+    
+    // 8. Certified (YTD)
+    const certifiedYtd = yearly_average_prices?.find(p => p.label.includes('Certified Wool'));
+    if (certifiedYtd) orderedCards.push({
+        type: 'yearly_price',
+        data: certifiedYtd
+    });
+    
+    
     return (
         <div>
             <div className="flex items-center gap-2 mb-3">
@@ -127,37 +191,47 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
             </div>
             
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {filteredIndicators.map(indicator => (
-                    <IndicatorCard
-                        key={indicator.type}
-                        title={getIndicatorTitle(indicator.type)}
-                        value={formatValue(indicator.type, indicator.value)}
-                        unit={indicator.unit}
-                        change={indicator.pct_change}
-                        ytdValue={
-                            indicator.value_ytd 
-                                ? `${indicator.value_ytd.toLocaleString('en-US')} ${indicator.unit}` 
-                                : undefined
-                        }
-                    />
-                ))}
-                {yearly_average_prices?.map(price => (
-                    <IndicatorCard
-                        key={price.label}
-                        title={price.label}
-                        value={price.value.toFixed(2)}
-                        unit={price.unit}
-                    />
-                ))}
-                {benchmarks.map(benchmark => (
-                    <IndicatorCard
-                        key={benchmark.label}
-                        title={benchmark.label}
-                        value={benchmark.price.toFixed(2)}
-                        unit={benchmark.currency.split(' ')[0]}
-                        change={benchmark.day_change_pct}
-                    />
-                ))}
+                {orderedCards.map((card, index) => {
+                    if (card.type === 'indicator') {
+                        const indicator = card.data;
+                        return (
+                            <IndicatorCard
+                                key={indicator.type}
+                                title={getIndicatorTitle(indicator.type)}
+                                value={formatValue(indicator.type, indicator.value)}
+                                unit={indicator.unit}
+                                change={indicator.pct_change}
+                                ytdValue={
+                                    indicator.value_ytd 
+                                        ? `${indicator.value_ytd.toLocaleString('en-US')} ${indicator.unit}` 
+                                        : undefined
+                                }
+                            />
+                        );
+                    } else if (card.type === 'benchmark') {
+                        const benchmark = card.data;
+                        return (
+                            <IndicatorCard
+                                key={benchmark.label}
+                                title={benchmark.label}
+                                value={benchmark.price.toFixed(2)}
+                                unit={benchmark.currency.split(' ')[0]}
+                                change={benchmark.day_change_pct}
+                            />
+                        );
+                    } else if (card.type === 'yearly_price') {
+                        const price = card.data;
+                        return (
+                            <IndicatorCard
+                                key={price.label}
+                                title={price.label}
+                                value={price.value.toFixed(2)}
+                                unit={price.unit}
+                            />
+                        );
+                    }
+                    return null;
+                })}
             </div>
         </div>
     );

@@ -35,8 +35,8 @@ const TopSalesTable: React.FC<TopSalesTableProps> = ({ data }) => {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-              {['FARM', 'REGION', 'LOTS', 'TYPE', 'MICRON', 'PRICE (ZAR/KG)', 'CERTIFIED', 'BUYER'].map(header => (
-                <th key={header} className="text-left py-2 px-2 font-medium" style={{ color: 'var(--text-muted)' }}>
+              {['FARM', 'REGION', 'LOTS', 'TYPE', 'MICRON', 'PRICE (ZAR/KG)', 'Certification', 'BUYER'].map((header, index) => (
+                <th key={header} className={`py-2 px-2 font-medium ${index === 6 ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-muted)' }}>
                   {header}
                 </th>
               ))}
@@ -74,14 +74,16 @@ const TopSalesTable: React.FC<TopSalesTableProps> = ({ data }) => {
                     R{sale.price_zar_per_kg_greasy.toFixed(2)}
                   </span>
                 </td>
-                <td className="py-1 px-2 text-center">
-                  {sale.certified ? (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">
-                      RWS
-                    </span>
-                  ) : (
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
-                  )}
+                <td className="py-1 px-2 text-center align-middle">
+                  <div className="flex justify-center items-center">
+                    {sale.certified ? (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">
+                        RWS
+                      </span>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+                    )}
+                  </div>
                 </td>
                 <td className="py-1 px-2">
                   <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>

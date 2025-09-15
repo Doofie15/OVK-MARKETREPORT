@@ -50,7 +50,7 @@ export const transformFormToDatabase = (formData: Omit<AuctionReport, 'top_sales
       indicators.push({
         id: '',
         sale_id: '',
-        indicator: price.label.includes('RWS') ? 'certified_merino' : 'all_merino',
+        indicator: price.label.includes('Certified Wool') ? 'certified_merino' : 'all_merino',
         unit: 'sa_c_per_kg_clean' as ValueUnit,
         value_this_sale: price.value,
         value_prior_sale: undefined,
@@ -218,7 +218,7 @@ export const transformDatabaseToForm = (dbData: CompleteAuctionData): Omit<Aucti
   const yearlyAveragePrices = dbData.indicators
     .filter(ind => ind.indicator === 'certified_merino' || ind.indicator === 'all_merino')
     .map(indicator => ({
-      label: indicator.indicator === 'certified_merino' ? 'RWS Avg Price (YTD)' : 'Non-RWS Avg Price (YTD)',
+      label: indicator.indicator === 'certified_merino' ? 'Certified Wool Avg Price (YTD)' : 'All - Merino Wool Avg Price (YTD)',
       value: indicator.value_this_sale || 0,
       unit: 'ZAR/kg'
     }));

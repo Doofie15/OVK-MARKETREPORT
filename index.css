@@ -213,6 +213,18 @@ body {
   transform: translateY(-2px);
 }
 
+/* Mobile Chart Container */
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  
+  .chart-container:hover {
+    transform: none;
+  }
+}
+
 .chart-title {
   color: var(--text-primary);
   font-size: 18px;
@@ -368,6 +380,16 @@ body {
   background: var(--bg-hover);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 /* Animations */
 @keyframes fadeInUp {
   from {
@@ -494,6 +516,24 @@ body {
   padding: 0 20px;
 }
 
+/* Equal Height Cards */
+.equal-height-cards {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.equal-height-cards > * {
+  height: 100%;
+}
+
+@media (max-width: 1024px) {
+  .equal-height-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 .section {
   margin-bottom: 40px;
 }
@@ -507,8 +547,16 @@ body {
   flex-direction: column;
 }
 
+.flex-1 {
+  flex: 1 1 0%;
+}
+
 .items-center {
   align-items: center;
+}
+
+.items-stretch {
+  align-items: stretch;
 }
 
 .justify-between {

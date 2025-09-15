@@ -133,11 +133,11 @@ const App: React.FC = () => {
   const rwsPremium = useMemo(() => {
     if (!activeReport?.yearly_average_prices) return 0;
     
-    const rwsPrice = activeReport.yearly_average_prices.find(p => p.label.includes('RWS'))?.value || 0;
-    const nonRwsPrice = activeReport.yearly_average_prices.find(p => p.label.includes('Non-RWS'))?.value || 0;
+    const certifiedPrice = activeReport.yearly_average_prices.find(p => p.label.includes('Certified Wool'))?.value || 0;
+    const allMerinoPrice = activeReport.yearly_average_prices.find(p => p.label.includes('All - Merino Wool'))?.value || 0;
     
-    if (nonRwsPrice > 0) {
-      return ((rwsPrice - nonRwsPrice) / nonRwsPrice) * 100;
+    if (allMerinoPrice > 0) {
+      return ((certifiedPrice - allMerinoPrice) / allMerinoPrice) * 100;
     }
     return 0;
   }, [activeReport]);
@@ -147,7 +147,6 @@ const App: React.FC = () => {
       return activeReport.provincial_producers
           .flatMap(p => p.producers)
           .sort((a, b) => b.price - a.price)
-          .slice(0, 10)
           .map((p, index) => ({
               position: index + 1,
               farm: p.name,
@@ -207,7 +206,7 @@ const App: React.FC = () => {
                 brokers: [],
                 currencies: [],
                 insights: '',
-                trends: { rws: [], non_rws: [] },
+                trends: { rws: [], non_rws: [], awex: [] },
                 yearly_average_prices: [],
                 provincial_producers: [],
                 province_avg_prices: [],
@@ -250,6 +249,34 @@ const App: React.FC = () => {
         />
         {activeReport ? (
           <div className="space-y-4">
+            {/* Prominent Auction Title */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">
+                    {activeReport.auction.catalogue_name || `Auction ${activeReport.auction.week_id}`}
+                  </h1>
+                  <div className="flex items-center gap-2 text-blue-100">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-lg font-semibold">
+                      {new Date(activeReport.auction.auction_date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-blue-100 text-sm mb-1">Season</div>
+                  <div className="text-2xl font-bold">{activeReport.auction.season_label}</div>
+                </div>
+              </div>
+            </div>
+
             <IndicatorsGrid 
               indicators={activeReport.indicators} 
               benchmarks={activeReport.benchmarks}
@@ -268,9 +295,19 @@ const App: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid lg:grid-cols-2 gap-4">
-              <MicronPriceChart data={activeReport.micron_prices} />
-              <BuyerShareChart data={activeReport.buyers.slice(0, 6)} />
+            <div className="grid lg:grid-cols-3 gap-4 items-stretch">
+              <div className="lg:col-span-2">
+                <MicronPriceChart 
+                  data={activeReport.micron_prices} 
+                  previousData={previousReport?.micron_prices}
+                  catalogueName={activeReport.auction.catalogue_name}
+                  currentAuction={activeReport.auction}
+                  previousAuction={previousReport?.auction}
+                />
+              </div>
+              <div className="flex flex-col">
+                <BuyerShareChart data={activeReport.buyers.slice(0, 6)} />
+              </div>
             </div>
 
             <AuctionComparison 
@@ -280,16 +317,12 @@ const App: React.FC = () => {
 
             <MarketTrends data={activeReport.trends} />
             
-            <div className="grid lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                <BuyerListTable data={activeReport.buyers} />
-              </div>
-              <div>
-                <BrokersGrid data={activeReport.brokers} />
-              </div>
+            <div className="equal-height-cards">
+              <BuyerListTable data={activeReport.buyers} />
+              <BrokersGrid data={activeReport.brokers} />
             </div>
             
-            <TopSalesTable data={topSalesForActiveReport.slice(0, 5)} />
+            <TopSalesTable data={topSalesForActiveReport.slice(0, 10)} />
             
             <TopPerformers 
               topSales={topSalesForActiveReport}

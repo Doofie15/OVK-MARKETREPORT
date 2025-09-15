@@ -54,7 +54,7 @@ const AuctionDetailsSection: React.FC<{
                 <p className="text-sm text-blue-700">Enter the basic auction information including date, catalogue name, and commodity type.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Auction Date *</label>
@@ -167,11 +167,11 @@ const MarketIndicatorsSection: React.FC<{
              let item = indicators.find(i => i.type === 'total_value');
             if(item) item.value = numericValue; else indicators.push({ type: 'total_value', value: numericValue, unit: 'ZAR M', pct_change: 0 });
         } else if (field === 'avg_rws') {
-            let item = yearlyPrices.find(p => p.label.includes('RWS'));
-            if(item) item.value = numericValue; else yearlyPrices.push({ label: 'RWS Avg Price (YTD)', value: numericValue, unit: 'ZAR/kg' });
+            let item = yearlyPrices.find(p => p.label.includes('Certified Wool'));
+            if(item) item.value = numericValue; else yearlyPrices.push({ label: 'Certified Wool Avg Price (YTD)', value: numericValue, unit: 'ZAR/kg' });
         } else if (field === 'avg_non_rws') {
-            let item = yearlyPrices.find(p => p.label.includes('Non-RWS'));
-            if(item) item.value = numericValue; else yearlyPrices.push({ label: 'Non-RWS Avg Price (YTD)', value: numericValue, unit: 'ZAR/kg' });
+            let item = yearlyPrices.find(p => p.label.includes('All - Merino Wool'));
+            if(item) item.value = numericValue; else yearlyPrices.push({ label: 'All - Merino Wool Avg Price (YTD)', value: numericValue, unit: 'ZAR/kg' });
         }
 
         setReport(prev => ({ ...prev, indicators, yearly_average_prices: yearlyPrices }));
@@ -234,7 +234,7 @@ const MarketIndicatorsSection: React.FC<{
                 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Avg Price RWS Certified (YTD)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Avg Price Certified Wool (YTD)</label>
                         <input 
                             type="number" 
                             step="0.01"
@@ -246,7 +246,7 @@ const MarketIndicatorsSection: React.FC<{
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Avg Price Non-Certified (YTD)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Avg Price All - Merino Wool (YTD)</label>
                         <input 
                             type="number" 
                             step="0.01"

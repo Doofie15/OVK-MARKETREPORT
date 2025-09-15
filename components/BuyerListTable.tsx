@@ -8,7 +8,7 @@ interface BuyerListTableProps {
 
 const BuyerListTable: React.FC<BuyerListTableProps> = ({ data }) => {
   return (
-    <div className="card">
+    <div className="card h-full flex flex-col">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,7 +25,7 @@ const BuyerListTable: React.FC<BuyerListTableProps> = ({ data }) => {
         </div>
       </div>
       
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto flex-1">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>

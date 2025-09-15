@@ -1,6 +1,17 @@
 import React from 'react';
+import { AuctionDataService } from '../../data/service';
 
 const AdminDashboard: React.FC = () => {
+  const handleAddTestData = async () => {
+    try {
+      await AuctionDataService.addTestData();
+      alert('✅ Test data added successfully! Now create a new auction to see previous value comparisons.');
+    } catch (error) {
+      console.error('Error adding test data:', error);
+      alert('❌ Error adding test data. Check console for details.');
+    }
+  };
+
   const stats = [
     {
       title: 'Total Auctions',
@@ -79,7 +90,13 @@ const AdminDashboard: React.FC = () => {
     }
   ];
 
-  const quickActions = [
+  const quickActions: Array<{
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    color: string;
+    onClick?: () => void;
+  }> = [
     {
       title: 'Create New Auction',
       description: 'Add a new auction report',
@@ -89,6 +106,17 @@ const AdminDashboard: React.FC = () => {
         </svg>
       ),
       color: 'bg-blue-500'
+    },
+    {
+      title: 'Add Test Data',
+      description: 'Add dummy auction for testing comparisons',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+      ),
+      color: 'bg-yellow-500',
+      onClick: handleAddTestData
     },
     {
       title: 'Import Data',
@@ -161,6 +189,7 @@ const AdminDashboard: React.FC = () => {
               {quickActions.map((action, index) => (
                 <button
                   key={index}
+                  onClick={action.onClick || (() => {})}
                   className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all text-left group"
                 >
                   <div className="flex items-center space-x-4">

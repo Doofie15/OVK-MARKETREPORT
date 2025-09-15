@@ -17,18 +17,54 @@ const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, prev
   // Create comparison data for the table
   const comparisonData = sortedCurrentData.map(current => {
     const previous = sortedPreviousData.find(p => p.bucket_micron === current.bucket_micron);
-    const previousPrice = previous?.price_clean_zar_per_kg || 0;
-    const currentPrice = current.price_clean_zar_per_kg;
-    const percentChange = previousPrice > 0 ? ((currentPrice - previousPrice) / previousPrice) * 100 : 0;
+    
+    // Certified pricing
+    const prevCertified = previous?.certified_price_clean_zar_per_kg || previous?.price_clean_zar_per_kg || 0;
+    const currCertified = current.certified_price_clean_zar_per_kg || current.price_clean_zar_per_kg;
+    const certifiedChange = prevCertified > 0 ? ((currCertified - prevCertified) / prevCertified) * 100 : 0;
+    
+    // All Merino pricing
+    const prevAllMerino = previous?.all_merino_price_clean_zar_per_kg || previous?.price_clean_zar_per_kg || 0;
+    const currAllMerino = current.all_merino_price_clean_zar_per_kg || current.price_clean_zar_per_kg;
+    const allMerinoChange = prevAllMerino > 0 ? ((currAllMerino - prevAllMerino) / prevAllMerino) * 100 : 0;
     
     return {
       micron: current.bucket_micron,
       category: current.category,
-      previousPrice,
-      currentPrice,
-      percentChange
+      certified: {
+        previous: prevCertified,
+        current: currCertified,
+        change: certifiedChange
+      },
+      allMerino: {
+        previous: prevAllMerino,
+        current: currAllMerino,
+        change: allMerinoChange
+      }
     };
   });
+
+  const renderChangeIndicator = (change: number) => {
+    if (change === 0) return <span className="text-gray-400">-</span>;
+    
+    return (
+      <span className={`inline-flex items-center gap-1 ${
+        change > 0 ? 'text-green-600' : 'text-red-600'
+      }`}>
+        {change > 0 && (
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+        )}
+        {change < 0 && (
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        )}
+        {Math.abs(change).toFixed(1)}%
+      </span>
+    );
+  };
 
   return (
     <div className="card">
@@ -52,22 +88,35 @@ const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, prev
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Micron</th>
-              <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Category</th>
-              <th className="px-2 py-2 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>Previous</th>
-              <th className="px-2 py-2 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>Current</th>
-              <th className="px-2 py-2 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>Change</th>
+              <th className="px-2 py-2 text-left font-semibold border-r border-gray-200" style={{ color: 'var(--text-primary)' }}>Micron</th>
+              <th className="px-2 py-2 text-left font-semibold border-r border-gray-200" style={{ color: 'var(--text-primary)' }}>Category</th>
+              <th className="px-2 py-2 text-center font-semibold border-l-2 border-blue-200 bg-blue-100" style={{ color: 'var(--text-primary)' }} colSpan={3}>
+                Certified (Previous & Current) Change
+              </th>
+              <th className="px-2 py-2 text-center font-semibold border-l-2 border-green-200 bg-green-100" style={{ color: 'var(--text-primary)' }} colSpan={3}>
+                All Merino (Previous & Current) Change
+              </th>
+            </tr>
+            <tr className="bg-gray-50">
+              <th className="border-r border-gray-200"></th>
+              <th className="border-r border-gray-200"></th>
+              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
+              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
+              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Change</th>
+              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
+              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
+              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Change</th>
             </tr>
           </thead>
           <tbody>
             {comparisonData.map((item, index) => (
               <tr key={item.micron} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}>
-                <td className="px-2 py-1">
+                <td className="px-2 py-1 border-r border-gray-200">
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                     {item.micron}µm
                   </span>
                 </td>
-                <td className="px-2 py-1">
+                <td className="px-2 py-1 border-r border-gray-200">
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
                     item.category === 'Fine' ? 'bg-blue-100 text-blue-700' :
                     item.category === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
@@ -76,33 +125,25 @@ const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, prev
                     {item.category}
                   </span>
                 </td>
-                <td className="px-2 py-1 text-right font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  {item.previousPrice > 0 ? `R${item.previousPrice.toFixed(2)}` : 'N/A'}
+                {/* Certified columns */}
+                <td className="px-1 py-1 text-right font-medium border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>
+                  R{item.certified.previous.toFixed(2)}
                 </td>
-                <td className="px-2 py-1 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  R{item.currentPrice.toFixed(2)}
+                <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-primary)' }}>
+                  R{item.certified.current.toFixed(2)}
                 </td>
-                <td className="px-2 py-1 text-right font-semibold">
-                  {item.previousPrice > 0 ? (
-                    <span className={`inline-flex items-center gap-1 ${
-                      item.percentChange > 0 ? 'text-green-600' : 
-                      item.percentChange < 0 ? 'text-red-600' : 'text-gray-600'
-                    }`}>
-                      {item.percentChange > 0 && (
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {item.percentChange < 0 && (
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {Math.abs(item.percentChange).toFixed(1)}%
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
+                <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25">
+                  {renderChangeIndicator(item.certified.change)}
+                </td>
+                {/* All Merino columns */}
+                <td className="px-1 py-1 text-right font-medium border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>
+                  R{item.allMerino.previous.toFixed(2)}
+                </td>
+                <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-primary)' }}>
+                  R{item.allMerino.current.toFixed(2)}
+                </td>
+                <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25">
+                  {renderChangeIndicator(item.allMerino.change)}
                 </td>
               </tr>
             ))}
