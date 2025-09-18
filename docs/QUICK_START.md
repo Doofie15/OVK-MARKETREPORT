@@ -52,9 +52,10 @@ npm run dev
 
 ### 3. Administrative Functions
 - Click "Admin Panel" to access data entry
-- Create new auction reports
+- Create new auction reports with enhanced 95% width form layout
 - Import/export data
 - **Mobile**: Responsive admin forms with mobile-friendly inputs
+- **Enhanced Layout**: Wider form provides better data entry experience
 
 ### 4. Data Visualization
 - Interactive charts and graphs
@@ -113,8 +114,11 @@ The OVK Wool Market Report Platform is now running locally. Start exploring the 
 
 **Next Steps:**
 1. Explore the market dashboard
-2. Try the administrative functions
+2. Try the administrative functions with the enhanced 95% width form
 3. Review the sample data
 4. Check out the analytics features
+5. Test the improved form layout for data entry
+
+**Recent Enhancement**: The auction data capture form now uses 95% of the page width for improved usability and better data entry experience!
 
 Happy exploring! 🐑📊

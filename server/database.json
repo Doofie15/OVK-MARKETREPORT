@@ -751,6 +751,61 @@
     }
   ],
   "report_ingest_audit": [],
+  "cape_wools_reports": [
+    {
+      "id": "sample-cape-wools-report-001",
+      "created_at": "2025-09-10T10:00:00.000Z",
+      "updated_at": "2025-09-10T10:00:00.000Z",
+      "auction": {
+        "season_label": "2025/26",
+        "catalogue_name": "CG04",
+        "auction_date": "2025-09-10",
+        "auction_center": "Port Elizabeth",
+        "commodity": "wool",
+        "week_start": "2025-09-08",
+        "week_end": "2025-09-14"
+      },
+      "market_indices": {
+        "merino_indicator_sa_cents_clean": 18917,
+        "merino_indicator_us_cents_clean": 1079,
+        "merino_indicator_euro_cents_clean": 924,
+        "certified_indicator_sa_cents_clean": 19534,
+        "certified_indicator_us_cents_clean": 1114,
+        "certified_indicator_euro_cents_clean": 954,
+        "awex_emi_sa_cents_clean": 1319
+      },
+      "currency_fx": {
+        "ZAR_USD": 17.53,
+        "ZAR_EUR": 20.48,
+        "ZAR_JPY": 8.42,
+        "ZAR_GBP": 23.66,
+        "USD_AUD": 0.6585
+      },
+      "supply_stats": {
+        "offered_bales": 5841,
+        "sold_bales": 5376,
+        "clearance_rate_pct": 92.1
+      },
+      "highest_price": {
+        "price_cents_clean": 23264,
+        "micron": 17.2,
+        "bales": 7
+      },
+      "certified_share": {
+        "offered_bales": 3800,
+        "sold_bales": 3650,
+        "all_wool_pct_offered": 58.2,
+        "all_wool_pct_sold": 61.8,
+        "merino_pct_offered": 15.2,
+        "merino_pct_sold": 16.8
+      },
+      "greasy_stats": {
+        "turnover_rand": 45680000,
+        "bales": 5376,
+        "mass_kg": 1892340
+      }
+    }
+  ],
   "metadata": {
     "version": "1.0.0",
     "created_at": "2025-01-27T00:00:00.000Z",

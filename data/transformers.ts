@@ -157,7 +157,6 @@ export const transformDatabaseToForm = (dbData: CompleteAuctionData): Omit<Aucti
   const auction = {
     commodity: 'wool' as const,
     season_label: dbData.sale.season,
-    week_id: `week_${new Date(dbData.sale.sale_date).getFullYear()}_${String(dbData.sale.catalogue_no).padStart(2, '0')}`,
     week_start: getWeekStart(dbData.sale.sale_date),
     week_end: getWeekEnd(dbData.sale.sale_date),
     auction_date: dbData.sale.sale_date,

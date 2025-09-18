@@ -77,11 +77,16 @@ This project follows the OVK Code of Conduct. By participating, you agree to uph
 ### File Organization
 ```
 components/
-├── admin/           # Admin-specific components
+├── admin/           # Admin-specific components (including enhanced 95% width form)
 ├── mobile/          # Mobile-optimized components
 ├── shared/          # Shared components
 └── [feature]/       # Feature-specific components
 ```
+
+### Recent Updates
+- **Enhanced Form Layout**: Admin forms now use 95% of page width for improved usability
+- **Improved User Experience**: Wider form layout provides better data entry experience
+- **Mobile Compatibility**: Enhanced forms maintain full mobile responsiveness
 
 ### Naming Conventions
 - **Components**: PascalCase (`UserProfile.tsx`)
@@ -150,6 +155,8 @@ export const MobileFeatureComponent: React.FC<Props> = ({ data }) => {
 - Test on different screen sizes
 - Test with different data sets
 - Test admin functionality
+- Test enhanced form layout (95% width utilization)
+- Verify mobile responsiveness of enhanced forms
 
 ## 📝 Pull Request Process
 

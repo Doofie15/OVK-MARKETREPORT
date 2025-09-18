@@ -1,63 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import type { AuctionReport } from '../../types';
-import { AuctionDataService } from '../../data';
-import type { Sale } from '../../data';
+import { SeasonService } from '../../data/service';
+import type { Season } from '../../types';
 
-interface AuctionsListProps {
-  reports: AuctionReport[];
-  onAddNew: () => void;
-  onEdit: (report: AuctionReport) => void;
-  onDelete: (weekId: string) => void;
-  onView: (report: AuctionReport) => void;
+interface SeasonListProps {
+  onCreateSeason: () => void;
+  onEditSeason: (season: Season) => void;
 }
 
-const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, onDelete, onView }) => {
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
+const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason }) => {
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [filteredSeasons, setFilteredSeasons] = useState<Season[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSales, setSelectedSales] = useState<string[]>([]);
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deletePasswordError, setDeletePasswordError] = useState<string | null>(null);
 
-  // Load sales data on component mount
+  // Load seasons on component mount
   useEffect(() => {
-    loadSales();
+    loadSeasons();
   }, []);
 
-  // Filter sales based on search term
+  // Filter seasons based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFilteredSales(sales);
+      setFilteredSeasons(seasons);
     } else {
-      const filtered = sales.filter(sale =>
-        sale.sale_date.includes(searchTerm) ||
-        `CAT${String(sale.catalogue_no).padStart(2, '0')}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `week_${new Date(sale.sale_date).getFullYear()}_${String(sale.catalogue_no).padStart(2, '0')}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sale.season.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = seasons.filter(season =>
+        season.year.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        season.start_date.includes(searchTerm) ||
+        season.end_date.includes(searchTerm)
       );
-      setFilteredSales(filtered);
+      setFilteredSeasons(filtered);
     }
-  }, [sales, searchTerm]);
+  }, [seasons, searchTerm]);
 
-  const loadSales = async () => {
+  const loadSeasons = async () => {
     try {
       setLoading(true);
       setError(null);
-      const salesData = await AuctionDataService.getAllAuctionReports();
-      setSales(salesData);
+      const seasonsData = await SeasonService.getAllSeasons();
+      setSeasons(seasonsData);
     } catch (err) {
-      setError('Failed to load auction data');
-      console.error('Error loading sales data:', err);
+      setError('Failed to load seasons');
+      console.error('Error loading seasons:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteSale = (saleId: string, saleInfo: string) => {
-    setDeleteConfirm(saleId);
+  const handleDeleteSeason = (seasonId: string, seasonName: string) => {
+    setDeleteConfirm(seasonId);
     setDeletePassword('');
     setDeletePasswordError(null);
   };
@@ -78,15 +73,15 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     }
 
     try {
-      await AuctionDataService.deleteAuctionReport(deleteConfirm);
-      await loadSales(); // Reload the list
-      setSelectedSales(selectedSales.filter(id => id !== deleteConfirm));
+      await SeasonService.deleteSeason(deleteConfirm);
+      await loadSeasons(); // Reload the list
+      setSelectedSeasons(selectedSeasons.filter(id => id !== deleteConfirm));
       setDeleteConfirm(null);
       setDeletePassword('');
       setDeletePasswordError(null);
     } catch (err) {
-      setError('Failed to delete auction');
-      console.error('Error deleting auction report:', err);
+      setError('Failed to delete season');
+      console.error('Error deleting season:', err);
     }
   };
 
@@ -97,70 +92,52 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
   };
 
   const handleSelectAll = () => {
-    if (selectedSales.length === filteredSales.length) {
-      setSelectedSales([]);
+    if (selectedSeasons.length === filteredSeasons.length) {
+      setSelectedSeasons([]);
     } else {
-      setSelectedSales(filteredSales.map(sale => sale.id));
+      setSelectedSeasons(filteredSeasons.map(season => season.id));
     }
   };
 
-  const handleSelectSale = (saleId: string) => {
-    setSelectedSales(prev =>
-      prev.includes(saleId)
-        ? prev.filter(id => id !== saleId)
-        : [...prev, saleId]
+  const handleSelectSeason = (seasonId: string) => {
+    setSelectedSeasons(prev =>
+      prev.includes(seasonId)
+        ? prev.filter(id => id !== seasonId)
+        : [...prev, seasonId]
     );
   };
 
   const handleExport = async (format: 'csv' | 'xlsx' | 'pdf') => {
     try {
-      // Export selected sales if any are selected, otherwise export all sales
-      const salesToExport = selectedSales.length > 0 
-        ? sales.filter(sale => selectedSales.includes(sale.id))
-        : filteredSales;
+      // Export selected seasons if any are selected, otherwise export all seasons
+      const seasonsToExport = selectedSeasons.length > 0 
+        ? seasons.filter(season => selectedSeasons.includes(season.id))
+        : filteredSeasons;
       
-      if (salesToExport.length === 0) {
-        alert('No auctions to export.');
+      if (seasonsToExport.length === 0) {
+        alert('No seasons to export.');
         return;
       }
       
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `auctions_${timestamp}`;
+      const filename = `seasons_${timestamp}`;
       
       if (format === 'csv') {
-        const csvContent = await exportSalesToCSV(salesToExport);
+        const csvContent = await SeasonService.exportSeasonsToCSV(seasonsToExport);
         downloadFile(csvContent, `${filename}.csv`, 'text/csv');
       } else if (format === 'xlsx') {
         // For XLSX, we'll export as CSV for now (can be enhanced with a proper XLSX library)
-        const csvContent = await exportSalesToCSV(salesToExport);
+        const csvContent = await SeasonService.exportSeasonsToCSV(seasonsToExport);
         downloadFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       } else if (format === 'pdf') {
         // For PDF, we'll create a simple text-based export (can be enhanced with a PDF library)
-        const jsonContent = JSON.stringify(salesToExport, null, 2);
+        const jsonContent = await SeasonService.exportSeasonsToJSON(seasonsToExport);
         downloadFile(jsonContent, `${filename}.pdf`, 'application/pdf');
       }
     } catch (err) {
-      setError('Failed to export auctions');
-      console.error('Error exporting auctions:', err);
+      setError('Failed to export seasons');
+      console.error('Error exporting seasons:', err);
     }
-  };
-
-  const exportSalesToCSV = async (sales: Sale[]): Promise<string> => {
-    const headers = ['Auction Date', 'Catalogue Name', 'Week ID', 'Season', 'Total Bales Offered', 'Total Bales Sold', 'Clearance %'];
-    const csvContent = [
-      headers.join(','),
-      ...sales.map(sale => [
-        sale.sale_date,
-        `"CAT${String(sale.catalogue_no).padStart(2, '0')}"`,
-        `"week_${new Date(sale.sale_date).getFullYear()}_${String(sale.catalogue_no).padStart(2, '0')}"`,
-        `"${sale.season}"`,
-        sale.total_bales_offered || 0,
-        sale.total_bales_sold || 0,
-        sale.clearance_pct || 0
-      ].join(','))
-    ].join('\n');
-
-    return csvContent;
   };
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -183,43 +160,11 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     });
   };
 
-  const handleViewSale = async (sale: Sale) => {
-    try {
-      const report = await AuctionDataService.getAuctionReport(sale.id);
-      if (report) {
-        // Convert to the format expected by onView
-        const auctionReport: AuctionReport = {
-          ...report,
-          top_sales: [] // This would need to be populated from provincial data
-        };
-        onView(auctionReport);
-      }
-    } catch (error) {
-      console.error('Error loading auction report:', error);
-    }
-  };
-
-  const handleEditSale = async (sale: Sale) => {
-    try {
-      const report = await AuctionDataService.getAuctionReport(sale.id);
-      if (report) {
-        // Convert to the format expected by onEdit
-        const auctionReport: AuctionReport = {
-          ...report,
-          top_sales: [] // This would need to be populated from provincial data
-        };
-        onEdit(auctionReport);
-      }
-    } catch (error) {
-      console.error('Error loading auction report:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading auctions...</span>
+        <span className="ml-2 text-gray-600">Loading seasons...</span>
       </div>
     );
   }
@@ -229,17 +174,17 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Auctions Management</h1>
-          <p className="text-gray-600">Manage auction reports and trading data</p>
+          <h1 className="text-2xl font-bold text-gray-900">Season Management</h1>
+          <p className="text-gray-600">Manage auction seasons and their configurations</p>
         </div>
         <button
-          onClick={onAddNew}
+          onClick={onCreateSeason}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          + Add New Auction
+          + Add New Season
         </button>
       </div>
 
@@ -255,32 +200,6 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
         </div>
       )}
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-blue-600">{sales.length}</div>
-          <div className="text-sm text-blue-800">Total Auctions</div>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-green-600">
-            {sales.reduce((sum, s) => sum + (s.total_bales_sold || 0), 0).toLocaleString()}
-          </div>
-          <div className="text-sm text-green-800">Total Bales Sold</div>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">
-            {sales.length > 0 ? (sales.reduce((sum, s) => sum + (s.clearance_pct || 0), 0) / sales.length).toFixed(1) : 0}%
-          </div>
-          <div className="text-sm text-purple-800">Avg Clearance</div>
-        </div>
-        <div className="bg-orange-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-orange-600">
-            {sales.length > 0 ? formatDate(sales.sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())[0].sale_date) : 'N/A'}
-          </div>
-          <div className="text-sm text-orange-800">Latest Auction</div>
-        </div>
-      </div>
-
       {/* Search and Export Controls */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -292,7 +211,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
               </svg>
               <input
                 type="text"
-                placeholder="Search auctions by date, catalogue, week ID, or season..."
+                placeholder="Search seasons by year or date..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -302,15 +221,15 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
 
           {/* Export Controls */}
           <div className="flex items-center gap-2">
-            {selectedSales.length > 0 && (
+            {selectedSeasons.length > 0 && (
               <span className="text-sm text-gray-600">
-                {selectedSales.length} selected
+                {selectedSeasons.length} selected
               </span>
             )}
             <div className="relative group">
               <button 
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                disabled={sales.length === 0}
+                disabled={seasons.length === 0}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -353,27 +272,27 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
         </div>
       </div>
 
-      {/* Auctions Table */}
+      {/* Seasons Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {filteredSales.length === 0 ? (
+        {filteredSeasons.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No auctions found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No seasons found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchTerm ? 'Try adjusting your search criteria.' : 'Get started by creating a new auction.'}
+              {searchTerm ? 'Try adjusting your search criteria.' : 'Get started by creating a new season.'}
             </p>
             {!searchTerm && (
               <div className="mt-6">
                 <button
-                  onClick={onAddNew}
+                  onClick={onCreateSeason}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Create First Auction
+                  Create First Season
                 </button>
               </div>
             )}
@@ -386,28 +305,22 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                   <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedSales.length === filteredSales.length && filteredSales.length > 0}
+                      checked={selectedSeasons.length === filteredSeasons.length && filteredSeasons.length > 0}
                       onChange={handleSelectAll}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Auction Date
+                    Year
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Catalogue Name
+                    Start Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Week ID
+                    End Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Season
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Bales
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Clearance %
+                    Number of Auctions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -415,44 +328,36 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-gray-50">
+                {filteredSeasons.map((season) => (
+                  <tr key={season.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedSales.includes(sale.id)}
-                        onChange={() => handleSelectSale(sale.id)}
+                        checked={selectedSeasons.includes(season.id)}
+                        onChange={() => handleSelectSeason(season.id)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{formatDate(sale.sale_date)}</div>
+                      <div className="text-sm font-medium text-gray-900">{season.year}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      CAT{String(sale.catalogue_no).padStart(2, '0')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                      week_{new Date(sale.sale_date).getFullYear()}_{String(sale.catalogue_no).padStart(2, '0')}
+                      {formatDate(season.start_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sale.season}
+                      {formatDate(season.end_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {sale.total_bales_sold?.toLocaleString() || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {sale.clearance_pct?.toFixed(1) || 0}%
+                        {season.number_of_auctions}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => handleViewSale(sale)}
+                          onClick={() => onEditSeason(season)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
-                          title="View Auction"
+                          title="View/Edit Season"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -460,18 +365,9 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                           </svg>
                         </button>
                         <button
-                          onClick={() => handleEditSale(sale)}
-                          className="text-green-600 hover:text-green-900 transition-colors"
-                          title="Edit Auction"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSale(sale.id, `CAT${String(sale.catalogue_no).padStart(2, '0')} - ${formatDate(sale.sale_date)}`)}
+                          onClick={() => handleDeleteSeason(season.id, season.year)}
                           className="text-red-600 hover:text-red-900 transition-colors"
-                          title="Delete Auction"
+                          title="Delete Season"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -488,9 +384,9 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
       </div>
 
       {/* Summary */}
-      {filteredSales.length > 0 && (
+      {filteredSeasons.length > 0 && (
         <div className="text-sm text-gray-500 text-center">
-          Showing {filteredSales.length} of {sales.length} auctions
+          Showing {filteredSeasons.length} of {seasons.length} seasons
         </div>
       )}
 
@@ -508,7 +404,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
             
             <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Confirm Delete</h3>
             <p className="text-gray-600 text-center mb-6">
-              Are you sure you want to delete this auction? This action cannot be undone.
+              Are you sure you want to delete this season? This action cannot be undone.
             </p>
             
             <div className="mb-4">
@@ -546,7 +442,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!deletePassword.trim()}
               >
-                Delete Auction
+                Delete Season
               </button>
             </div>
           </div>
@@ -556,4 +452,4 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
   );
 };
 
-export default AuctionsList;
+export default SeasonList;

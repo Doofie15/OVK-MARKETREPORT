@@ -2,7 +2,7 @@
 
 ## Overview
 
-The OVK Wool Market Report Platform includes a RESTful API server built with Node.js and Express.js. The API provides endpoints for managing auction reports, market data, and administrative functions.
+The OVK Wool Market Report Platform includes a RESTful API server built with Node.js and Express.js. The API provides endpoints for managing auction reports, market data, and administrative functions. The platform features an enhanced form interface that utilizes 95% of the page width for improved data entry efficiency.
 
 ## Base URL
 
@@ -416,6 +416,14 @@ The API includes built-in monitoring:
 - Health check endpoint: `GET /health`
 - Performance metrics
 - Error tracking
+
+## Recent Updates
+
+### Enhanced Form Interface
+- **95% Width Utilization**: The auction data capture form now uses 95% of the available page width
+- **Improved API Integration**: Enhanced form layout provides better integration with API endpoints
+- **Better Data Validation**: Improved form validation with wider layout for better error handling
+- **Mobile Responsiveness**: API maintains full mobile compatibility with enhanced form interface
 
 ## Support
 

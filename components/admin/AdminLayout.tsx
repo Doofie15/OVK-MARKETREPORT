@@ -105,6 +105,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 const getSectionDescription = (section: AdminSection): string => {
   const descriptions: Record<AdminSection, string> = {
     dashboard: 'Overview of system statistics and key metrics',
+    seasons: 'Manage auction seasons and their configurations',
     auctions: 'Manage auction reports and trading data',
     'cape-mohair': 'Cape Mohair market reports and analysis',
     'ovk-reports': 'OVK market intelligence and reports',

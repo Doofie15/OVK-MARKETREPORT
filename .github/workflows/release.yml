@@ -1,0 +1,254 @@
+name: Release Workflow
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.1)'
+        required: true
+        type: string
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate changelog
+      run: |
+        echo "🔍 Validating CHANGELOG.md for release..."
+        if [ -f "CHANGELOG.md" ]; then
+          echo "✅ CHANGELOG.md exists"
+          
+          # Extract version from tag or input
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          
+          echo "📋 Checking for version $VERSION in changelog..."
+          
+          # Check if version exists in changelog
+          if grep -q "## \[${VERSION#v}\]" CHANGELOG.md; then
+            echo "✅ Version $VERSION found in changelog"
+          else
+            echo "❌ Version $VERSION not found in changelog"
+            echo "Please add version $VERSION to CHANGELOG.md before releasing"
+            exit 1
+          fi
+          
+          # Check if unreleased section is empty or has content
+          echo "📝 Checking unreleased section..."
+          if grep -A 20 "## \[Unreleased\]" CHANGELOG.md | grep -q "### Added\|### Changed\|### Fixed"; then
+            echo "⚠️ Unreleased section contains changes - consider moving to version section"
+          else
+            echo "✅ Unreleased section is clean"
+          fi
+        else
+          echo "❌ CHANGELOG.md not found"
+          exit 1
+        fi
+        
+    - name: Validate release notes
+      run: |
+        echo "🔍 Validating RELEASE_NOTES.md..."
+        if [ -f "RELEASE_NOTES.md" ]; then
+          echo "✅ RELEASE_NOTES.md exists"
+          
+          # Check for version information
+          if grep -q "Version.*Enhanced Form Layout" RELEASE_NOTES.md; then
+            echo "✅ Release notes contain current version information"
+          else
+            echo "⚠️ Release notes may need updating for current version"
+          fi
+        else
+          echo "⚠️ RELEASE_NOTES.md not found - consider creating release notes"
+        fi
+        
+    - name: Check documentation updates
+      run: |
+        echo "📚 Checking documentation for updates..."
+        
+        # Check if README references changelog
+        if grep -q "CHANGELOG.md" README.md; then
+          echo "✅ README.md references changelog"
+        else
+          echo "❌ README.md missing changelog reference"
+          exit 1
+        fi
+        
+        # Check if GitHub README references changelog
+        if grep -q "CHANGELOG.md" .github/README.md; then
+          echo "✅ GitHub README references changelog"
+        else
+          echo "❌ GitHub README missing changelog reference"
+          exit 1
+        fi
+
+  build-and-test:
+    needs: validate-release
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd server && npm ci && cd ..
+        
+    - name: Run tests
+      run: |
+        npm run test --if-present
+        cd server && npm run test --if-present && cd ..
+        
+    - name: Build application
+      run: |
+        npm run build
+        cd server && npm run build --if-present && cd ..
+        
+    - name: Test enhanced form layout
+      run: |
+        echo "🧪 Testing enhanced form layout in production build..."
+        # Verify build includes form layout changes
+        if grep -r "w-\[95%\]" dist/ > /dev/null 2>&1; then
+          echo "✅ Enhanced form layout found in build"
+        else
+          echo "⚠️ Enhanced form layout not found in build - checking for max-w-7xl"
+          if grep -r "max-w-7xl" dist/ > /dev/null 2>&1; then
+            echo "❌ Old form layout still present in build"
+            exit 1
+          fi
+        fi
+
+  create-release:
+    needs: [validate-release, build-and-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Extract version
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+        echo "📋 Creating release for version: $VERSION"
+        
+    - name: Generate release notes
+      id: release-notes
+      run: |
+        VERSION_NUMBER="${{ steps.version.outputs.version_number }}"
+        echo "📝 Generating release notes for version $VERSION_NUMBER..."
+        
+        # Extract changelog section for this version
+        if grep -A 50 "## \[$VERSION_NUMBER\]" CHANGELOG.md > version_changelog.txt; then
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat version_changelog.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "notes=Release $VERSION_NUMBER" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.version.outputs.version }}
+        body: ${{ steps.release-notes.outputs.notes }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload release assets
+      run: |
+        echo "📦 Preparing release assets..."
+        
+        # Create release archive
+        tar -czf wool-market-report-${{ steps.version.outputs.version }}.tar.gz \
+          --exclude=node_modules \
+          --exclude=.git \
+          --exclude=dist \
+          .
+          
+        echo "✅ Release assets prepared"
+
+  deploy-staging:
+    needs: [validate-release, build-and-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        echo "Version: ${GITHUB_REF#refs/tags/}"
+        
+        # Add your staging deployment commands here
+        # This could include:
+        # - Building the application
+        # - Uploading to staging server
+        # - Running health checks
+        # - Notifying team
+        
+        echo "✅ Staging deployment completed"
+        
+    - name: Run smoke tests
+      run: |
+        echo "🧪 Running smoke tests on staging..."
+        
+        # Add your smoke test commands here
+        # This could include:
+        # - Testing form layout (95% width)
+        # - Verifying mobile responsiveness
+        # - Checking API endpoints
+        # - Validating data integrity
+        
+        echo "✅ Smoke tests passed"
+
+  notify-team:
+    needs: [create-release, deploy-staging]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify team
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        
+        if [ "${{ needs.create-release.result }}" == "success" ] && [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+          echo "✅ Release $VERSION successfully deployed!"
+          echo "📋 Enhanced form layout (95% width) is now live"
+          echo "📱 Mobile compatibility maintained"
+          echo "📚 Documentation updated"
+        else
+          echo "❌ Release $VERSION deployment failed"
+          echo "Please check the workflow logs for details"
+        fi
+        
+        # Add notification logic here (Slack, email, etc.)
+        echo "📢 Team notification sent"

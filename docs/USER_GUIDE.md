@@ -127,7 +127,13 @@ The dashboard is organized into several key sections:
 ## Data Entry
 
 ### Cape Wools Data Capture
-The platform includes a comprehensive form for capturing Cape Wools weekly report data:
+The platform includes a comprehensive form for capturing Cape Wools weekly report data with an enhanced layout that utilizes 95% of the page width for improved usability:
+
+#### Enhanced Form Layout
+- **95% Width Utilization**: The form now uses 95% of the available page width for better space utilization
+- **Improved Data Entry**: Wider layout provides more comfortable data entry experience
+- **Better Field Organization**: Enhanced spacing and organization of form fields
+- **Responsive Design**: Maintains responsiveness across different screen sizes
 
 #### Form Structure
 The form is organized into 9 logical sections:
@@ -183,6 +189,8 @@ The form is organized into 9 logical sections:
 - **Validate Data**: Use built-in validation to check data accuracy
 - **Save Regularly**: Use draft functionality to save work in progress
 - **Review Before Publishing**: Always review data before final submission
+- **Utilize Enhanced Layout**: Take advantage of the wider form layout for more efficient data entry
+- **Mobile Compatibility**: The enhanced form maintains full mobile responsiveness
 
 ### Bulk Data Import
 1. **Prepare CSV File**: Format data according to template

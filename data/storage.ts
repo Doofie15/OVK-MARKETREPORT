@@ -45,7 +45,8 @@ const STORAGE_KEYS = {
   BALES_SOLD_BY_LENGTH: 'wool_market_bales_sold_by_length',
   BALES_SOLD_BY_STYLE: 'wool_market_bales_sold_by_style',
   AVERAGE_PRICES_CLEAN: 'wool_market_average_prices_clean',
-  REPORT_INGEST_AUDIT: 'wool_market_report_ingest_audit'
+  REPORT_INGEST_AUDIT: 'wool_market_report_ingest_audit',
+  CAPE_WOOLS_REPORTS: 'wool_market_cape_wools_reports'
 };
 
 // Generic storage functions
@@ -344,6 +345,75 @@ export const completeAuctionStorage = {
   }
 };
 
+// Cape Wools Reports storage operations
+export const capeWoolsReportsStorage = {
+  // Create a new Cape Wools report
+  create: (reportData: any): any => {
+    const report = {
+      id: generateId(),
+      created_at: getCurrentTimestamp(),
+      updated_at: getCurrentTimestamp(),
+      ...reportData
+    };
+
+    const existingReports = getFromStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS) || [];
+    existingReports.push(report);
+    saveToStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS, existingReports);
+    
+    return report;
+  },
+
+  // Get Cape Wools report by ID
+  getById: (id: string): any | null => {
+    const reports = getFromStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS) || [];
+    return reports.find((report: any) => report.id === id) || null;
+  },
+
+  // Get all Cape Wools reports
+  getAll: (): any[] => {
+    const reports = getFromStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS) || [];
+    return reports.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  },
+
+  // Get latest Cape Wools report
+  getLatest: (): any | null => {
+    const reports = capeWoolsReportsStorage.getAll();
+    return reports.length > 0 ? reports[0] : null;
+  },
+
+  // Update Cape Wools report
+  update: (id: string, updateData: any): any => {
+    const reports = getFromStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS) || [];
+    const reportIndex = reports.findIndex((report: any) => report.id === id);
+    
+    if (reportIndex === -1) {
+      throw new Error('Cape Wools report not found');
+    }
+
+    reports[reportIndex] = {
+      ...reports[reportIndex],
+      ...updateData,
+      updated_at: getCurrentTimestamp()
+    };
+
+    saveToStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS, reports);
+    return reports[reportIndex];
+  },
+
+  // Delete Cape Wools report
+  delete: (id: string): boolean => {
+    const reports = getFromStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS) || [];
+    const filteredReports = reports.filter((report: any) => report.id !== id);
+    
+    if (filteredReports.length === reports.length) {
+      return false; // Report not found
+    }
+
+    saveToStorage(STORAGE_KEYS.CAPE_WOOLS_REPORTS, filteredReports);
+    return true;
+  }
+};
+
 // Export all storage operations
 export const storage = {
   sales: saleStorage,
@@ -352,5 +422,6 @@ export const storage = {
   buyerPurchases: buyerPurchaseStorage,
   offeringAnalysis: offeringAnalysisStorage,
   averagePricesClean: averagePricesCleanStorage,
-  completeAuction: completeAuctionStorage
+  completeAuction: completeAuctionStorage,
+  capeWoolsReports: capeWoolsReportsStorage
 };

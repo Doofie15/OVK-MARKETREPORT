@@ -8,11 +8,22 @@ export interface SaleInfo {
 }
 
 export interface MarketIndices {
-  merino_indicator_cents_clean: number;
-  certified_indicator_cents_clean: number;
-  change_merino_pct: number;
-  change_certified_pct: number;
-  awex_emi_cents_clean: number;
+  // SA Merino Indicator (cents clean)
+  merino_indicator_sa_cents_clean: number;
+  // US Merino Indicator (cents clean)
+  merino_indicator_us_cents_clean: number;
+  // Euro Merino Indicator (cents clean)
+  merino_indicator_euro_cents_clean: number;
+  
+  // SA Certified Indicator (cents clean)
+  certified_indicator_sa_cents_clean: number;
+  // US Certified Indicator (cents clean)
+  certified_indicator_us_cents_clean: number;
+  // Euro Certified Indicator (cents clean)
+  certified_indicator_euro_cents_clean: number;
+  
+  // AWEX EMI (cents clean)
+  awex_emi_sa_cents_clean: number;
 }
 
 export interface CurrencyFX {
@@ -42,6 +53,15 @@ export interface CapeWoolsBuyer {
 }
 
 export interface CertifiedShare {
+  // Bales data
+  offered_bales: number;
+  sold_bales: number;
+  
+  // Percentage shares for All Wool
+  all_wool_pct_offered: number;
+  all_wool_pct_sold: number;
+  
+  // Percentage shares for Merino Wool
   merino_pct_offered: number;
   merino_pct_sold: number;
 }
@@ -103,10 +123,11 @@ export interface CompanyData {
 }
 
 // Enhanced Auction interface to include Cape Wools fields
+// Updated to make week_id optional
 export interface Auction {
   commodity: 'wool' | 'mohair';
   season_label: string;
-  week_id: string;
+  week_id?: string;
   week_start: string;
   week_end: string;
   auction_date: string;
@@ -232,6 +253,25 @@ export interface ProvinceAveragePrice {
   id: string; // e.g., 'ZA-EC'
   name: string;
   avg_price: number;
+}
+
+// Season management interfaces
+export interface Season {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  year: string; // e.g., '2025/2026'
+  number_of_auctions: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSeasonData {
+  name: string;
+  start_date: string;
+  end_date: string;
+  year: string;
 }
 
 export interface AuctionReport {

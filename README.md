@@ -8,6 +8,9 @@ A comprehensive React-based web application for tracking and analyzing wool mark
 
 ## 🎯 Latest Updates
 
+- ✅ **Enhanced Form Layout**: Auction data capture form now uses 95% of page width for improved usability and better space utilization
+- ✅ **Comprehensive Changelog**: Full project history and updates documented in CHANGELOG.md
+- ✅ **Updated Documentation**: All project documentation reflects latest enhancements and improvements
 - ✅ **Mobile-First Design**: Complete mobile component library with responsive layouts and touch-optimized interfaces
 - ✅ **Enhanced Mobile Experience**: Dedicated mobile components for all major features including charts, tables, and data visualization
 - ✅ **Responsive Component System**: Smart layout switching between desktop and mobile views with automatic breakpoint detection
@@ -341,6 +344,10 @@ npm run build
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## 📋 Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and all project updates.
 
 ## 📄 License
 

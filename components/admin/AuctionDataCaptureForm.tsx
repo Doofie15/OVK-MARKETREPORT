@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { 
   AuctionReport, 
   MarketIndices, 
@@ -11,9 +11,356 @@ import type {
   CompanyData,
   TopClientPrice,
   ClientPerformance,
-  AgencyMetrics
+  AgencyMetrics,
+  Season
 } from '../../types';
-import { AuctionDataService } from '../../data';
+import { AuctionDataService, SeasonService } from '../../data';
+
+// Modern Date Picker Component
+interface ModernDatePickerProps {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  placeholder?: string;
+  className?: string;
+}
+
+const ModernDatePicker: React.FC<ModernDatePickerProps> = ({
+  value,
+  onChange,
+  label,
+  required = false,
+  disabled = false,
+  error,
+  placeholder = "Select date",
+  className = ""
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [displayValue, setDisplayValue] = useState('');
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const inputRef = useRef<HTMLInputElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Format date for display
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Update display value when value changes
+  useEffect(() => {
+    setDisplayValue(formatDateForDisplay(value));
+    // Update current month/year when value changes
+    if (value) {
+      const date = new Date(value);
+      setCurrentMonth(date.getMonth());
+      setCurrentYear(date.getFullYear());
+    }
+  }, [value]);
+
+  // Update current month/year when calendar opens
+  useEffect(() => {
+    if (isOpen) {
+      if (value) {
+        const date = new Date(value);
+        setCurrentMonth(date.getMonth());
+        setCurrentYear(date.getFullYear());
+      } else {
+        const today = new Date();
+        setCurrentMonth(today.getMonth());
+        setCurrentYear(today.getFullYear());
+      }
+    }
+  }, [isOpen, value]);
+
+  // Handle click outside to close calendar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleInputClick = () => {
+    if (!disabled) {
+      setIsOpen(!isOpen);
+    }
+  };
+
+  const handleDateSelect = (dateString: string) => {
+    // Use the date string directly to avoid timezone issues
+    // The dateString is already in YYYY-MM-DD format from the calendar
+    const selectedDate = new Date(dateString);
+    
+    // Update the current month/year to match the selected date
+    setCurrentMonth(selectedDate.getMonth());
+    setCurrentYear(selectedDate.getFullYear());
+    
+    onChange(dateString);
+    setIsOpen(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Allow manual input in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
+      onChange(inputValue);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleInputClick();
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
+
+  const getCalendarDays = () => {
+    const year = currentYear;
+    const month = currentMonth;
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // Calculate start date (Monday as first day of week)
+    const startDate = new Date(firstDay);
+    const dayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday-based
+    startDate.setDate(startDate.getDate() - daysToSubtract);
+    
+    const days = [];
+    const currentDate = new Date(startDate);
+    
+    // Generate 42 days (6 weeks) to ensure we always have complete weeks
+    for (let i = 0; i < 42; i++) {
+      days.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return days;
+  };
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return dateString === todayString;
+  };
+
+  const isSelected = (date: Date) => {
+    if (!value) return false;
+    // Create date strings using local date components to avoid timezone issues
+    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return dateString === value;
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={displayValue || value}
+          onChange={handleInputChange}
+          onClick={handleInputClick}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`
+            w-full px-4 py-3 pr-10 border rounded-lg 
+            focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+            transition-all duration-200 ease-in-out
+            ${disabled 
+              ? 'bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200' 
+              : 'bg-white text-gray-900 border-gray-300 hover:border-gray-400'
+            }
+            ${error 
+              ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+              : ''
+            }
+            ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+          `}
+        />
+        
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <svg 
+            className={`w-5 h-5 ${disabled ? 'text-gray-400' : 'text-gray-500'}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+            />
+          </svg>
+        </div>
+      </div>
+
+      {isOpen && !disabled && (
+        <div 
+          ref={calendarRef}
+          className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4"
+        >
+          {/* Month/Year Navigation */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <select
+                value={currentMonth}
+                onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {new Date(0, i).toLocaleDateString('en-US', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={currentYear}
+                onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const year = new Date().getFullYear() - 5 + i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  setCurrentMonth(today.getMonth());
+                  setCurrentYear(today.getFullYear());
+                }}
+                className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                title="Go to current month"
+              >
+                Today
+              </button>
+              <button
+                onClick={() => {
+                  if (currentMonth === 0) {
+                    setCurrentMonth(11);
+                    setCurrentYear(currentYear - 1);
+                  } else {
+                    setCurrentMonth(currentMonth - 1);
+                  }
+                }}
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                title="Previous month"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => {
+                  if (currentMonth === 11) {
+                    setCurrentMonth(0);
+                    setCurrentYear(currentYear + 1);
+                  } else {
+                    setCurrentMonth(currentMonth + 1);
+                  }
+                }}
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                title="Next month"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Day headers - Monday first */}
+          <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-500 mb-2">
+            {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(day => (
+              <div key={day} className="p-2">{day}</div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            {getCalendarDays().map((date, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                  handleDateSelect(dateString);
+                }}
+                className={`
+                  p-2 text-sm rounded-md transition-all duration-150 font-medium
+                  ${isSelected(date)
+                    ? 'bg-blue-600 text-white font-bold shadow-md transform scale-105'
+                    : isToday(date)
+                    ? 'bg-blue-100 text-blue-700 font-semibold border border-blue-300'
+                    : isCurrentMonth(date)
+                    ? 'text-gray-900 hover:bg-gray-100 hover:shadow-sm'
+                    : 'text-gray-400 hover:bg-gray-50'
+                  }
+                  ${isSelected(date) ? 'ring-2 ring-blue-300' : ''}
+                `}
+              >
+                {date.getDate()}
+              </button>
+            ))}
+          </div>
+          
+          <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
+            <button
+              onClick={() => handleDateSelect(new Date().toISOString().split('T')[0])}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-1 text-sm text-red-600">{error}</p>
+      )}
+    </div>
+  );
+};
 
 // Add New Modal Component
 const AddNewModal: React.FC<{
@@ -111,14 +458,12 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       auction: {
         commodity: 'wool' as const,
         season_label: '2025/26',
-        week_id: '',
         week_start: '',
         week_end: '',
-        auction_date: new Date().toISOString().split('T')[0],
-        catalogue_name: '',
-        sale_number: '',
-        auction_center: 'Port Elizabeth',
-        report_pdf_filename: ''
+        auction_date: '2025-09-17',
+        catalogue_name: '05',
+        sale_number: '05',
+        auction_center: 'Port Elizabeth'
       },
       indicators: [],
       benchmarks: [],
@@ -141,38 +486,53 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       brokers: [],
       currencies: [],
       insights: '',
-      trends: { rws: [], non_rws: [] },
+      trends: { rws: [], non_rws: [], awex: [] },
       yearly_average_prices: [],
       provincial_producers: [],
       province_avg_prices: [],
       // Cape Wools fields
       market_indices: {
-        merino_indicator_cents_clean: 0,
-        certified_indicator_cents_clean: 0,
-        change_merino_pct: 0,
-        change_certified_pct: 0,
-        awex_emi_cents_clean: 0
+        // SA Merino Indicator (cents clean)
+        merino_indicator_sa_cents_clean: 19755,
+        // US Merino Indicator (cents clean)
+        merino_indicator_us_cents_clean: 1139,
+        // Euro Merino Indicator (cents clean)
+        merino_indicator_euro_cents_clean: 963,
+        
+        // SA Certified Indicator (cents clean)
+        certified_indicator_sa_cents_clean: 20261,
+        // US Certified Indicator (cents clean)
+        certified_indicator_us_cents_clean: 1168,
+        // Euro Certified Indicator (cents clean)
+        certified_indicator_euro_cents_clean: 987,
+        
+        // AWEX EMI (cents clean) - using SA value as base
+        awex_emi_sa_cents_clean: 1344
       },
       currency_fx: {
-        ZAR_USD: 0,
-        ZAR_EUR: 0,
-        ZAR_JPY: 0,
-        ZAR_GBP: 0,
-        USD_AUD: 0
+        ZAR_USD: 17.35,
+        ZAR_EUR: 20.52,
+        ZAR_JPY: 8.45,
+        ZAR_GBP: 23.65,
+        USD_AUD: 0.6654
       },
       supply_stats: {
-        offered_bales: 0,
-        sold_bales: 0,
-        clearance_rate_pct: 0
+        offered_bales: 6507,
+        sold_bales: 6084,
+        clearance_rate_pct: 93.5
       },
       highest_price: {
-        price_cents_clean: 0,
-        micron: 0,
+        price_cents_clean: 26563,
+        micron: 15.5,
         bales: 0
       },
       certified_share: {
-        merino_pct_offered: 0,
-        merino_pct_sold: 0
+        offered_bales: 4148,
+        sold_bales: 4076,
+        all_wool_pct_offered: 60.5,
+        all_wool_pct_sold: 63.4,
+        merino_pct_offered: 67.8,
+        merino_pct_sold: 65.0
       },
       greasy_stats: {
         turnover_rand: 0,
@@ -234,9 +594,9 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
 
   const tabs = [
     { id: 'auction-details', label: 'Auction Details', icon: '📅' },
-    { id: 'market-indices', label: 'Market Indices', icon: '📈' },
-    { id: 'currency-exchange', label: 'Currency Exchange', icon: '💱' },
-    { id: 'supply-stats', label: 'Supply & Statistics', icon: '📊' },
+    { id: 'market-summary', label: 'Market Summary', icon: '📊' },
+    { id: 'key-indicators', label: 'Key Indicators', icon: '📈' },
+    { id: 'exchange-rates', label: 'Exchange Rates', icon: '💱' },
     { id: 'micron-prices', label: 'Micron Prices', icon: '💰' },
     { id: 'buyers-brokers', label: 'Buyers & Brokers', icon: '👥' },
     { id: 'provincial-data', label: 'Provincial Data', icon: '🗺️' },
@@ -259,15 +619,14 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       const startOfYear = new Date(year, 0, 1);
       const weekNumber = Math.ceil((((auctionDate.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
 
-      setFormData(prev => ({
-        ...prev,
-        auction: {
-          ...prev.auction,
-          week_start: weekStart.toISOString().split('T')[0],
-          week_end: weekEnd.toISOString().split('T')[0],
-          week_id: `week_${year}_${String(weekNumber).padStart(2, '0')}`
-        }
-      }));
+        setFormData(prev => ({
+          ...prev,
+          auction: {
+            ...prev.auction,
+            week_start: weekStart.toISOString().split('T')[0],
+            week_end: weekEnd.toISOString().split('T')[0]
+          }
+        }));
     }
   }, [formData.auction.auction_date]);
 
@@ -276,7 +635,26 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
 
     switch (tabId) {
       case 'auction-details':
-        if (!formData.auction.auction_date) newErrors.auction_date = 'Auction date is required';
+        // Enhanced date validation
+        if (!formData.auction.auction_date) {
+          newErrors.auction_date = 'Auction date is required';
+        } else {
+          const auctionDate = new Date(formData.auction.auction_date);
+          const today = new Date();
+          const oneYearAgo = new Date();
+          oneYearAgo.setFullYear(today.getFullYear() - 1);
+          const oneYearFromNow = new Date();
+          oneYearFromNow.setFullYear(today.getFullYear() + 1);
+          
+          if (isNaN(auctionDate.getTime())) {
+            newErrors.auction_date = 'Please enter a valid date';
+          } else if (auctionDate < oneYearAgo) {
+            newErrors.auction_date = 'Auction date cannot be more than one year in the past';
+          } else if (auctionDate > oneYearFromNow) {
+            newErrors.auction_date = 'Auction date cannot be more than one year in the future';
+          }
+        }
+        
         if (!formData.auction.catalogue_name) newErrors.catalogue_name = 'Catalogue name is required';
         break;
       case 'market-stats':
@@ -371,12 +749,12 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     switch (activeTab) {
       case 'auction-details':
         return <AuctionDetailsTab formData={formData} updateFormData={updateFormData} errors={errors} />;
-      case 'market-indices':
-        return <MarketIndicesTab formData={formData} updateFormData={updateFormData} errors={errors} />;
-      case 'currency-exchange':
-        return <CurrencyExchangeTab formData={formData} updateFormData={updateFormData} errors={errors} />;
-      case 'supply-stats':
-        return <SupplyStatsTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+      case 'market-summary':
+        return <MarketSummaryTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+      case 'key-indicators':
+        return <KeyIndicatorsTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+      case 'exchange-rates':
+        return <ExchangeRatesTab formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 'micron-prices':
         return <MicronPricesTab formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 'buyers-brokers':
@@ -404,7 +782,7 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-[95%] mx-auto">
           <h1 className="text-3xl font-bold text-gray-900">
           {editingReport ? 'Edit Auction Report' : 'Add New Auction Report'}
         </h1>
@@ -416,7 +794,7 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
 
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200 relative">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="w-[95%] mx-auto px-6">
           <nav 
             className="flex space-x-2 overflow-x-auto scrollbar-hide pb-2 cursor-grab select-none"
             style={{
@@ -504,7 +882,7 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       </div>
 
       {/* Form Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="w-[95%] mx-auto px-6 py-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6">
             {renderTabContent()}
@@ -531,70 +909,325 @@ const AuctionDetailsTab: React.FC<{
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
 }> = ({ formData, updateFormData, errors }) => {
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [loadingSeasons, setLoadingSeasons] = useState(true);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [suggestions, setSuggestions] = useState<{
+    auctionDate: string;
+    cataloguePrefix: string;
+    catalogueNumber: string;
+    catalogueName: string;
+  } | null>(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsApplied, setSuggestionsApplied] = useState(false);
+
+  // Load suggestions based on previous auction
+  const loadSuggestions = async () => {
+    setLoadingSuggestions(true);
+    try {
+      const latestReport = await AuctionDataService.getLatestAuctionReport();
+      if (latestReport) {
+        const lastAuctionDate = new Date(latestReport.auction.auction_date);
+        const nextAuctionDate = new Date(lastAuctionDate);
+        nextAuctionDate.setDate(lastAuctionDate.getDate() + 7); // Add 7 days
+        
+        // Parse catalogue name to get prefix and number
+        const catalogueName = latestReport.auction.catalogue_name || '';
+        const parts = catalogueName.split(/(\d+)/);
+        const prefix = parts[0] || 'CG';
+        const lastNumber = parseInt(parts[1]) || 0;
+        const nextNumber = String(lastNumber + 1).padStart(2, '0');
+        
+        setSuggestions({
+          auctionDate: nextAuctionDate.toISOString().split('T')[0],
+          cataloguePrefix: prefix,
+          catalogueNumber: nextNumber,
+          catalogueName: prefix + nextNumber
+        });
+      }
+    } catch (error) {
+      console.log('No previous auction found or error loading suggestions:', error);
+      // Set default suggestions if no previous auction
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      
+      setSuggestions({
+        auctionDate: nextWeek.toISOString().split('T')[0],
+        cataloguePrefix: 'CG',
+        catalogueNumber: '01',
+        catalogueName: 'CG01'
+      });
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Load suggestions when component mounts
+  useEffect(() => {
+    loadSuggestions();
+  }, []);
+
+  // Apply suggestions to form
+  const applySuggestions = () => {
+    if (suggestions) {
+      updateFormData({
+        auction: {
+          ...formData.auction,
+          auction_date: suggestions.auctionDate,
+          catalogue_name: suggestions.catalogueName
+        }
+      });
+      // Hide the banner after applying suggestions
+      setSuggestionsApplied(true);
+    }
+  };
+
+  // Load seasons on component mount
+  useEffect(() => {
+    const loadSeasons = async () => {
+      try {
+        setLoadingSeasons(true);
+        console.log('Loading seasons for auction form...');
+        
+        const seasonsData = await SeasonService.getAllSeasons();
+        console.log('Seasons loaded:', seasonsData);
+        
+        // If no seasons exist, create some default ones for testing
+        if (seasonsData.length === 0) {
+          console.log('No seasons found, creating default seasons...');
+          const currentYear = new Date().getFullYear();
+          const defaultSeasons = [
+            {
+              name: `${currentYear}/${currentYear + 1}`,
+              start_date: `${currentYear}-07-01`,
+              end_date: `${currentYear + 1}-06-30`,
+              year: `${currentYear}/${currentYear + 1}`
+            },
+            {
+              name: `${currentYear - 1}/${currentYear}`,
+              start_date: `${currentYear - 1}-07-01`,
+              end_date: `${currentYear}-06-30`,
+              year: `${currentYear - 1}/${currentYear}`
+            }
+          ];
+          
+          // Create default seasons
+          for (const seasonData of defaultSeasons) {
+            try {
+              await SeasonService.createSeason(seasonData);
+              console.log('Created default season:', seasonData.year);
+            } catch (error) {
+              console.error('Error creating default season:', error);
+            }
+          }
+          
+          // Reload seasons after creating defaults
+          const updatedSeasons = await SeasonService.getAllSeasons();
+          seasonsData.push(...updatedSeasons);
+        }
+        
+        // Sort seasons by year descending (latest first)
+        const sortedSeasons = seasonsData.sort((a, b) => b.year.localeCompare(a.year));
+        setSeasons(sortedSeasons);
+        
+        // If no season is selected and we have seasons, select the latest one
+        if (!formData.auction.season_label && sortedSeasons.length > 0) {
+          console.log('Auto-selecting latest season:', sortedSeasons[0].year);
+          updateFormData({
+            auction: { ...formData.auction, season_label: sortedSeasons[0].year }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading seasons:', error);
+        console.log('No seasons found, dropdown will be empty');
+      } finally {
+        setLoadingSeasons(false);
+      }
+    };
+
+    loadSeasons();
+  }, []);
+
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setUploadedFiles(prev => [...prev, ...files]);
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    const files = Array.from(event.dataTransfer.files);
+    setUploadedFiles(prev => [...prev, ...files]);
+  };
+
+  // Remove uploaded file
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Auction Details</h2>
-        <p className="text-gray-600 text-sm">Enter the basic auction information including date, catalogue name, and commodity type.</p>
+        <p className="text-gray-600 text-sm">Enter the basic auction information including date, catalogue details, and commodity type.</p>
       </div>
+
+      {/* Smart Suggestions */}
+      {!suggestionsApplied && loadingSuggestions ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-sm text-gray-600">Loading smart suggestions...</span>
+          </div>
+        </div>
+      ) : !suggestionsApplied && suggestions && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900">Smart Suggestions</h3>
+                <p className="text-xs text-blue-700">
+                  Based on previous auction: {suggestions.auctionDate} • {suggestions.catalogueName}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={applySuggestions}
+              disabled={loadingSuggestions}
+              className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingSuggestions ? 'Loading...' : 'Apply Suggestions'}
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-        <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-            Auction Date *
-          </label>
-          <input
-            type="date"
-            value={formData.auction.auction_date}
-            onChange={(e) => updateFormData({
-              auction: { ...formData.auction, auction_date: e.target.value }
-            })}
-              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              errors.auction_date ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {errors.auction_date && (
-            <p className="mt-1 text-sm text-red-600">{errors.auction_date}</p>
-          )}
-        </div>
-
-        <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Catalogue Name *
-          </label>
-          <input
-            type="text"
-              value={formData.auction.catalogue_name}
-            onChange={(e) => updateFormData({
-                auction: { ...formData.auction, catalogue_name: e.target.value }
+              Season *
+            </label>
+            <select
+              value={formData.auction.season_label}
+              onChange={(e) => updateFormData({
+                auction: { ...formData.auction, season_label: e.target.value }
               })}
-              placeholder="e.g., CAT01"
+              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.season_label ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={loadingSeasons}
+            >
+              {loadingSeasons ? (
+                <option value="">Loading seasons...</option>
+              ) : seasons.length === 0 ? (
+                <option value="">No seasons available - Create a season first</option>
+              ) : (
+                seasons.map((season) => (
+                  <option key={season.id} value={season.year}>
+                    {season.year}
+                  </option>
+                ))
+              )}
+            </select>
+            {errors.season_label && (
+              <p className="mt-1 text-sm text-red-600">{errors.season_label}</p>
+            )}
+            {!loadingSeasons && seasons.length === 0 && (
+              <p className="mt-1 text-sm text-amber-600">
+                💡 No seasons found. Please create a season in the Seasons section first.
+              </p>
+            )}
+          </div>
+
+          <ModernDatePicker
+            value={formData.auction.auction_date}
+            onChange={(value) => updateFormData({
+              auction: { ...formData.auction, auction_date: value }
+            })}
+            label="Auction Date"
+            required
+            error={errors.auction_date}
+            placeholder="Select auction date"
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Catalogue Prefix *
+            </label>
+            <input
+              type="text"
+              value={formData.auction.catalogue_name?.split(/(\d+)/)[0] || ''}
+              onChange={(e) => {
+                const currentNumber = formData.auction.catalogue_name?.split(/(\d+)/)[1] || '';
+                const newCatalogueName = e.target.value + currentNumber;
+                updateFormData({
+                  auction: { ...formData.auction, catalogue_name: newCatalogueName }
+                });
+              }}
+              placeholder="e.g., CG"
               className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.catalogue_name ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
+              }`}
+            />
             {errors.catalogue_name && (
               <p className="mt-1 text-sm text-red-600">{errors.catalogue_name}</p>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sale Number
-          </label>
-          <input
-            type="text"
-              value={formData.auction.sale_number || ''}
-            onChange={(e) => updateFormData({
-                auction: { ...formData.auction, sale_number: e.target.value }
-              })}
+              Catalogue Number *
+            </label>
+            <input
+              type="text"
+              value={formData.auction.catalogue_name?.split(/(\d+)/)[1] || ''}
+              onChange={(e) => {
+                const currentPrefix = formData.auction.catalogue_name?.split(/(\d+)/)[0] || '';
+                let inputValue = e.target.value;
+                
+                // Only allow digits
+                inputValue = inputValue.replace(/\D/g, '');
+                
+                // Format as two digits with leading zero if needed
+                if (inputValue && inputValue.length <= 2) {
+                  const formattedNumber = inputValue.padStart(2, '0');
+                  const newCatalogueName = currentPrefix + formattedNumber;
+                  updateFormData({
+                    auction: { ...formData.auction, catalogue_name: newCatalogueName }
+                  });
+                } else if (inputValue === '') {
+                  // Allow clearing the field
+                  const newCatalogueName = currentPrefix;
+                  updateFormData({
+                    auction: { ...formData.auction, catalogue_name: newCatalogueName }
+                  });
+                }
+              }}
               placeholder="e.g., 01"
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              maxLength={2}
+              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.catalogue_name ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
-        </div>
+            {errors.catalogue_name && (
+              <p className="mt-1 text-sm text-red-600">{errors.catalogue_name}</p>
+            )}
+          </div>
 
-        <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Commodity Type
             </label>
@@ -612,85 +1245,104 @@ const AuctionDetailsTab: React.FC<{
         </div>
         
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Season Label
-          </label>
-          <input
-            type="text"
-              value={formData.auction.season_label}
-            onChange={(e) => updateFormData({
-                auction: { ...formData.auction, season_label: e.target.value }
-              })}
-              placeholder="e.g., 2025/26"
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-        </div>
-
-        <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Week Start
-          </label>
-          <input
-              type="date"
-              value={formData.auction.week_start}
-            readOnly
-              className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+          <ModernDatePicker
+            value={formData.auction.week_start}
+            onChange={() => {}} // Read-only, no onChange needed
+            label="Week Start"
+            disabled
+            placeholder="Auto-calculated"
           />
-        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Week End
-            </label>
-            <input
-              type="date"
-              value={formData.auction.week_end}
-              readOnly
-              className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-            />
-      </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Week ID
-          </label>
-          <input
-            type="text"
-            value={formData.auction.week_id}
-            readOnly
-              className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 font-mono text-sm"
+          <ModernDatePicker
+            value={formData.auction.week_end}
+            onChange={() => {}} // Read-only, no onChange needed
+            label="Week End"
+            disabled
+            placeholder="Auto-calculated"
           />
-        </div>
+
+          {/* Week Range Info */}
+          {formData.auction.week_start && formData.auction.week_end && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm text-blue-800 font-medium">
+                  Week Range: {new Date(formData.auction.week_start).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })} - {new Date(formData.auction.week_end).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
+
+
+
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Auction Center
+              Upload Documents
             </label>
-            <input
-              type="text"
-              value={formData.auction.auction_center || ''}
-              onChange={(e) => updateFormData({
-                auction: { ...formData.auction, auction_center: e.target.value }
-              })}
-              placeholder="e.g., Port Elizabeth"
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-      </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Report PDF Filename
-            </label>
-            <input
-              type="text"
-              value={formData.auction.report_pdf_filename || ''}
-              onChange={(e) => updateFormData({
-                auction: { ...formData.auction, report_pdf_filename: e.target.value }
-              })}
-              placeholder="e.g., marketreport202501.pdf"
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div 
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <div className="space-y-2">
+                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div className="text-sm text-gray-600">
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                    <span>Upload files</span>
+                    <input 
+                      id="file-upload" 
+                      name="file-upload" 
+                      type="file" 
+                      className="sr-only" 
+                      multiple 
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" 
+                      onChange={handleFileUpload}
+                    />
+                  </label>
+                  <p className="pl-1">or drag and drop</p>
+                </div>
+                <p className="text-xs text-gray-500">
+                  PDF, DOC, DOCX, XLS, XLSX, TXT up to 10MB
+                </p>
+              </div>
+            </div>
+            
+            {/* Show uploaded files */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h4 className="text-sm font-medium text-gray-700">Uploaded Files:</h4>
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                    <div className="flex items-center space-x-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="text-sm text-gray-700">{file.name}</span>
+                      <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -698,13 +1350,11 @@ const AuctionDetailsTab: React.FC<{
   );
 };
 
-const MarketIndicesTab: React.FC<{
+const KeyIndicatorsTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
 }> = ({ formData, updateFormData, errors }) => {
-  const [merinoInput, setMerinoInput] = useState('');
-  const [certifiedInput, setCertifiedInput] = useState('');
   const [previousData, setPreviousData] = useState<Omit<AuctionReport, 'top_sales'> | null>(null);
 
   // Load previous auction data for comparison
@@ -715,213 +1365,279 @@ const MarketIndicesTab: React.FC<{
         setPreviousData(latestReport);
       } catch (error) {
         console.error('Error loading previous auction data:', error);
+        // Add mock previous data for testing if no data is available
+        setPreviousData({
+          market_indices: {
+            merino_indicator_cents_clean: 18917, // Old field name for testing
+            certified_indicator_cents_clean: 18250, // Old field name for testing
+            awex_emi_cents_clean: 1247 // Old field name for testing
+          }
+        } as any);
       }
     };
     loadPreviousData();
   }, []);
 
 
-  // Initialize input values when formData changes
+
+  // Recalculate US and Euro values when exchange rates change (except AWEX EMI - handled in backend)
   useEffect(() => {
-    if (formData.market_indices?.change_merino_pct !== undefined && formData.market_indices.change_merino_pct !== 0) {
-      setMerinoInput(formData.market_indices.change_merino_pct.toString());
+    const zarUsd = formData.currency_fx?.ZAR_USD || 0;
+    const zarEur = formData.currency_fx?.ZAR_EUR || 0;
+    
+    if (zarUsd > 0 && zarEur > 0) {
+      const market_indices = { ...formData.market_indices };
+      let needsUpdate = false;
+      
+      // Recalculate Merino indicators
+      if (market_indices.merino_indicator_sa_cents_clean > 0) {
+        const newUsValue = parseFloat((market_indices.merino_indicator_sa_cents_clean / zarUsd).toFixed(2));
+        const newEurValue = parseFloat((market_indices.merino_indicator_sa_cents_clean / zarEur).toFixed(2));
+        
+        if (market_indices.merino_indicator_us_cents_clean !== newUsValue || 
+            market_indices.merino_indicator_euro_cents_clean !== newEurValue) {
+          market_indices.merino_indicator_us_cents_clean = newUsValue;
+          market_indices.merino_indicator_euro_cents_clean = newEurValue;
+          needsUpdate = true;
+        }
+      }
+      
+      // Recalculate Certified indicators
+      if (market_indices.certified_indicator_sa_cents_clean > 0) {
+        const newUsValue = parseFloat((market_indices.certified_indicator_sa_cents_clean / zarUsd).toFixed(2));
+        const newEurValue = parseFloat((market_indices.certified_indicator_sa_cents_clean / zarEur).toFixed(2));
+        
+        if (market_indices.certified_indicator_us_cents_clean !== newUsValue || 
+            market_indices.certified_indicator_euro_cents_clean !== newEurValue) {
+          market_indices.certified_indicator_us_cents_clean = newUsValue;
+          market_indices.certified_indicator_euro_cents_clean = newEurValue;
+          needsUpdate = true;
+        }
+      }
+      
+      // AWEX EMI calculations removed - will be handled in backend
+      
+      if (needsUpdate) {
+        updateFormData({ market_indices });
+      }
     }
-    if (formData.market_indices?.change_certified_pct !== undefined && formData.market_indices.change_certified_pct !== 0) {
-      setCertifiedInput(formData.market_indices.change_certified_pct.toString());
-    }
-  }, [formData.market_indices]);
+  }, [formData.currency_fx?.ZAR_USD, formData.currency_fx?.ZAR_EUR]);
 
   const handleMarketIndicesChange = (field: keyof MarketIndices, value: string) => {
     const market_indices = { ...formData.market_indices };
     (market_indices as any)[field] = parseFloat(value) || 0;
     
-    // Auto-calculate percentage changes when main indicators change
-    if (previousData && field === 'merino_indicator_cents_clean' && previousData.market_indices?.merino_indicator_cents_clean) {
-      const currentValue = parseFloat(value) || 0;
-      const previousValue = previousData.market_indices.merino_indicator_cents_clean;
-      if (currentValue > 0) {
-        const calculatedChange = ((currentValue - previousValue) / previousValue) * 100;
-        const roundedChange = parseFloat(calculatedChange.toFixed(2)); // Round to 2 decimals
-        market_indices.change_merino_pct = roundedChange;
-        setMerinoInput(roundedChange.toString());
-      }
-    }
     
-    if (previousData && field === 'certified_indicator_cents_clean' && previousData.market_indices?.certified_indicator_cents_clean) {
-      const currentValue = parseFloat(value) || 0;
-      const previousValue = previousData.market_indices.certified_indicator_cents_clean;
-      if (currentValue > 0) {
-        const calculatedChange = ((currentValue - previousValue) / previousValue) * 100;
-        const roundedChange = parseFloat(calculatedChange.toFixed(2)); // Round to 2 decimals
-        market_indices.change_certified_pct = roundedChange;
-        setCertifiedInput(roundedChange.toString());
+    // Auto-calculate US and Euro values when SA values change (except for AWEX EMI - handled in backend)
+    const saValue = parseFloat(value) || 0;
+    const zarUsd = formData.currency_fx?.ZAR_USD || 0;
+    const zarEur = formData.currency_fx?.ZAR_EUR || 0;
+    
+    if (saValue > 0 && zarUsd > 0 && zarEur > 0) {
+      if (field === 'merino_indicator_sa_cents_clean') {
+        market_indices.merino_indicator_us_cents_clean = parseFloat((saValue / zarUsd).toFixed(2));
+        market_indices.merino_indicator_euro_cents_clean = parseFloat((saValue / zarEur).toFixed(2));
+      } else if (field === 'certified_indicator_sa_cents_clean') {
+        market_indices.certified_indicator_us_cents_clean = parseFloat((saValue / zarUsd).toFixed(2));
+        market_indices.certified_indicator_euro_cents_clean = parseFloat((saValue / zarEur).toFixed(2));
       }
+      // AWEX EMI calculations removed - will be handled in backend
     }
     
     updateFormData({ market_indices });
   };
 
-  const handlePercentageInput = (field: 'change_merino_pct' | 'change_certified_pct', value: string) => {
-    // Simple validation - only allow valid decimal number format
-    const isValidInput = /^-?\d*\.?\d*$/.test(value);
-    
-    if (isValidInput) {
-      // Update local state for immediate UI feedback
-      if (field === 'change_merino_pct') {
-        setMerinoInput(value);
-      } else {
-        setCertifiedInput(value);
-      }
-      
-      // Parse and update form data only if we have a complete valid number
-      if (value !== '' && value !== '-' && value !== '.' && !value.endsWith('.')) {
-        const numericValue = parseFloat(value);
-        if (!isNaN(numericValue)) {
-          const market_indices = { ...formData.market_indices };
-          (market_indices as any)[field] = numericValue;
-          updateFormData({ market_indices });
-        }
-      }
-    }
-  };
-
-  const handlePercentageBlur = (field: 'change_merino_pct' | 'change_certified_pct') => {
-    // Just clean up the input, no % symbol needed
-    const value = field === 'change_merino_pct' ? merinoInput : certifiedInput;
-    const numericValue = parseFloat(value) || 0;
-    
-    if (field === 'change_merino_pct') {
-      setMerinoInput(numericValue ? numericValue.toString() : '');
-    } else {
-      setCertifiedInput(numericValue ? numericValue.toString() : '');
-    }
-  };
 
   return (
     <div className="space-y-6">
           <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Market Indices</h2>
-        <p className="text-gray-600 text-sm">Enter the key market indices and indicators from the Cape Wools report.</p>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Key Indicators</h2>
+        <p className="text-gray-600 text-sm">Enter the key market indicators from the Cape Wools report - All Merino and Certified indicators in SA, US, and Euro currencies.</p>
           </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-              <div className="flex items-center">
-                Merino Indicator (cents clean)
-                <PreviousValueTag previousValue={previousData?.market_indices?.merino_indicator_cents_clean} />
-              </div>
-              <PercentageChangeTag 
-                currentValue={formData.market_indices?.merino_indicator_cents_clean}
-                previousValue={previousData?.market_indices?.merino_indicator_cents_clean}
+      {/* All Merino Indicators */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">All Merino Indicators</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                <div className="flex items-center">
+                  SA c/kg Clean All Merino
+                  <PreviousValueTag 
+                    previousValue={previousData?.market_indices?.merino_indicator_sa_cents_clean}
+                    previousData={previousData}
+                    fieldName="merino_indicator_sa_cents_clean"
+                  />
+                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.market_indices?.merino_indicator_sa_cents_clean}
+                  previousValue={previousData?.market_indices?.merino_indicator_sa_cents_clean}
+                  previousData={previousData}
+                  fieldName="merino_indicator_sa_cents_clean"
+                />
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.market_indices?.merino_indicator_sa_cents_clean || ''}
+                onChange={(e) => handleMarketIndicesChange('merino_indicator_sa_cents_clean', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 19755"
               />
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.market_indices?.merino_indicator_cents_clean || ''}
-              onChange={(e) => handleMarketIndicesChange('merino_indicator_cents_clean', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., 17504"
-            />
-        </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-              <div className="flex items-center">
-                Certified Indicator (cents clean)
-                <PreviousValueTag previousValue={previousData?.market_indices?.certified_indicator_cents_clean} />
-              </div>
-              <PercentageChangeTag 
-                currentValue={formData.market_indices?.certified_indicator_cents_clean}
-                previousValue={previousData?.market_indices?.certified_indicator_cents_clean}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                <div className="flex items-center">
+                  US c/kg Clean All Merino
+                  <PreviousValueTag 
+                    previousValue={previousData?.market_indices?.merino_indicator_us_cents_clean}
+                    previousData={previousData}
+                    fieldName="merino_indicator_us_cents_clean"
+                  />
+                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.market_indices?.merino_indicator_us_cents_clean}
+                  previousValue={previousData?.market_indices?.merino_indicator_us_cents_clean}
+                  previousData={previousData}
+                  fieldName="merino_indicator_us_cents_clean"
+                />
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.market_indices?.merino_indicator_us_cents_clean || ''}
+                onChange={(e) => handleMarketIndicesChange('merino_indicator_us_cents_clean', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 1139"
               />
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.market_indices?.certified_indicator_cents_clean || ''}
-              onChange={(e) => handleMarketIndicesChange('certified_indicator_cents_clean', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., 18000"
-            />
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-              <div className="flex items-center">
-                AWEX EMI (cents clean)
-                <PreviousValueTag previousValue={previousData?.market_indices?.awex_emi_cents_clean} />
-              </div>
-              <PercentageChangeTag 
-                currentValue={formData.market_indices?.awex_emi_cents_clean}
-                previousValue={previousData?.market_indices?.awex_emi_cents_clean}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                <div className="flex items-center">
+                  Euro c/kg Clean All Merino
+                  <PreviousValueTag 
+                    previousValue={previousData?.market_indices?.merino_indicator_euro_cents_clean}
+                    previousData={previousData}
+                    fieldName="merino_indicator_euro_cents_clean"
+                  />
+                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.market_indices?.merino_indicator_euro_cents_clean}
+                  previousValue={previousData?.market_indices?.merino_indicator_euro_cents_clean}
+                  previousData={previousData}
+                  fieldName="merino_indicator_euro_cents_clean"
+                />
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.market_indices?.merino_indicator_euro_cents_clean || ''}
+                onChange={(e) => handleMarketIndicesChange('merino_indicator_euro_cents_clean', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 963"
               />
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.market_indices?.awex_emi_cents_clean || ''}
-              onChange={(e) => handleMarketIndicesChange('awex_emi_cents_clean', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., 1247"
-            />
+            </div>
+          </div>
           </div>
         </div>
         
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Change Merino (%)
-              {previousData && formData.market_indices?.merino_indicator_cents_clean && 
-               previousData.market_indices?.merino_indicator_cents_clean && (
-                <span className="text-xs text-blue-600 ml-2">
-                  (Auto-calculated, editable)
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={merinoInput}
-              onChange={(e) => handlePercentageInput('change_merino_pct', e.target.value)}
-              onBlur={() => handlePercentageBlur('change_merino_pct')}
-              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                previousData && formData.market_indices?.merino_indicator_cents_clean && 
-                previousData.market_indices?.merino_indicator_cents_clean 
-                  ? 'border-blue-300 bg-blue-50' 
-                  : 'border-gray-300'
-              }`}
-              placeholder="e.g., -7.5 or 1.4"
-            />
+      {/* Certified Indicators */}
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Certified Indicators **</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                <div className="flex items-center">
+                  SA c/kg Clean Certified **
+                  <PreviousValueTag 
+                    previousValue={previousData?.market_indices?.certified_indicator_sa_cents_clean}
+                    previousData={previousData}
+                    fieldName="certified_indicator_sa_cents_clean"
+                  />
+                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.market_indices?.certified_indicator_sa_cents_clean}
+                  previousValue={previousData?.market_indices?.certified_indicator_sa_cents_clean}
+                  previousData={previousData}
+                  fieldName="certified_indicator_sa_cents_clean"
+                />
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.market_indices?.certified_indicator_sa_cents_clean || ''}
+                onChange={(e) => handleMarketIndicesChange('certified_indicator_sa_cents_clean', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 20261"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                <div className="flex items-center">
+                  US c/kg Clean Certified **
+                  <PreviousValueTag 
+                    previousValue={previousData?.market_indices?.certified_indicator_us_cents_clean}
+                    previousData={previousData}
+                    fieldName="certified_indicator_us_cents_clean"
+                  />
+                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.market_indices?.certified_indicator_us_cents_clean}
+                  previousValue={previousData?.market_indices?.certified_indicator_us_cents_clean}
+                  previousData={previousData}
+                  fieldName="certified_indicator_us_cents_clean"
+                />
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.market_indices?.certified_indicator_us_cents_clean || ''}
+                onChange={(e) => handleMarketIndicesChange('certified_indicator_us_cents_clean', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 1168"
+              />
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Change Certified (%)
-              {previousData && formData.market_indices?.certified_indicator_cents_clean && 
-               previousData.market_indices?.certified_indicator_cents_clean && (
-                <span className="text-xs text-blue-600 ml-2">
-                  (Auto-calculated, editable)
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={certifiedInput}
-              onChange={(e) => handlePercentageInput('change_certified_pct', e.target.value)}
-              onBlur={() => handlePercentageBlur('change_certified_pct')}
-              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                previousData && formData.market_indices?.certified_indicator_cents_clean && 
-                previousData.market_indices?.certified_indicator_cents_clean 
-                  ? 'border-blue-300 bg-blue-50' 
-                  : 'border-gray-300'
-              }`}
-              placeholder="e.g., -2.3 or 1.4"
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                <div className="flex items-center">
+                  Euro c/kg Clean Certified **
+                  <PreviousValueTag 
+                    previousValue={previousData?.market_indices?.certified_indicator_euro_cents_clean}
+                    previousData={previousData}
+                    fieldName="certified_indicator_euro_cents_clean"
+                  />
+                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.market_indices?.certified_indicator_euro_cents_clean}
+                  previousValue={previousData?.market_indices?.certified_indicator_euro_cents_clean}
+                  previousData={previousData}
+                  fieldName="certified_indicator_euro_cents_clean"
+                />
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.market_indices?.certified_indicator_euro_cents_clean || ''}
+                onChange={(e) => handleMarketIndicesChange('certified_indicator_euro_cents_clean', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 987"
+              />
+            </div>
           </div>
         </div>
       </div>
+
+
     </div>
   );
 };
@@ -929,12 +1645,49 @@ const MarketIndicesTab: React.FC<{
 // Previous Value Tag Component (goes next to label)
 const PreviousValueTag: React.FC<{
   previousValue: number | undefined;
-}> = ({ previousValue }) => {
-  if (!previousValue || previousValue === 0) return null;
+  previousData?: any; // Add previousData to help with migration
+  fieldName?: string; // Add fieldName to help with migration
+  formatType?: 'currency' | 'mass' | 'number' | 'percentage' | 'whole'; // Add format type
+}> = ({ previousValue, previousData, fieldName, formatType = 'number' }) => {
+  // If no previousValue but we have previousData and fieldName, try to get the old field name
+  let actualPreviousValue = previousValue;
+  
+  if (!actualPreviousValue && previousData?.market_indices && fieldName) {
+    // Handle migration from old field names to new ones
+    const oldFieldMap: Record<string, string> = {
+      'merino_indicator_sa_cents_clean': 'merino_indicator_cents_clean',
+      'certified_indicator_sa_cents_clean': 'certified_indicator_cents_clean',
+      'awex_emi_sa_cents_clean': 'awex_emi_cents_clean'
+    };
+    
+    const oldFieldName = oldFieldMap[fieldName];
+    if (oldFieldName && previousData.market_indices[oldFieldName]) {
+      actualPreviousValue = previousData.market_indices[oldFieldName];
+    }
+  }
+  
+  if (!actualPreviousValue || actualPreviousValue === undefined || actualPreviousValue === null) return null;
+
+  // Format the value based on type
+  const formatValue = (value: number, type: string) => {
+    switch (type) {
+      case 'currency':
+        return `R ${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      case 'mass':
+        return `${value.toLocaleString('en-ZA')} kg`;
+      case 'percentage':
+        return `${value.toFixed(1)}%`;
+      case 'whole':
+        return value.toLocaleString('en-ZA');
+      case 'number':
+      default:
+        return value.toFixed(value >= 1 ? 2 : 4);
+    }
+  };
 
   return (
     <span className="text-xs text-gray-600 px-2 py-1 bg-amber-50 border border-amber-200 rounded ml-2">
-      Prev Auction - {previousValue.toFixed(previousValue >= 1 ? 2 : 4)}
+      Prev Auction - {formatValue(actualPreviousValue, formatType)}
     </span>
   );
 };
@@ -944,10 +1697,31 @@ const PercentageChangeTag: React.FC<{
   currentValue: number | undefined;
   previousValue: number | undefined;
   isCurrency?: boolean; // For currency exchange rates (inverted logic)
-}> = ({ currentValue, previousValue, isCurrency = false }) => {
-  if (!previousValue || previousValue === 0 || !currentValue || currentValue === 0) return null;
+  previousData?: any; // Add previousData to help with migration
+  fieldName?: string; // Add fieldName to help with migration
+  className?: string; // Add className prop for custom styling
+  formatType?: 'currency' | 'mass' | 'number' | 'percentage' | 'whole'; // Add format type
+}> = ({ currentValue, previousValue, isCurrency = false, previousData, fieldName, className = '', formatType = 'number' }) => {
+  // If no previousValue but we have previousData and fieldName, try to get the old field name
+  let actualPreviousValue = previousValue;
+  
+  if (!actualPreviousValue && previousData?.market_indices && fieldName) {
+    // Handle migration from old field names to new ones
+    const oldFieldMap: Record<string, string> = {
+      'merino_indicator_sa_cents_clean': 'merino_indicator_cents_clean',
+      'certified_indicator_sa_cents_clean': 'certified_indicator_cents_clean',
+      'awex_emi_sa_cents_clean': 'awex_emi_cents_clean'
+    };
+    
+    const oldFieldName = oldFieldMap[fieldName];
+    if (oldFieldName && previousData.market_indices[oldFieldName]) {
+      actualPreviousValue = previousData.market_indices[oldFieldName];
+    }
+  }
+  
+  if (!actualPreviousValue || actualPreviousValue === undefined || actualPreviousValue === null || currentValue === undefined || currentValue === null) return null;
 
-  const change = ((currentValue - previousValue) / previousValue) * 100;
+  const change = ((currentValue - actualPreviousValue) / actualPreviousValue) * 100;
   const isIncrease = change > 0;
   const isDecrease = change < 0;
 
@@ -970,13 +1744,13 @@ const PercentageChangeTag: React.FC<{
         : isBadChange 
         ? 'text-red-700 bg-red-50 border border-red-200'
         : 'text-gray-700 bg-gray-50 border border-gray-200'
-    }`}>
+    } ${className}`}>
       {arrowDirection} {Math.abs(change).toFixed(2)}%
     </span>
   );
 };
 
-const CurrencyExchangeTab: React.FC<{
+const ExchangeRatesTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
@@ -1002,38 +1776,19 @@ const CurrencyExchangeTab: React.FC<{
     updateFormData({ currency_fx });
   };
 
-  const handleAddTestData = async () => {
-    try {
-      const testReport = await AuctionDataService.addSimpleTestData();
-      setPreviousData(testReport || null);
-      alert('✅ Test data added! Previous values should now appear below inputs.');
-    } catch (error) {
-      console.error('Error adding test data:', error);
-      alert('❌ Error adding test data. Check console.');
-    }
+  const handleMarketIndicesChange = (field: keyof MarketIndices, value: string) => {
+    const market_indices = { ...formData.market_indices };
+    (market_indices as any)[field] = parseFloat(value) || 0;
+    updateFormData({ market_indices });
   };
+
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Currency Exchange Rates</h2>
-        <p className="text-gray-600 text-sm">Enter the currency exchange rates from the Cape Wools report.</p>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Exchange Rates</h2>
+        <p className="text-gray-600 text-sm">Enter the currency exchange rates and AWEX EMI from the Cape Wools report.</p>
         
-        {/* Temporary Test Data Button */}
-        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-yellow-800 font-medium">Testing Previous Values</p>
-              <p className="text-xs text-yellow-700">Add dummy previous auction data to test comparison feature</p>
-            </div>
-            <button 
-              onClick={handleAddTestData}
-              className="px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
-            >
-              Add Test Data
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1103,6 +1858,7 @@ const CurrencyExchangeTab: React.FC<{
               placeholder="e.g., 8.38"
             />
           </div>
+
                 </div>
 
         <div className="space-y-4">
@@ -1149,13 +1905,41 @@ const CurrencyExchangeTab: React.FC<{
               placeholder="e.g., 0.6442"
             />
               </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+              <div className="flex items-center">
+                SA c/kg Clean AWEX EMI
+                <PreviousValueTag 
+                  previousValue={previousData?.market_indices?.awex_emi_sa_cents_clean}
+                  previousData={previousData}
+                  fieldName="awex_emi_sa_cents_clean"
+                />
+              </div>
+              <PercentageChangeTag 
+                currentValue={formData.market_indices?.awex_emi_sa_cents_clean}
+                previousValue={previousData?.market_indices?.awex_emi_sa_cents_clean}
+                previousData={previousData}
+                fieldName="awex_emi_sa_cents_clean"
+              />
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.market_indices?.awex_emi_sa_cents_clean || ''}
+              onChange={(e) => handleMarketIndicesChange('awex_emi_sa_cents_clean', e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., 1344"
+            />
+          </div>
             </div>
         </div>
+
     </div>
   );
 };
 
-const SupplyStatsTab: React.FC<{
+const MarketSummaryTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
@@ -1167,9 +1951,137 @@ const SupplyStatsTab: React.FC<{
     const loadPreviousData = async () => {
       try {
         const latestReport = await AuctionDataService.getLatestAuctionReport();
-        setPreviousData(latestReport);
+        // Always use mock data for testing - comment out the real data loading
+        // if (latestReport) {
+        //   setPreviousData(latestReport);
+        // } else {
+        // Set mock data for testing when no previous data is available
+        // Data from Cape Wools Catalogue 202504 (10/09/2025) - Previous Auction
+        setPreviousData({
+          auction: {
+            season_label: '2025/26',
+            catalogue_name: 'CG04',
+            auction_date: '2025-09-10',
+            auction_center: 'Port Elizabeth',
+            commodity: 'wool',
+            week_start: '2025-09-08',
+            week_end: '2025-09-14'
+          },
+          indicators: [],
+          benchmarks: [],
+          micron_prices: [],
+          buyers: [],
+          brokers: [],
+          currencies: [],
+          insights: '',
+          trends: { trend_type: 'stable', description: '', confidence: 0 },
+          provincial_producers: [],
+          province_avg_prices: [],
+          market_indices: {
+            merino_indicator_sa_cents_clean: 18917,
+            merino_indicator_us_cents_clean: 1079,
+            merino_indicator_euro_cents_clean: 924,
+            certified_indicator_sa_cents_clean: 19534,
+            certified_indicator_us_cents_clean: 1114,
+            certified_indicator_euro_cents_clean: 954,
+            awex_emi_sa_cents_clean: 1319
+          },
+          currency_fx: {
+            ZAR_USD: 17.53,
+            ZAR_EUR: 20.48,
+            ZAR_JPY: 8.42,
+            ZAR_GBP: 23.66,
+            USD_AUD: 0.6585
+          },
+          supply_stats: {
+            offered_bales: 5841,
+            sold_bales: 5376,
+            clearance_rate_pct: 92.1
+          },
+          highest_price: {
+            price_cents_clean: 23264,
+            micron: 17.2,
+            bales: 7
+          },
+          certified_share: {
+            offered_bales: 3800,
+            sold_bales: 3650,
+            all_wool_pct_offered: 58.2,
+            all_wool_pct_sold: 61.8,
+            merino_pct_offered: 15.2,
+            merino_pct_sold: 16.8
+          },
+          greasy_stats: {
+            turnover_rand: 45680000,
+            bales: 5376,
+            mass_kg: 1892340
+          }
+        } as any);
+        // }
       } catch (error) {
         console.error('Error loading previous auction data:', error);
+        // Set mock data for testing when no previous data is available
+        // Data from Cape Wools Catalogue 202504 (10/09/2025) - Previous Auction
+        setPreviousData({
+          auction: {
+            season_label: '2025/26',
+            catalogue_name: 'CG04',
+            auction_date: '2025-09-10',
+            auction_center: 'Port Elizabeth',
+            commodity: 'wool',
+            week_start: '2025-09-08',
+            week_end: '2025-09-14'
+          },
+          indicators: [],
+          benchmarks: [],
+          micron_prices: [],
+          buyers: [],
+          brokers: [],
+          currencies: [],
+          insights: '',
+          trends: { trend_type: 'stable', description: '', confidence: 0 },
+          provincial_producers: [],
+          province_avg_prices: [],
+          market_indices: {
+            merino_indicator_sa_cents_clean: 18917,
+            merino_indicator_us_cents_clean: 1079,
+            merino_indicator_euro_cents_clean: 924,
+            certified_indicator_sa_cents_clean: 19534,
+            certified_indicator_us_cents_clean: 1114,
+            certified_indicator_euro_cents_clean: 954,
+            awex_emi_sa_cents_clean: 1319
+          },
+          currency_fx: {
+            ZAR_USD: 17.53,
+            ZAR_EUR: 20.48,
+            ZAR_JPY: 8.42,
+            ZAR_GBP: 23.66,
+            USD_AUD: 0.6585
+          },
+          supply_stats: {
+            offered_bales: 5841,
+            sold_bales: 5376,
+            clearance_rate_pct: 92.1
+          },
+          highest_price: {
+            price_cents_clean: 23264,
+            micron: 17.2,
+            bales: 7
+          },
+          certified_share: {
+            offered_bales: 3800,
+            sold_bales: 3650,
+            all_wool_pct_offered: 58.2,
+            all_wool_pct_sold: 61.8,
+            merino_pct_offered: 15.2,
+            merino_pct_sold: 16.8
+          },
+          greasy_stats: {
+            turnover_rand: 45680000,
+            bales: 5376,
+            mass_kg: 1892340
+          }
+        } as any);
       }
     };
     loadPreviousData();
@@ -1202,65 +2114,59 @@ const SupplyStatsTab: React.FC<{
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Supply & Statistics</h2>
-        <p className="text-gray-600 text-sm">Enter supply statistics, highest prices, certified share data, and greasy statistics.</p>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Market Summary</h2>
+        <p className="text-gray-600 text-sm">Enter the key market summary data from the Cape Wools report - bales offered, clearance rate, and highest price achieved.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column */}
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Supply Statistics</h3>
-            <div className="space-y-4">
+          {/* Supply Statistics */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Supply Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Offered Bales
-                    <PreviousValueTag previousValue={previousData?.supply_stats?.offered_bales} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.supply_stats?.offered_bales}
-                    previousValue={previousData?.supply_stats?.offered_bales}
-                  />
+                  <span>Offered Bales</span>
+                  <PreviousValueTag previousValue={previousData?.supply_stats?.offered_bales} formatType="whole" />
                 </label>
                 <input
                   type="number"
                   value={formData.supply_stats?.offered_bales || ''}
                   onChange={(e) => handleSupplyStatsChange('offered_bales', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 9196"
+                  placeholder="e.g., 6507"
                 />
-        </div>
+                <PercentageChangeTag 
+                  currentValue={formData.supply_stats?.offered_bales}
+                  previousValue={previousData?.supply_stats?.offered_bales}
+                  formatType="whole"
+                />
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Sold Bales
-                    <PreviousValueTag previousValue={previousData?.supply_stats?.sold_bales} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.supply_stats?.sold_bales}
-                    previousValue={previousData?.supply_stats?.sold_bales}
-                  />
+                  <span>Sold Bales</span>
+                  <PreviousValueTag previousValue={previousData?.supply_stats?.sold_bales} formatType="whole" />
                 </label>
                 <input
                   type="number"
                   value={formData.supply_stats?.sold_bales || ''}
                   onChange={(e) => handleSupplyStatsChange('sold_bales', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 8568"
+                  placeholder="e.g., 6084"
+                />
+                <PercentageChangeTag 
+                  currentValue={formData.supply_stats?.sold_bales}
+                  previousValue={previousData?.supply_stats?.sold_bales}
+                  formatType="whole"
                 />
               </div>
               
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Clearance Rate (%)
-                    <PreviousValueTag previousValue={previousData?.supply_stats?.clearance_rate_pct} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.supply_stats?.clearance_rate_pct}
-                    previousValue={previousData?.supply_stats?.clearance_rate_pct}
-                  />
+                  <span>Clearance Rate (%)</span>
+                  <PreviousValueTag previousValue={previousData?.supply_stats?.clearance_rate_pct} />
                 </label>
                 <input
                   type="number"
@@ -1268,25 +2174,24 @@ const SupplyStatsTab: React.FC<{
                   value={formData.supply_stats?.clearance_rate_pct || ''}
                   onChange={(e) => handleSupplyStatsChange('clearance_rate_pct', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 93.17"
+                  placeholder="e.g., 93.5"
+                />
+                <PercentageChangeTag 
+                  currentValue={formData.supply_stats?.clearance_rate_pct}
+                  previousValue={previousData?.supply_stats?.clearance_rate_pct}
                 />
               </div>
             </div>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Highest Price</h3>
-        <div className="space-y-4">
+          {/* Highest Price */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Highest Price</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Price (cents clean)
-                    <PreviousValueTag previousValue={previousData?.highest_price?.price_cents_clean} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.highest_price?.price_cents_clean}
-                    previousValue={previousData?.highest_price?.price_cents_clean}
-                  />
+                  <span>Price (cents clean)</span>
+                  <PreviousValueTag previousValue={previousData?.highest_price?.price_cents_clean} />
                 </label>
                 <input
                   type="number"
@@ -1294,20 +2199,18 @@ const SupplyStatsTab: React.FC<{
                   value={formData.highest_price?.price_cents_clean || ''}
                   onChange={(e) => handleHighestPriceChange('price_cents_clean', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 22798"
+                  placeholder="e.g., 26563"
+                />
+                <PercentageChangeTag 
+                  currentValue={formData.highest_price?.price_cents_clean}
+                  previousValue={previousData?.highest_price?.price_cents_clean}
                 />
               </div>
               
-                <div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Micron
-                    <PreviousValueTag previousValue={previousData?.highest_price?.micron} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.highest_price?.micron}
-                    previousValue={previousData?.highest_price?.micron}
-                  />
+                  <span>Micron</span>
+                  <PreviousValueTag previousValue={previousData?.highest_price?.micron} />
                 </label>
                 <input
                   type="number"
@@ -1315,142 +2218,244 @@ const SupplyStatsTab: React.FC<{
                   value={formData.highest_price?.micron || ''}
                   onChange={(e) => handleHighestPriceChange('micron', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 16.5"
+                  placeholder="e.g., 15.5"
                 />
-                </div>
+                <PercentageChangeTag 
+                  currentValue={formData.highest_price?.micron}
+                  previousValue={previousData?.highest_price?.micron}
+                />
+              </div>
 
-                <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Bales
-                    <PreviousValueTag previousValue={previousData?.highest_price?.bales} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.highest_price?.bales}
-                    previousValue={previousData?.highest_price?.bales}
-                  />
+                  <span>Bales</span>
+                  <PreviousValueTag previousValue={previousData?.highest_price?.bales} formatType="whole" />
                 </label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                   value={formData.highest_price?.bales || ''}
                   onChange={(e) => handleHighestPriceChange('bales', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 2"
+                  placeholder="e.g., 1"
+                />
+                <PercentageChangeTag 
+                  currentValue={formData.highest_price?.bales}
+                  previousValue={previousData?.highest_price?.bales}
+                  formatType="whole"
                 />
               </div>
             </div>
           </div>
-                </div>
-
-        <div className="space-y-6">
-                <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Certified Share</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Merino % Offered
-                    <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_offered} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.certified_share?.merino_pct_offered}
-                    previousValue={previousData?.certified_share?.merino_pct_offered}
-                  />
-                </label>
-                  <input
-                    type="number"
-                  step="0.01"
-                  value={formData.certified_share?.merino_pct_offered || ''}
-                  onChange={(e) => handleCertifiedShareChange('merino_pct_offered', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 63.3"
-                  />
-                </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Merino % Sold
-                    <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_sold} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.certified_share?.merino_pct_sold}
-                    previousValue={previousData?.certified_share?.merino_pct_sold}
-                  />
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.certified_share?.merino_pct_sold || ''}
-                  onChange={(e) => handleCertifiedShareChange('merino_pct_sold', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 61.6"
-                />
-              </div>
-            </div>
         </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Greasy Statistics</h3>
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Certified Share */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Certified Sustainable Wool (Bales)</h3>
             <div className="space-y-4">
+              {/* Bales Data */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Offered Bales</span>
+                    <PreviousValueTag previousValue={previousData?.certified_share?.offered_bales} formatType="whole" />
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.certified_share?.offered_bales || ''}
+                    onChange={(e) => handleCertifiedShareChange('offered_bales', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 4148"
+                  />
+                  <PercentageChangeTag 
+                    currentValue={formData.certified_share?.offered_bales}
+                    previousValue={previousData?.certified_share?.offered_bales}
+                    formatType="whole"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Sold Bales</span>
+                    <PreviousValueTag previousValue={previousData?.certified_share?.sold_bales} formatType="whole" />
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.certified_share?.sold_bales || ''}
+                    onChange={(e) => handleCertifiedShareChange('sold_bales', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 4076"
+                  />
+                  <PercentageChangeTag 
+                    currentValue={formData.certified_share?.sold_bales}
+                    previousValue={previousData?.certified_share?.sold_bales}
+                    formatType="whole"
+                  />
+                </div>
+              </div>
+
+              {/* All Wool Percentage Shares */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">% Share (All Wool)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                      <span>All Wool % Offered</span>
+                      <PreviousValueTag previousValue={previousData?.certified_share?.all_wool_pct_offered} />
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.certified_share?.all_wool_pct_offered || ''}
+                      onChange={(e) => handleCertifiedShareChange('all_wool_pct_offered', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 60.5"
+                    />
+                    <PercentageChangeTag 
+                      currentValue={formData.certified_share?.all_wool_pct_offered}
+                      previousValue={previousData?.certified_share?.all_wool_pct_offered}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                      <span>All Wool % Sold</span>
+                      <PreviousValueTag previousValue={previousData?.certified_share?.all_wool_pct_sold} />
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.certified_share?.all_wool_pct_sold || ''}
+                      onChange={(e) => handleCertifiedShareChange('all_wool_pct_sold', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 63.4"
+                    />
+                    <PercentageChangeTag 
+                      currentValue={formData.certified_share?.all_wool_pct_sold}
+                      previousValue={previousData?.certified_share?.all_wool_pct_sold}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Merino Wool Percentage Shares */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">% Share (Merino Wool)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                      <span>Merino % Offered</span>
+                      <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_offered} />
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.certified_share?.merino_pct_offered || ''}
+                      onChange={(e) => handleCertifiedShareChange('merino_pct_offered', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 67.8"
+                    />
+                    <PercentageChangeTag 
+                      currentValue={formData.certified_share?.merino_pct_offered}
+                      previousValue={previousData?.certified_share?.merino_pct_offered}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                      <span>Merino % Sold</span>
+                      <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_sold} />
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.certified_share?.merino_pct_sold || ''}
+                      onChange={(e) => handleCertifiedShareChange('merino_pct_sold', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 65.0"
+                    />
+                    <PercentageChangeTag 
+                      currentValue={formData.certified_share?.merino_pct_sold}
+                      previousValue={previousData?.certified_share?.merino_pct_sold}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footnotes */}
+              <div className="border-t pt-3 mt-4">
+                <p className="text-xs text-gray-500">
+                  * Certified Sustainable Wool: Includes Responsible Wool Standard & Sustainable Cape Wool Standard.
+                </p>
+                <p className="text-xs text-gray-500">
+                  ** Calculated on unique sustainable standard identifiers
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Greasy Statistics */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Greasy Statistics</h3>
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Turnover (ZAR)
-                    <PreviousValueTag previousValue={previousData?.greasy_stats?.turnover_rand} />
-                  </div>
-                  <PercentageChangeTag 
-                    currentValue={formData.greasy_stats?.turnover_rand}
-                    previousValue={previousData?.greasy_stats?.turnover_rand}
-                  />
+                  <span>Turnover (ZAR)</span>
+                  <PreviousValueTag previousValue={previousData?.greasy_stats?.turnover_rand} formatType="currency" />
                 </label>
                 <input
                   type="number"
                   value={formData.greasy_stats?.turnover_rand || ''}
                   onChange={(e) => handleGreasyStatsChange('turnover_rand', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 136144702"
+                  placeholder="e.g., 120000000 (R 120 000 000.00)"
+                />
+                <PercentageChangeTag 
+                  currentValue={formData.greasy_stats?.turnover_rand}
+                  previousValue={previousData?.greasy_stats?.turnover_rand}
+                  formatType="currency"
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Bales
-                    <PreviousValueTag previousValue={previousData?.greasy_stats?.bales} />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Bales</span>
+                    <PreviousValueTag previousValue={previousData?.greasy_stats?.bales} formatType="whole" />
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.greasy_stats?.bales || ''}
+                    onChange={(e) => handleGreasyStatsChange('bales', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 6084"
+                  />
                   <PercentageChangeTag 
                     currentValue={formData.greasy_stats?.bales}
                     previousValue={previousData?.greasy_stats?.bales}
+                    formatType="whole"
                   />
-                </label>
-                <input
-                  type="number"
-                  value={formData.greasy_stats?.bales || ''}
-                  onChange={(e) => handleGreasyStatsChange('bales', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 8568"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                  <div className="flex items-center">
-                    Mass (kg)
-                    <PreviousValueTag previousValue={previousData?.greasy_stats?.mass_kg} />
-                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Mass (kg)</span>
+                    <PreviousValueTag previousValue={previousData?.greasy_stats?.mass_kg} formatType="mass" />
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.greasy_stats?.mass_kg || ''}
+                    onChange={(e) => handleGreasyStatsChange('mass_kg', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 1500000 (1 500 000 kg)"
+                  />
                   <PercentageChangeTag 
                     currentValue={formData.greasy_stats?.mass_kg}
                     previousValue={previousData?.greasy_stats?.mass_kg}
+                    formatType="mass"
                   />
-                </label>
-                <input
-                  type="number"
-                  value={formData.greasy_stats?.mass_kg || ''}
-                  onChange={(e) => handleGreasyStatsChange('mass_kg', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 1311248"
-                />
+                </div>
               </div>
             </div>
           </div>
@@ -3260,17 +4265,24 @@ const ReviewSaveTab: React.FC<{
                 <h4 className="font-semibold text-gray-700 mb-3">Market Indices</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Merino Indicator</span>
+                    <span className="text-sm text-gray-600">Merino Indicator (SA)</span>
                     <span className="font-semibold">
-                      {formData.market_indices?.merino_indicator_cents_clean ? 
-                        `${formData.market_indices.merino_indicator_cents_clean} cents` : 'N/A'}
+                      {formData.market_indices?.merino_indicator_sa_cents_clean ? 
+                        `${formData.market_indices.merino_indicator_sa_cents_clean} cents` : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">AWEX EMI</span>
+                    <span className="text-sm text-gray-600">Certified Indicator (SA)</span>
                     <span className="font-semibold">
-                      {formData.market_indices?.awex_emi_cents_clean ? 
-                        `${formData.market_indices.awex_emi_cents_clean} cents` : 'N/A'}
+                      {formData.market_indices?.certified_indicator_sa_cents_clean ? 
+                        `${formData.market_indices.certified_indicator_sa_cents_clean} cents` : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">AWEX EMI (SA)</span>
+                    <span className="font-semibold">
+                      {formData.market_indices?.awex_emi_sa_cents_clean ? 
+                        `${formData.market_indices.awex_emi_sa_cents_clean} cents` : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -3492,18 +4504,6 @@ const ReviewSaveTab: React.FC<{
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Catalogue</span>
                 <span className="font-semibold">{formData.auction.catalogue_name || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Week ID</span>
-                <span className="font-mono text-sm">{formData.auction.week_id}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Sale Number</span>
-                <span className="font-semibold">{formData.auction.sale_number || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Auction Center</span>
-                <span className="font-semibold">{formData.auction.auction_center || 'N/A'}</span>
               </div>
             </div>
           </div>

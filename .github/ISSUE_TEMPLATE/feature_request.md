@@ -24,6 +24,12 @@ Describe specific use cases or scenarios where this feature would be valuable:
 ## 📱 Mobile Considerations
 How should this feature work on mobile devices? Any specific mobile requirements?
 
+## 📝 Form Integration
+If this feature relates to the auction data capture form:
+- [ ] Feature should work with the enhanced 95% width form layout
+- [ ] Feature should maintain mobile responsiveness
+- [ ] Feature should integrate with existing form validation
+
 ## 🎨 UI/UX Considerations
 Any specific UI/UX requirements or design considerations?
 

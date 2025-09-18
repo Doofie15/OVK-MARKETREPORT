@@ -40,6 +40,25 @@ jobs:
         cd server
         npm run test --if-present
         
+    - name: Test enhanced form layout
+      run: |
+        echo "Testing enhanced 95% width form layout compatibility..."
+        # Add specific tests for form layout if needed
+        
+    - name: Validate release notes
+      run: |
+        echo "Validating release notes..."
+        if [ -f "RELEASE_NOTES.md" ]; then
+          echo "✅ RELEASE_NOTES.md exists"
+          if grep -q "Version.*Enhanced Form Layout" RELEASE_NOTES.md; then
+            echo "✅ Release notes contain form layout information"
+          else
+            echo "⚠️ Release notes may be missing form layout details"
+          fi
+        else
+          echo "⚠️ RELEASE_NOTES.md not found"
+        fi
+        
     - name: Build frontend
       run: npm run build
       
@@ -69,6 +88,23 @@ jobs:
       
     - name: Run TypeScript check
       run: npx tsc --noEmit
+      
+    - name: Validate changelog
+      run: |
+        echo "Validating CHANGELOG.md format..."
+        if [ -f "CHANGELOG.md" ]; then
+          echo "✅ CHANGELOG.md exists"
+          # Check for required sections
+          if grep -q "## \[Unreleased\]" CHANGELOG.md; then
+            echo "✅ Unreleased section found"
+          else
+            echo "❌ Unreleased section missing"
+            exit 1
+          fi
+        else
+          echo "❌ CHANGELOG.md not found"
+          exit 1
+        fi
 
   security:
     runs-on: ubuntu-latest
@@ -123,4 +159,5 @@ jobs:
     - name: Run smoke tests
       run: |
         echo "Running smoke tests..."
+        echo "Testing enhanced form layout deployment..."
         # Add your smoke test commands here

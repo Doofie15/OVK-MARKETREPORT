@@ -19,11 +19,14 @@ Brief description of the changes made in this pull request.
 - [ ] Mobile components have been updated if applicable
 - [ ] Responsive design has been maintained
 - [ ] Touch interactions work properly
+- [ ] Enhanced form layout (95% width) maintains mobile compatibility
+- [ ] Form responsiveness tested across different screen sizes
 
 ### 🧪 Testing
 - [ ] I have tested these changes locally
 - [ ] I have tested on multiple browsers (Chrome, Firefox, Safari, Edge)
 - [ ] I have tested on mobile devices
+- [ ] I have tested the enhanced form layout (95% width) if applicable
 - [ ] I have added/updated tests for new functionality
 - [ ] All existing tests pass
 
@@ -35,6 +38,8 @@ If applicable, add screenshots or videos to help explain your changes.
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
+- [ ] I have updated the CHANGELOG.md with my changes (if applicable)
+- [ ] I have updated the RELEASE_NOTES.md (if this is a significant change)
 - [ ] My changes generate no new warnings or errors
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes

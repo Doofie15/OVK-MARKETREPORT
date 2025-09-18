@@ -32,10 +32,11 @@ cd server && npm start  # Backend (http://localhost:3001)
 
 - 📊 **Interactive Market Dashboard** - Real-time auction data visualization
 - 📱 **Mobile-First Design** - Complete mobile component library with responsive layouts
-- 🛠️ **Admin Interface** - Comprehensive data capture system for Cape Wools reports
+- 🛠️ **Enhanced Admin Interface** - Comprehensive data capture system with 95% width form layout
 - 📈 **Advanced Analytics** - Buyer behavior analysis and market trend tracking
 - 🗺️ **Provincial Analysis** - Geographic breakdown of prices and producers
 - 📋 **Data Management** - Local storage with structured data models
+- ✨ **Improved UX** - Enhanced form layout for better data entry experience
 
 ## 🏗️ Tech Stack
 
@@ -66,6 +67,20 @@ The platform includes a complete mobile component library:
 - [User Guide](docs/USER_GUIDE.md)
 - [API Documentation](docs/API.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Changelog](CHANGELOG.md)
+
+## 🚀 Recent Updates
+
+- ✅ **Enhanced Form Layout**: Auction data capture form now uses 95% of page width for improved usability
+- ✅ **Better Data Entry**: Wider form layout provides more comfortable data entry experience
+- ✅ **Mobile Responsive**: Enhanced form maintains full mobile compatibility
+- ✅ **Improved UX**: Better space utilization and field organization
+- ✅ **Comprehensive Changelog**: Full project history and updates documented
+- ✅ **Updated Documentation**: All project docs reflect latest enhancements
+
+## 📋 Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and all project updates.
 
 ## 🤝 Contributing
 

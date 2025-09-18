@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Season Management Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>Season Management Test</h1>
+    <p>This page tests the Season management functionality without the full React app.</p>
+
+    <div class="test-section">
+        <h2>Test Season Creation</h2>
+        <button onclick="testCreateSeason()">Create Test Season</button>
+        <button onclick="testGetAllSeasons()">Get All Seasons</button>
+        <button onclick="testUpdateSeason()">Update Season</button>
+        <button onclick="testDeleteSeason()">Delete Season</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Export Functions</h2>
+        <button onclick="testExportCSV()">Export CSV</button>
+        <button onclick="testExportJSON()">Export JSON</button>
+        <div id="exportResult" class="result"></div>
+    </div>
+
+    <script>
+        // Mock SeasonService for testing
+        class SeasonService {
+            static async createSeason(seasonData) {
+                try {
+                    const season = {
+                        id: `season_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                        ...seasonData,
+                        number_of_auctions: 0,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const existingSeasons = this.getAllSeasons();
+                    existingSeasons.push(season);
+                    localStorage.setItem('seasons', JSON.stringify(existingSeasons));
+
+                    return season;
+                } catch (error) {
+                    throw new Error('Failed to create season');
+                }
+            }
+
+            static async getAllSeasons() {
+                try {
+                    const seasonsData = localStorage.getItem('seasons');
+                    if (!seasonsData) return [];
+                    
+                    const seasons = JSON.parse(seasonsData);
+                    return seasons;
+                } catch (error) {
+                    throw new Error('Failed to get seasons');
+                }
+            }
+
+            static async updateSeason(seasonId, seasonData) {
+                try {
+                    const seasons = this.getAllSeasons();
+                    const seasonIndex = seasons.findIndex(season => season.id === seasonId);
+                    
+                    if (seasonIndex === -1) {
+                        throw new Error('Season not found');
+                    }
+
+                    const updatedSeason = {
+                        ...seasons[seasonIndex],
+                        ...seasonData,
+                        updated_at: new Date().toISOString()
+                    };
+
+                    seasons[seasonIndex] = updatedSeason;
+                    localStorage.setItem('seasons', JSON.stringify(seasons));
+
+                    return updatedSeason;
+                } catch (error) {
+                    throw new Error('Failed to update season');
+                }
+            }
+
+            static async deleteSeason(seasonId) {
+                try {
+                    const seasons = this.getAllSeasons();
+                    const filteredSeasons = seasons.filter(season => season.id !== seasonId);
+                    
+                    if (filteredSeasons.length === seasons.length) {
+                        throw new Error('Season not found');
+                    }
+
+                    localStorage.setItem('seasons', JSON.stringify(filteredSeasons));
+                    return true;
+                } catch (error) {
+                    throw new Error('Failed to delete season');
+                }
+            }
+
+            static async exportSeasonsToCSV(seasons) {
+                try {
+                    const headers = ['Season Name', 'Start Date', 'End Date', 'Year', 'Number of Auctions'];
+                    const csvContent = [
+                        headers.join(','),
+                        ...seasons.map(season => [
+                            `"${season.name}"`,
+                            season.start_date,
+                            season.end_date,
+                            `"${season.year}"`,
+                            season.number_of_auctions
+                        ].join(','))
+                    ].join('\n');
+
+                    return csvContent;
+                } catch (error) {
+                    throw new Error('Failed to export seasons to CSV');
+                }
+            }
+
+            static async exportSeasonsToJSON(seasons) {
+                try {
+                    return JSON.stringify(seasons, null, 2);
+                } catch (error) {
+                    throw new Error('Failed to export seasons to JSON');
+                }
+            }
+
+            static getAllSeasons() {
+                const seasonsData = localStorage.getItem('seasons');
+                return seasonsData ? JSON.parse(seasonsData) : [];
+            }
+        }
+
+        let testSeasonId = null;
+
+        async function testCreateSeason() {
+            try {
+                const seasonData = {
+                    name: '2025/2026', // Season name is now the same as the year
+                    start_date: '2025-07-01',
+                    end_date: '2026-06-30',
+                    year: '2025/2026'
+                };
+
+                const season = await SeasonService.createSeason(seasonData);
+                testSeasonId = season.id;
+                
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">✅ Season created successfully!<br>
+                    ID: ${season.id}<br>
+                    Name: ${season.name} (auto-generated from year)<br>
+                    Year: ${season.year}</div>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testGetAllSeasons() {
+            try {
+                const seasons = await SeasonService.getAllSeasons();
+                
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">✅ Found ${seasons.length} seasons:<br>
+                    ${seasons.map(s => `• ${s.name} (${s.year})`).join('<br>')}</div>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testUpdateSeason() {
+            if (!testSeasonId) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ Please create a season first</div>`;
+                return;
+            }
+
+            try {
+                const updatedSeason = await SeasonService.updateSeason(testSeasonId, {
+                    name: '2025/2026 Updated Wool Season'
+                });
+                
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">✅ Season updated successfully!<br>
+                    New name: ${updatedSeason.name}</div>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testDeleteSeason() {
+            if (!testSeasonId) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ Please create a season first</div>`;
+                return;
+            }
+
+            try {
+                await SeasonService.deleteSeason(testSeasonId);
+                testSeasonId = null;
+                
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">✅ Season deleted successfully!</div>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function clearStorage() {
+            localStorage.removeItem('seasons');
+            testSeasonId = null;
+            document.getElementById('result').innerHTML = 
+                `<div class="success">✅ Storage cleared!</div>`;
+        }
+
+        async function testExportCSV() {
+            try {
+                const seasons = await SeasonService.getAllSeasons();
+                if (seasons.length === 0) {
+                    document.getElementById('exportResult').innerHTML = 
+                        `<div class="error">❌ No seasons to export</div>`;
+                    return;
+                }
+
+                const csvContent = await SeasonService.exportSeasonsToCSV(seasons);
+                
+                // Create download link
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'seasons.csv';
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                document.getElementById('exportResult').innerHTML = 
+                    `<div class="success">✅ CSV exported successfully! (${seasons.length} seasons)<br>
+                    <small>Columns: Year, Start Date, End Date, Number of Auctions</small></div>`;
+            } catch (error) {
+                document.getElementById('exportResult').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testExportJSON() {
+            try {
+                const seasons = await SeasonService.getAllSeasons();
+                if (seasons.length === 0) {
+                    document.getElementById('exportResult').innerHTML = 
+                        `<div class="error">❌ No seasons to export</div>`;
+                    return;
+                }
+
+                const jsonContent = await SeasonService.exportSeasonsToJSON(seasons);
+                
+                // Create download link
+                const blob = new Blob([jsonContent], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'seasons.json';
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                document.getElementById('exportResult').innerHTML = 
+                    `<div class="success">✅ JSON exported successfully! (${seasons.length} seasons)</div>`;
+            } catch (error) {
+                document.getElementById('exportResult').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load existing seasons on page load
+        window.onload = function() {
+            testGetAllSeasons();
+        };
+    </script>
+</body>
+</html>

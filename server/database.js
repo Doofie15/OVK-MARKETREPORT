@@ -30,6 +30,7 @@ class JSONDatabase {
           bales_sold_by_style: [],
           average_prices_clean: [],
           report_ingest_audit: [],
+          cape_wools_reports: [],
           metadata: {
             version: "1.0.0",
             created_at: new Date().toISOString(),
@@ -356,6 +357,60 @@ class JSONDatabase {
       latestAuctionDate,
       totalRecords: this.getTotalRecords()
     };
+  }
+
+  // Cape Wools Reports methods
+  createCapeWoolsReport(reportData) {
+    const report = {
+      id: uuidv4(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...reportData
+    };
+
+    this.data.cape_wools_reports.push(report);
+    this.saveDatabase();
+    return report;
+  }
+
+  getCapeWoolsReport(id) {
+    return this.data.cape_wools_reports.find(report => report.id === id);
+  }
+
+  getAllCapeWoolsReports() {
+    return this.data.cape_wools_reports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  getLatestCapeWoolsReport() {
+    const reports = this.getAllCapeWoolsReports();
+    return reports.length > 0 ? reports[0] : null;
+  }
+
+  updateCapeWoolsReport(id, updateData) {
+    const reportIndex = this.data.cape_wools_reports.findIndex(report => report.id === id);
+    if (reportIndex === -1) {
+      throw new Error('Cape Wools report not found');
+    }
+
+    this.data.cape_wools_reports[reportIndex] = {
+      ...this.data.cape_wools_reports[reportIndex],
+      ...updateData,
+      updated_at: new Date().toISOString()
+    };
+
+    this.saveDatabase();
+    return this.data.cape_wools_reports[reportIndex];
+  }
+
+  deleteCapeWoolsReport(id) {
+    const reportIndex = this.data.cape_wools_reports.findIndex(report => report.id === id);
+    if (reportIndex === -1) {
+      throw new Error('Cape Wools report not found');
+    }
+
+    const deletedReport = this.data.cape_wools_reports.splice(reportIndex, 1)[0];
+    this.saveDatabase();
+    return deletedReport;
   }
 
   // Backup and restore

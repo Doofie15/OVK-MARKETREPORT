@@ -28,6 +28,12 @@ A clear and concise description of what actually happened.
 - **Browser**: [e.g. Chrome 96, Safari 15, Firefox 95]
 - **Screen Size**: [e.g. 1920x1080, 375x812]
 
+## 📝 Form-Related Issues
+If this bug is related to the auction data capture form:
+- [ ] Bug occurs with the enhanced 95% width form layout
+- [ ] Bug affects form responsiveness on mobile devices
+- [ ] Bug impacts form data entry or validation
+
 ## 📸 Screenshots
 If applicable, add screenshots to help explain your problem.
 

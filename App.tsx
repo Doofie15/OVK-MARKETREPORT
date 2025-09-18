@@ -28,7 +28,10 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import AuctionsList from './components/admin/AuctionsList';
 import AdminForm from './components/admin/AdminForm';
 import AuctionDataCaptureForm from './components/admin/AuctionDataCaptureForm';
+import SeasonList from './components/admin/SeasonList';
+import CreateSeason from './components/admin/CreateSeason';
 import type { AdminSection } from './components/admin/AdminSidebar';
+import type { Season } from './types';
 
 type ViewMode = 'report' | 'admin';
 
@@ -41,6 +44,8 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminSection, setAdminSection] = useState<AdminSection>('dashboard');
   const [editingReport, setEditingReport] = useState<AuctionReport | undefined>(undefined);
+  const [editingSeason, setEditingSeason] = useState<Season | null>(null);
+  const [showCreateSeason, setShowCreateSeason] = useState(false);
 
   const handleSaveReport = (newReportData: Omit<AuctionReport, 'top_sales'>) => {
     // Find the latest report to base YTD calculations on
@@ -124,6 +129,20 @@ const App: React.FC = () => {
     if (section === 'auctions') {
       setEditingReport(undefined);
     }
+    if (section === 'seasons') {
+      setEditingSeason(null);
+      setShowCreateSeason(false);
+    }
+  };
+
+  const handleSeasonCreated = () => {
+    setShowCreateSeason(false);
+    setEditingSeason(null);
+  };
+
+  const handleEditSeason = (season: Season) => {
+    setEditingSeason(season);
+    setShowCreateSeason(true);
   };
 
   const activeReport: AuctionReport | undefined = useMemo(() => 
@@ -178,6 +197,25 @@ const App: React.FC = () => {
     switch (adminSection) {
       case 'dashboard':
         return <AdminDashboard />;
+      case 'seasons':
+        if (showCreateSeason) {
+          return (
+            <CreateSeason
+              onBack={() => {
+                setShowCreateSeason(false);
+                setEditingSeason(null);
+              }}
+              onSeasonCreated={handleSeasonCreated}
+              editingSeason={editingSeason}
+            />
+          );
+        }
+        return (
+          <SeasonList
+            onCreateSeason={() => setShowCreateSeason(true)}
+            onEditSeason={handleEditSeason}
+          />
+        );
       case 'auctions':
         if (editingReport) {
           console.log('Rendering AuctionDataCaptureForm with editingReport:', editingReport);

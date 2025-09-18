@@ -3,7 +3,7 @@
 
 import { storage } from './storage';
 import { transformFormToDatabase, transformDatabaseToForm } from './transformers';
-import type { AuctionReport } from '../types';
+import type { AuctionReport, Season, CreateSeasonData } from '../types';
 import type { CompleteAuctionData, Sale } from './models';
 
 export class AuctionDataService {
@@ -152,13 +152,10 @@ export class AuctionDataService {
         auction: {
           commodity: 'wool',
           season_label: "2024-25",
-          week_id: "202425-01",
           week_start: previousDate.toISOString().split('T')[0],
           week_end: previousDate.toISOString().split('T')[0],
           auction_date: previousDate.toISOString().split('T')[0],
           catalogue_name: "Cape Wools SA Catalogue 37",
-          sale_number: "37",
-          auction_center: "Port Elizabeth"
         },
         market_indices: {
           merino_indicator_cents_clean: 17504,
@@ -249,13 +246,10 @@ export class AuctionDataService {
         auction: {
           commodity: 'wool',
           season_label: "2024-25",
-          week_id: "202425-01",
           week_start: previousDate.toISOString().split('T')[0],
           week_end: previousDate.toISOString().split('T')[0],
           auction_date: previousDate.toISOString().split('T')[0],
           catalogue_name: "Cape Wools SA Catalogue 37",
-          sale_number: "37",
-          auction_center: "Port Elizabeth"
         },
         market_indices: {
           merino_indicator_cents_clean: 17504,
@@ -489,6 +483,256 @@ export class AuctionDataService {
       console.error('Error clearing all data:', error);
       throw new Error('Failed to clear data');
     }
+  }
+
+  // Cape Wools Reports methods
+  static async saveCapeWoolsReport(formData: Omit<AuctionReport, 'top_sales'>): Promise<any> {
+    try {
+      // Transform form data to Cape Wools report structure
+      const capeWoolsReport = {
+        auction: formData.auction,
+        market_indices: formData.market_indices,
+        currency_fx: formData.currency_fx,
+        supply_stats: formData.supply_stats,
+        highest_price: formData.highest_price,
+        certified_share: formData.certified_share,
+        greasy_stats: formData.greasy_stats,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Save to database
+      const report = (storage as any).capeWoolsReports.create(capeWoolsReport);
+      
+      console.log('Cape Wools report saved successfully:', report);
+      return report;
+    } catch (error) {
+      console.error('Error saving Cape Wools report:', error);
+      throw new Error('Failed to save Cape Wools report');
+    }
+  }
+
+  static async getCapeWoolsReport(id: string): Promise<any | null> {
+    try {
+      return (storage as any).capeWoolsReports.getById(id);
+    } catch (error) {
+      console.error('Error getting Cape Wools report:', error);
+      return null;
+    }
+  }
+
+  static async getAllCapeWoolsReports(): Promise<any[]> {
+    try {
+      return (storage as any).capeWoolsReports.getAll();
+    } catch (error) {
+      console.error('Error getting all Cape Wools reports:', error);
+      return [];
+    }
+  }
+
+  static async getLatestCapeWoolsReport(): Promise<any | null> {
+    try {
+      return (storage as any).capeWoolsReports.getLatest();
+    } catch (error) {
+      console.error('Error getting latest Cape Wools report:', error);
+      return null;
+    }
+  }
+
+  static async updateCapeWoolsReport(id: string, formData: Omit<AuctionReport, 'top_sales'>): Promise<any> {
+    try {
+      const updateData = {
+        auction: formData.auction,
+        market_indices: formData.market_indices,
+        currency_fx: formData.currency_fx,
+        supply_stats: formData.supply_stats,
+        highest_price: formData.highest_price,
+        certified_share: formData.certified_share,
+        greasy_stats: formData.greasy_stats,
+        updated_at: new Date().toISOString()
+      };
+
+      return (storage as any).capeWoolsReports.update(id, updateData);
+    } catch (error) {
+      console.error('Error updating Cape Wools report:', error);
+      throw new Error('Failed to update Cape Wools report');
+    }
+  }
+
+  static async deleteCapeWoolsReport(id: string): Promise<boolean> {
+    try {
+      (storage as any).capeWoolsReports.delete(id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting Cape Wools report:', error);
+      return false;
+    }
+  }
+}
+
+// Season management service
+export class SeasonService {
+  // Create a new season
+  static async createSeason(seasonData: CreateSeasonData): Promise<Season> {
+    try {
+      const season: Season = {
+        id: `season_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...seasonData,
+        number_of_auctions: 0, // Will be calculated from actual auctions
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Save to localStorage for now
+      const existingSeasons = this.getAllSeasons();
+      existingSeasons.push(season);
+      localStorage.setItem('seasons', JSON.stringify(existingSeasons));
+
+      console.log('Season created successfully:', season);
+      return season;
+    } catch (error) {
+      console.error('Error creating season:', error);
+      throw new Error('Failed to create season');
+    }
+  }
+
+  // Get all seasons
+  static async getAllSeasons(): Promise<Season[]> {
+    try {
+      const seasonsData = localStorage.getItem('seasons');
+      if (!seasonsData) return [];
+      
+      const seasons = JSON.parse(seasonsData);
+      
+      // Update auction counts for each season
+      const updatedSeasons = await Promise.all(
+        seasons.map(async (season: Season) => {
+          const auctionCount = await this.getAuctionCountForSeason(season.id);
+          return { ...season, number_of_auctions: auctionCount };
+        })
+      );
+      
+      return updatedSeasons;
+    } catch (error) {
+      console.error('Error getting seasons:', error);
+      throw new Error('Failed to get seasons');
+    }
+  }
+
+  // Get season by ID
+  static async getSeasonById(seasonId: string): Promise<Season | null> {
+    try {
+      const seasons = await this.getAllSeasons();
+      return seasons.find(season => season.id === seasonId) || null;
+    } catch (error) {
+      console.error('Error getting season by ID:', error);
+      throw new Error('Failed to get season');
+    }
+  }
+
+  // Update season
+  static async updateSeason(seasonId: string, seasonData: Partial<CreateSeasonData>): Promise<Season> {
+    try {
+      const seasons = this.getAllSeasons();
+      const seasonIndex = seasons.findIndex(season => season.id === seasonId);
+      
+      if (seasonIndex === -1) {
+        throw new Error('Season not found');
+      }
+
+      const updatedSeason = {
+        ...seasons[seasonIndex],
+        ...seasonData,
+        updated_at: new Date().toISOString()
+      };
+
+      seasons[seasonIndex] = updatedSeason;
+      localStorage.setItem('seasons', JSON.stringify(seasons));
+
+      console.log('Season updated successfully:', updatedSeason);
+      return updatedSeason;
+    } catch (error) {
+      console.error('Error updating season:', error);
+      throw new Error('Failed to update season');
+    }
+  }
+
+  // Delete season
+  static async deleteSeason(seasonId: string): Promise<boolean> {
+    try {
+      const seasons = this.getAllSeasons();
+      const filteredSeasons = seasons.filter(season => season.id !== seasonId);
+      
+      if (filteredSeasons.length === seasons.length) {
+        throw new Error('Season not found');
+      }
+
+      localStorage.setItem('seasons', JSON.stringify(filteredSeasons));
+      console.log('Season deleted successfully:', seasonId);
+      return true;
+    } catch (error) {
+      console.error('Error deleting season:', error);
+      throw new Error('Failed to delete season');
+    }
+  }
+
+  // Get auction count for a season
+  static async getAuctionCountForSeason(seasonId: string): Promise<number> {
+    try {
+      const sales = storage.completeAuction.getAllSales();
+      const season = await this.getSeasonById(seasonId);
+      
+      if (!season) return 0;
+
+      // Count auctions that fall within the season date range
+      const startDate = new Date(season.start_date);
+      const endDate = new Date(season.end_date);
+      
+      return sales.filter(sale => {
+        const saleDate = new Date(sale.sale_date);
+        return saleDate >= startDate && saleDate <= endDate;
+      }).length;
+    } catch (error) {
+      console.error('Error getting auction count for season:', error);
+      return 0;
+    }
+  }
+
+  // Export seasons to CSV
+  static async exportSeasonsToCSV(seasons: Season[]): Promise<string> {
+    try {
+      const headers = ['Year', 'Start Date', 'End Date', 'Number of Auctions'];
+      const csvContent = [
+        headers.join(','),
+        ...seasons.map(season => [
+          `"${season.year}"`,
+          season.start_date,
+          season.end_date,
+          season.number_of_auctions
+        ].join(','))
+      ].join('\n');
+
+      return csvContent;
+    } catch (error) {
+      console.error('Error exporting seasons to CSV:', error);
+      throw new Error('Failed to export seasons to CSV');
+    }
+  }
+
+  // Export seasons to JSON
+  static async exportSeasonsToJSON(seasons: Season[]): Promise<string> {
+    try {
+      return JSON.stringify(seasons, null, 2);
+    } catch (error) {
+      console.error('Error exporting seasons to JSON:', error);
+      throw new Error('Failed to export seasons to JSON');
+    }
+  }
+
+  // Helper method to get all seasons (without async for internal use)
+  private static getAllSeasons(): Season[] {
+    const seasonsData = localStorage.getItem('seasons');
+    return seasonsData ? JSON.parse(seasonsData) : [];
   }
 }
 
