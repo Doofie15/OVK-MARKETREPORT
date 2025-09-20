@@ -13,6 +13,10 @@ export class AuctionDataService {
       // Transform form data to database structure
       const dbData = transformFormToDatabase(formData);
       
+      // Mark as published
+      dbData.sale.status = 'published';
+      dbData.sale.is_draft = false;
+      
       // Save to storage
       const sale = storage.completeAuction.save(dbData);
       
@@ -31,6 +35,7 @@ export class AuctionDataService {
       const dbData = transformFormToDatabase(formData);
       
       // Mark as draft
+      dbData.sale.status = 'draft';
       dbData.sale.is_draft = true;
       
       // Save to storage

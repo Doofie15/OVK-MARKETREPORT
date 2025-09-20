@@ -73,14 +73,14 @@ const IndicatorCard: React.FC<{
     const isPositive = change !== undefined && change >= 0;
 
     return (
-        <div className="metric-card h-28 flex flex-col justify-between p-4">
+        <div className="metric-card h-32 flex flex-col justify-between p-4 pb-5">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     {getIndicatorIcon(title)}
-                    <p className="text-xs font-medium text-gray-600">{title}</p>
+                    <p className="text-sm font-medium text-gray-600">{title}</p>
                 </div>
                 {change !== undefined && (
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
                         isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
                         {isPositive ? <TrendingUpIcon className="w-3 h-3" /> : <TrendingDownIcon className="w-3 h-3" />}
@@ -91,17 +91,17 @@ const IndicatorCard: React.FC<{
             
             <div className="flex flex-col">
                 <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    <span className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         {value}
                     </span>
-                    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <span className="text-base" style={{ color: 'var(--text-muted)' }}>
                         {unit}
                     </span>
                 </div>
                 
-                <div className="h-4">
+                <div className="h-5">
                     {ytdValue && (
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                             YTD: {ytdValue}
                         </p>
                     )}
@@ -187,7 +187,7 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                 <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                     <ChartBarIcon className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-sm font-bold gradient-text">MARKET OVERVIEW</h2>
+                <h2 className="text-lg font-bold gradient-text">MARKET OVERVIEW</h2>
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">

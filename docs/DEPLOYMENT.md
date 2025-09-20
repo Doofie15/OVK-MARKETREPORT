@@ -51,6 +51,10 @@ Create environment files:
 
 **Frontend (.env.local)**
 ```env
+# Google Gemini AI Configuration
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Application Configuration
 VITE_API_URL=http://localhost:3001/api
 VITE_APP_NAME=OVK Wool Market Report
 VITE_APP_VERSION=1.0.0
@@ -311,10 +315,28 @@ docker-compose down
 
 ## Environment Configuration
 
+### AI Configuration
+The platform includes Google Gemini AI integration for intelligent market insights generation:
+
+#### Getting a Gemini API Key
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Create a new API key
+4. Copy the API key for use in your environment variables
+
+#### Environment Variables
+- **VITE_GEMINI_API_KEY**: Your Google Gemini API key for AI-powered market insights
+- **Fallback Mode**: The platform works without an API key using local enhancement algorithms
+- **Security**: Never commit API keys to version control
+
 ### Production Environment Variables
 
 **Frontend (.env.production)**
 ```env
+# Google Gemini AI Configuration
+VITE_GEMINI_API_KEY=your_production_gemini_api_key
+
+# Application Configuration
 VITE_API_URL=https://api.yourdomain.com
 VITE_APP_NAME=OVK Wool Market Report
 VITE_APP_VERSION=1.0.0

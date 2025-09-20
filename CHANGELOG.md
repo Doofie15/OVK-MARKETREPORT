@@ -8,20 +8,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
+- **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
+- **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
+- **Season Management Analytics**: Real-time calculation of auction counts, bales, volume, and turnover per season
+- **AI-Powered Market Insights**: Google Gemini AI integration for intelligent market commentary generation
+- **Smart Content Enhancement**: AI analyzes auction data and Cape Wools commentary to create professional insights
+- **80-Word Card Optimization**: Content automatically optimized for small card display format with automatic word limiting
+- **OVK Brand Enhancement**: AI always highlights OVK's positive market position and contributions
+- **Cape Wools Commentary Integration**: Direct integration of Cape Wools market commentary into AI analysis
+- **Real-time Word Counting**: Visual feedback with color-coded word count display (80-word limit)
+- **Enhanced Input Formatting**: Currency formatting with thousands separators for better readability
+- **Catalogue Number Fix**: Improved input handling with 2-digit formatting and natural typing support
+- **Fallback Enhancement**: Robust local enhancement when AI API is not available
+- **AI Composer Setup Guide**: Comprehensive documentation for AI configuration and usage
+- **Pagination System**: Flexible pagination with 10, 50, 100, 200, or All rows per page
+- **Action Dropdown Menus**: Three-dot horizontal menus with contextual actions (Publish, View, Edit, Delete)
+- **Status Indicators**: Color-coded status badges for visual identification
+- **Enhanced Overview Cards**: Comprehensive statistics display for auctions and seasons
 - Enhanced form layout with 95% width utilization for improved usability
 - Comprehensive changelog documentation
 - Updated GitHub issue templates with form-related considerations
 - Enhanced CI/CD pipeline with form layout testing
 
 ### Changed
+- **Report Workflow**: Implemented draft/publish workflow with status tracking and confirmation modals
+- **Validation System**: Streamlined validation to focus on essential fields for public reports
+- **Publishing Threshold**: Adjusted to 85% completion for publishing reports
+- **Table Layout**: Enhanced auctions and seasons tables with better column organization
+- **Data Aggregation**: Real-time calculation of season statistics from actual auction data
+- **AI Service Integration**: Added Google Gemini AI service with fallback mechanisms
+- **Market Insights Tab**: Replaced simple textarea with advanced AI composer component
+- **Input Field Types**: Changed numeric inputs to text with real-time formatting
+- **Content Optimization**: Automatic formatting and word limit enforcement for card display
 - Auction data capture form now uses 95% of page width instead of max-w-7xl constraint
 - Improved form container classes from `max-w-7xl mx-auto` to `w-[95%] mx-auto`
 - Enhanced documentation across all project files
 - Updated GitHub workflows to include enhanced form testing
 
 ### Fixed
+- **Report Status Refresh**: Fixed issue where auction status wasn't updating after saving reports
+- **Validation Logic**: Fixed validation to recognize data from both indicators and greasy_stats
+- **Turnover Display**: Fixed empty turnover column in auctions table
+- **Status Display**: Fixed "New" status showing for published auctions
+- **Completion Calculation**: Fixed incorrect completion percentages and missing field detection
+- **Currency Exchange Display**: Fixed incomplete currency display in review sections
+- **Catalogue Number Input**: Fixed bug where typing "15" resulted in "00" and backspace not working
+- **Currency Display**: Added thousands separators for better number readability
+- **AI API Configuration**: Proper environment variable handling and fallback mechanisms
 - Form width constraints for better space utilization
 - Mobile responsiveness maintained with enhanced layout
+
+### Technical Improvements
+- **Data Models**: Enhanced Sale interface with status, volume, and turnover fields
+- **Service Layer**: Added saveAuctionReportDraft and enhanced status management
+- **Transformers**: Updated data transformation to include new fields and status mapping
+- **Component Architecture**: Improved component structure with better state management
+- **Refresh Triggers**: Implemented automatic refresh system for data consistency
+- **Error Handling**: Enhanced error handling and user feedback systems
 
 ## [1.0.0] - 2025-01-15
 
@@ -213,3 +257,6 @@ When adding new entries to the changelog:
 ---
 
 **Note**: This changelog is maintained alongside the project documentation and is updated with each release to provide users and developers with a clear history of changes and improvements.
+
+
+

@@ -19,11 +19,15 @@ Stores basic auction information and metadata.
 - `total_bales_offered` (number): Total bales offered for sale
 - `total_bales_sold` (number): Total bales sold
 - `clearance_pct` (number): Clearance percentage
+- `total_volume_kg` (number): Total volume in kilograms
+- `total_turnover` (number): Total turnover in ZAR
 - `highest_price_c_per_kg_clean` (number): Highest price in cents per kg clean
 - `highest_price_micron` (number): Micron of highest price wool
 - `next_sale_date` (string): Date of next scheduled sale
 - `next_sale_bales` (number): Expected bales for next sale
 - `is_draft` (boolean): Whether this is a draft record
+- `status` (string): Report status ('draft', 'published', 'archived')
+- `is_empty` (boolean): For pagination empty rows
 
 ### 2. Cape Wools Reports Collection (`cape_wools_reports`)
 Stores complete Cape Wools market report data from the form.
@@ -73,6 +77,12 @@ Stores complete Cape Wools market report data from the form.
   - `turnover_rand` (number): Total turnover in ZAR
   - `bales` (number): Number of bales
   - `mass_kg` (number): Total mass in kilograms
+- `cape_wools_commentary` (string): Cape Wools market commentary text
+- `status` (string): Report status ('draft', 'published', 'archived')
+- `published_at` (string): ISO timestamp when report was published
+- `created_by` (string): User who created the report
+- `approved_by` (string): User who approved the report
+- `version` (number): Report version number
 
 ### 3. Indicators Collection (`indicators`)
 Stores market indicator data linked to sales.
@@ -228,6 +238,18 @@ Stores audit information for report ingestion processes.
 - `errors` (array): List of errors encountered
 - `processing_time_ms` (number): Processing time in milliseconds
 
+### 16. Seasons Collection (`seasons`)
+Stores season information for wool selling seasons.
+
+**Fields:**
+- `id` (string): Unique identifier
+- `year` (string): Season year (e.g., "2025/2026")
+- `start_date` (string): Season start date (YYYY-MM-DD)
+- `end_date` (string): Season end date (YYYY-MM-DD)
+- `number_of_auctions` (number): Expected number of auctions in season
+- `created_at` (string): ISO timestamp of creation
+- `updated_at` (string): ISO timestamp of last update
+
 ## Database Methods
 
 ### Cape Wools Reports Methods
@@ -281,6 +303,80 @@ Deletes a Cape Wools report.
 **Returns:**
 - Deleted report object
 
+### Enhanced Sales Methods
+
+#### `saveAuctionReportDraft(reportData)`
+Saves an auction report as draft.
+
+**Parameters:**
+- `reportData` (object): Report data object
+
+**Returns:**
+- Saved report object with status set to 'draft'
+
+#### `publishAuctionReport(id)`
+Publishes a draft auction report.
+
+**Parameters:**
+- `id` (string): Report ID
+
+**Returns:**
+- Updated report object with status set to 'published' and published_at timestamp
+
+#### `getReportsByStatus(status)`
+Retrieves reports filtered by status.
+
+**Parameters:**
+- `status` (string): Report status ('draft', 'published', 'archived')
+
+**Returns:**
+- Array of reports with the specified status
+
+### Seasons Methods
+
+#### `createSeason(seasonData)`
+Creates a new season record.
+
+**Parameters:**
+- `seasonData` (object): Season data object
+
+**Returns:**
+- Created season object with generated ID and timestamps
+
+#### `getAllSeasons()`
+Retrieves all seasons, sorted by year.
+
+**Returns:**
+- Array of season objects
+
+#### `getSeasonStats(seasonId)`
+Retrieves calculated statistics for a season.
+
+**Parameters:**
+- `seasonId` (string): Season ID
+
+**Returns:**
+- Object containing auction count, total bales, total volume, and total turnover
+
+#### `updateSeason(id, updateData)`
+Updates an existing season.
+
+**Parameters:**
+- `id` (string): Season ID
+- `updateData` (object): Data to update
+
+**Returns:**
+- Updated season object
+
+#### `deleteSeason(id)`
+Deletes a season.
+
+**Parameters:**
+- `id` (string): Season ID
+
+**Returns:**
+- Deleted season object
+
 ## Data Relationships
 
 ### Primary Relationships
@@ -289,11 +385,19 @@ Deletes a Cape Wools report.
 - **Sales** → **Buyer Purchases**: One-to-many (sale_id)
 - **Sales** → **Offering Analysis**: One-to-many (sale_id)
 - **Sales** → **Average Prices Clean**: One-to-many (sale_id)
+- **Seasons** → **Sales**: One-to-many (season field)
 
 ### Cape Wools Reports
 - **Cape Wools Reports** are standalone records that contain all form data
 - They are not directly linked to the traditional sales records
 - They represent the complete market report data from the Cape Wools form
+- **Status Management**: Reports have status ('draft', 'published', 'archived') for workflow management
+- **Cape Wools Commentary**: Integration of official Cape Wools market commentary
+
+### Enhanced Relationships
+- **Sales Status**: Sales records now include status for draft/publish workflow
+- **Season Analytics**: Seasons link to sales for calculating aggregated statistics
+- **Pagination Support**: Sales records include is_empty field for pagination empty rows
 
 ## Storage Implementation
 
@@ -370,6 +474,32 @@ When migrating from the old structure to the new Cape Wools structure:
 2. **New Collections**: The `cape_wools_reports` collection is new and separate from existing sales data
 3. **Data Structure**: Cape Wools reports use a flatter structure that matches the form data exactly
 4. **Backward Compatibility**: Existing sales data remains unchanged and functional
+
+## Enhanced Features
+
+### Report Status Management
+- **Draft/Publish Workflow**: Reports can be saved as drafts and published when ready
+- **Status Tracking**: Reports have status field ('draft', 'published', 'archived')
+- **Publishing Metadata**: Published reports include published_at timestamp and approval tracking
+- **Version Control**: Reports support versioning for change tracking
+
+### Season Analytics
+- **Dynamic Statistics**: Real-time calculation of season metrics from actual auction data
+- **Aggregated Data**: Seasons display total bales, volume, and turnover across all auctions
+- **Auction Counts**: Actual number of auctions per season (not just expected)
+- **Performance Tracking**: Monitor season progress with live data
+
+### Input Formatting Enhancements
+- **Currency Formatting**: Large numbers formatted with thousands separators (e.g., "125 000 000")
+- **Catalogue Number Formatting**: Automatic 2-digit formatting with natural typing support
+- **Real-time Validation**: Immediate feedback on data entry with enhanced validation
+- **User Experience**: Improved input handling with backspace support and natural typing
+
+### Pagination and Display
+- **Minimum Rows**: Tables always display minimum 10 rows for consistent layout
+- **Empty Row Padding**: Pagination uses is_empty field for consistent table height
+- **Flexible Pagination**: Support for 10, 50, 100, 200, or All rows per page
+- **Status Indicators**: Color-coded status badges for visual status identification
 
 ## Form Interface Enhancements
 

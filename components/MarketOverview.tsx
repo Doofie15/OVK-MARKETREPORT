@@ -86,7 +86,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
-          <h2 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="font-bold text-base tracking-wide" style={{ color: 'var(--text-primary)' }}>
             MARKET OVERVIEW
           </h2>
         </div>
@@ -103,7 +103,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
               </svg>
             </div>
-            <h3 className="font-bold text-xs tracking-wide" style={{ color: 'var(--text-primary)' }}>RATES</h3>
+            <h3 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text-primary)' }}>RATES</h3>
           </div>
           <div className="space-y-1">
             {currencies.map((currency) => {
@@ -112,13 +112,13 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
                 <div key={currency.code} className="flex items-center justify-between bg-slate-50 rounded p-1.5 border border-slate-150">
                   <div className="flex items-center gap-1.5">
                     {FlagIcon && <FlagIcon />}
-                    <span className="font-semibold text-xs" style={{ color: 'var(--text-primary)' }}>{currency.code}</span>
+                    <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{currency.code}</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-xs" style={{ color: 'var(--text-primary)' }}>
+                    <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                       R{currency.value.toFixed(2)}
                     </div>
-                    <div className={`text-xs font-semibold flex items-center gap-0.5 justify-end ${
+                    <div className={`text-sm font-semibold flex items-center gap-0.5 justify-end ${
                       currency.change > 0 ? 'text-green-600' : 
                       currency.change < 0 ? 'text-red-600' : 'text-gray-500'
                     }`}>
@@ -152,33 +152,33 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
                 <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
               </svg>
             </div>
-            <h3 className="font-bold text-xs tracking-wide" style={{ color: 'var(--text-primary)' }}>NEXT AUCTION</h3>
+            <h3 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text-primary)' }}>NEXT AUCTION</h3>
           </div>
           
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded p-2 border border-blue-200 text-center">
-              <div className="text-blue-600 text-xs font-medium">Date</div>
-              <div className="font-bold text-xs" style={{ color: 'var(--ovk-primary)' }}>{nextAuction}</div>
+              <div className="text-blue-600 text-sm font-medium">Date</div>
+              <div className="font-bold text-sm" style={{ color: 'var(--ovk-primary)' }}>{nextAuction}</div>
             </div>
             <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded p-2 border border-orange-200 text-center">
-              <div className="text-orange-600 text-xs font-medium">Days</div>
-              <div className="font-bold text-sm" style={{ color: 'var(--accent-warning)' }}>{daysUntil}</div>
+              <div className="text-orange-600 text-sm font-medium">Days</div>
+              <div className="font-bold text-base" style={{ color: 'var(--accent-warning)' }}>{daysUntil}</div>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-1">
             <div className="flex justify-between items-center bg-slate-50 rounded p-1.5">
-              <span className="text-slate-600 text-xs font-medium">Cat.</span>
-              <span className="font-bold text-xs" style={{ color: 'var(--text-primary)' }}>P36</span>
+              <span className="text-slate-600 text-sm font-medium">Cat.</span>
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>P36</span>
             </div>
             <div className="flex justify-between items-center bg-slate-50 rounded p-1.5">
-              <span className="text-slate-600 text-xs font-medium">Payout</span>
-              <span className="font-bold text-xs" style={{ color: 'var(--text-primary)' }}>10 Sept</span>
+              <span className="text-slate-600 text-sm font-medium">Payout</span>
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>10 Sept</span>
             </div>
           </div>
         </div>
 
-        {/* RWS Premium - Compact */}
+        {/* Certified Price Difference - Compact */}
         <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-slate-200 shadow-md">
           <div className="flex items-center gap-1 mb-2">
             <div className="w-4 h-4 rounded bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
@@ -186,25 +186,25 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd"/>
               </svg>
             </div>
-            <h3 className="font-bold text-xs tracking-wide" style={{ color: 'var(--text-primary)' }}>RWS PREMIUM</h3>
+            <h3 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text-primary)' }}>CERTIFIED PRICE DIFFERENCE</h3>
           </div>
           
           <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 mb-2 border border-emerald-200 text-center">
-            <div className="text-emerald-600 text-xs font-medium mb-1">PREMIUM RATE</div>
-            <div className="font-bold text-xl mb-1" style={{ color: 'var(--ovk-green)' }}>
+            <div className="text-emerald-600 text-sm font-medium mb-1">PRICE DIFFERENCE</div>
+            <div className="font-bold text-2xl mb-1" style={{ color: 'var(--ovk-green)' }}>
               +{rwsPremium.toFixed(1)}%
             </div>
-            <div className="text-emerald-600 text-xs font-medium">over conventional</div>
+            <div className="text-emerald-600 text-sm font-medium">over conventional</div>
           </div>
           
           <div className="grid grid-cols-2 gap-1">
             <div className="bg-emerald-50 rounded p-2 text-center border border-emerald-200">
-              <div className="text-emerald-600 text-xs font-medium">RWS</div>
-              <div className="font-bold text-xs" style={{ color: 'var(--ovk-green)' }}>Premium</div>
+              <div className="text-emerald-600 text-sm font-medium">CERTIFIED</div>
+              <div className="font-bold text-sm" style={{ color: 'var(--ovk-green)' }}>Wool</div>
             </div>
             <div className="bg-slate-50 rounded p-2 text-center border border-slate-200">
-              <div className="text-slate-600 text-xs font-medium">Standard</div>
-              <div className="font-bold text-xs" style={{ color: 'var(--text-primary)' }}>Base</div>
+              <div className="text-slate-600 text-sm font-medium">Standard</div>
+              <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Base</div>
             </div>
           </div>
         </div>

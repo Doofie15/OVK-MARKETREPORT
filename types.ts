@@ -275,6 +275,7 @@ export interface CreateSeasonData {
 }
 
 export interface AuctionReport {
+  id?: string; // Unique identifier for the report
   auction: Auction;
   indicators: Indicator[];
   benchmarks: Benchmark[];
@@ -297,7 +298,17 @@ export interface AuctionReport {
   certified_share?: CertifiedShare;
   greasy_stats?: GreasyStats;
   micron_price_comparison?: MicronPriceComparisonData;
+  cape_wools_commentary?: string;
   
   // Company-specific data
   company_data?: CompanyData;
+  
+  // Report status and metadata
+  status?: 'draft' | 'published' | 'archived';
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string;
+  created_by?: string;
+  approved_by?: string;
+  version?: number;
 }

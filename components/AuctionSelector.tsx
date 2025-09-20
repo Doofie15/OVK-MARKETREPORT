@@ -15,13 +15,13 @@ const ModernSelector: React.FC<{
   icon: React.ReactNode;
 }> = ({ label, value, onChange, options, icon }) => (
   <div className="relative">
-    <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>{label}</label>
+    <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>{label}</label>
     <div className="relative">
       <div className="absolute left-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
         {icon}
       </div>
       <select
-        className="w-full pl-8 pr-8 py-2 text-xs border border-gray-200 rounded-md bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-md bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         value={value}
         onChange={onChange}
         style={{ 
@@ -47,7 +47,7 @@ const AuctionSelector: React.FC<AuctionSelectorProps> = ({ weeks, selectedWeekId
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </div>
-        <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
           MARKET SELECTION
         </h2>
       </div>
@@ -57,7 +57,7 @@ const AuctionSelector: React.FC<AuctionSelectorProps> = ({ weeks, selectedWeekId
           label="Commodity"
           value="wool"
           onChange={() => {}} // No-op for now
-          options={[{ value: 'wool', label: 'Wool & Mohair' }]}
+          options={[{ value: 'wool', label: 'Wool' }]}
           icon={
             <svg className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />

@@ -151,6 +151,67 @@ Delete an auction report.
 }
 ```
 
+#### POST /reports/:id/draft
+Save an auction report as draft.
+
+**Parameters:**
+- `id` (string): Report UUID
+
+**Request Body:** Same as POST /reports
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "draft",
+    "updated_at": "2025-01-15T11:00:00Z"
+  }
+}
+```
+
+#### POST /reports/:id/publish
+Publish an auction report.
+
+**Parameters:**
+- `id` (string): Report UUID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "published",
+    "published_at": "2025-01-15T11:00:00Z",
+    "updated_at": "2025-01-15T11:00:00Z"
+  }
+}
+```
+
+#### GET /reports/status/:status
+Retrieve reports by status.
+
+**Parameters:**
+- `status` (string): Report status (draft, published, archived)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "sale_number": "2025-01",
+      "sale_date": "2025-01-15",
+      "status": "published",
+      "created_at": "2025-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
 ### Market Data
 
 #### GET /market-data
@@ -200,6 +261,111 @@ Retrieve market trend analysis.
       "volatility": 3.2
     }
   }
+}
+```
+
+### Seasons
+
+#### GET /seasons
+Retrieve all seasons.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "year": "2025/2026",
+      "start_date": "2025-07-01",
+      "end_date": "2026-06-30",
+      "number_of_auctions": 52,
+      "created_at": "2025-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### GET /seasons/:id/stats
+Retrieve season statistics including auction counts and aggregated data.
+
+**Parameters:**
+- `id` (string): Season UUID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "season_id": "uuid",
+    "year": "2025/2026",
+    "auction_count": 52,
+    "total_bales": 125000,
+    "total_volume": 250000,
+    "total_turnover": 45000000,
+    "created_at": "2025-01-15T10:00:00Z"
+  }
+}
+```
+
+#### POST /seasons
+Create a new season.
+
+**Request Body:**
+```json
+{
+  "year": "2025/2026",
+  "start_date": "2025-07-01",
+  "end_date": "2026-06-30",
+  "number_of_auctions": 52
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "generated-uuid",
+    "year": "2025/2026",
+    "start_date": "2025-07-01",
+    "end_date": "2026-06-30",
+    "number_of_auctions": 52,
+    "created_at": "2025-01-15T10:00:00Z"
+  }
+}
+```
+
+#### PUT /seasons/:id
+Update an existing season.
+
+**Parameters:**
+- `id` (string): Season UUID
+
+**Request Body:** Same as POST /seasons
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "updated_at": "2025-01-15T11:00:00Z"
+  }
+}
+```
+
+#### DELETE /seasons/:id
+Delete a season.
+
+**Parameters:**
+- `id` (string): Season UUID
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Season deleted successfully"
 }
 ```
 
@@ -276,8 +442,15 @@ interface AuctionReport {
   trends: Trend[];
   insights: MarketInsights;
   currencies: CurrencyData;
+  // New status and metadata fields
+  status: 'draft' | 'published' | 'archived';
+  cape_wools_commentary?: string;
   created_at: string;
   updated_at: string;
+  published_at?: string;
+  created_by?: string;
+  approved_by?: string;
+  version?: number;
 }
 ```
 
@@ -319,6 +492,32 @@ interface MicronPrice {
   price: number;
   volume: number;
   certification: string;
+}
+```
+
+### Season
+```typescript
+interface Season {
+  id: string;
+  year: string;
+  start_date: string;
+  end_date: string;
+  number_of_auctions: number;
+  created_at: string;
+  updated_at?: string;
+}
+```
+
+### SeasonStats
+```typescript
+interface SeasonStats {
+  season_id: string;
+  year: string;
+  auction_count: number;
+  total_bales: number;
+  total_volume: number;
+  total_turnover: number;
+  created_at: string;
 }
 ```
 
@@ -419,11 +618,23 @@ The API includes built-in monitoring:
 
 ## Recent Updates
 
+### Enhanced Report Management
+- **Status Management**: New endpoints for draft/publish workflow with status tracking
+- **Season Management**: Complete CRUD operations for season data with statistics
+- **Enhanced Data Models**: Updated AuctionReport interface with status and metadata fields
+- **Pagination Support**: Improved data retrieval with pagination for large datasets
+- **Real-time Statistics**: Dynamic calculation of season and auction statistics
+
 ### Enhanced Form Interface
 - **95% Width Utilization**: The auction data capture form now uses 95% of the available page width
 - **Improved API Integration**: Enhanced form layout provides better integration with API endpoints
 - **Better Data Validation**: Improved form validation with wider layout for better error handling
 - **Mobile Responsiveness**: API maintains full mobile compatibility with enhanced form interface
+
+### Input Formatting
+- **Currency Formatting**: Support for thousands separators in numeric inputs
+- **Catalogue Number Formatting**: 2-digit formatting with natural typing support
+- **Real-time Validation**: Enhanced validation with immediate feedback
 
 ## Support
 

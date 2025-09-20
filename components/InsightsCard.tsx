@@ -15,10 +15,10 @@ const InsightsCard: React.FC<InsightsCardProps> = ({ insights }) => {
           </svg>
         </div>
         <div>
-          <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
             MARKET INSIGHTS
           </h2>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             AI-powered intelligence
           </p>
         </div>
@@ -27,7 +27,7 @@ const InsightsCard: React.FC<InsightsCardProps> = ({ insights }) => {
       <div className="relative">
         <div className="absolute left-0 top-0 w-0.5 h-full rounded-full bg-gradient-to-b from-blue-400 to-indigo-600"></div>
         <div className="pl-3">
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {insights}
           </p>
         </div>
@@ -36,7 +36,7 @@ const InsightsCard: React.FC<InsightsCardProps> = ({ insights }) => {
       <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--border-primary)' }}>
         <div className="flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Updated {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>

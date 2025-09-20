@@ -23,6 +23,9 @@ export interface Sale {
   total_bales_sold?: number; // e.g. 6,252
   clearance_pct?: number; // e.g. 95.06
   
+  total_volume_kg?: number; // e.g. 1,500,000
+  total_turnover?: number; // e.g. 44,000,000
+  
   highest_price_c_per_kg_clean?: number; // e.g. 246.36
   highest_price_micron?: number; // e.g. 16.4
   
@@ -30,6 +33,8 @@ export interface Sale {
   next_sale_bales?: number; // e.g. 5,165
   
   is_draft?: boolean; // Whether this is a draft or final report
+  status?: 'draft' | 'published' | 'archived'; // Report status
+  is_empty?: boolean; // For pagination empty rows
   
   created_at: string;
 }

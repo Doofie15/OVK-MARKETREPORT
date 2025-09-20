@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { SeasonService } from '../../data/service';
+import { SeasonService, AuctionDataService } from '../../data/service';
 import type { Season } from '../../types';
+import type { Sale } from '../../data/models';
 
 interface SeasonListProps {
   onCreateSeason: () => void;
@@ -10,6 +11,7 @@ interface SeasonListProps {
 const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason }) => {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [filteredSeasons, setFilteredSeasons] = useState<Season[]>([]);
+  const [auctions, setAuctions] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,8 +43,12 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
     try {
       setLoading(true);
       setError(null);
-      const seasonsData = await SeasonService.getAllSeasons();
+      const [seasonsData, auctionsData] = await Promise.all([
+        SeasonService.getAllSeasons(),
+        AuctionDataService.getAllAuctionReports()
+      ]);
       setSeasons(seasonsData);
+      setAuctions(auctionsData);
     } catch (err) {
       setError('Failed to load seasons');
       console.error('Error loading seasons:', err);
@@ -158,6 +164,18 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Calculate statistics for a season
+  const getSeasonStats = (season: Season) => {
+    const seasonAuctions = auctions.filter(auction => auction.season === season.year);
+    
+    return {
+      auctionCount: seasonAuctions.length,
+      totalBales: seasonAuctions.reduce((sum, auction) => sum + (auction.total_bales_sold || 0), 0),
+      totalVolume: seasonAuctions.reduce((sum, auction) => sum + (auction.total_volume_kg || 0), 0),
+      totalTurnover: seasonAuctions.reduce((sum, auction) => sum + (auction.total_turnover || 0), 0)
+    };
   };
 
   if (loading) {
@@ -323,60 +341,87 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
                     Number of Auctions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    # Bales
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Volume
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Turnover
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSeasons.map((season) => (
-                  <tr key={season.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedSeasons.includes(season.id)}
-                        onChange={() => handleSelectSeason(season.id)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{season.year}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(season.start_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(season.end_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {season.number_of_auctions}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => onEditSeason(season)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                          title="View/Edit Season"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSeason(season.id, season.year)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          title="Delete Season"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredSeasons.map((season) => {
+                  const stats = getSeasonStats(season);
+                  return (
+                    <tr key={season.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedSeasons.includes(season.id)}
+                          onChange={() => handleSelectSeason(season.id)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{season.year}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(season.start_date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(season.end_date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {stats.auctionCount}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {stats.totalBales.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          {stats.totalVolume.toLocaleString()} kg
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          ZAR {(stats.totalTurnover / 1000000).toFixed(1)}M
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => onEditSeason(season)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            title="View/Edit Season"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSeason(season.id, season.year)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                            title="Delete Season"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

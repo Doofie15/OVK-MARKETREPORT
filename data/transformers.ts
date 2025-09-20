@@ -25,11 +25,14 @@ export const transformFormToDatabase = (formData: Omit<AuctionReport, 'top_sales
     catalogue_no: parseInt(formData.auction.catalogue_name.replace(/\D/g, '')) || 1,
     sale_date: formData.auction.auction_date,
     location: 'Port Elizabeth', // Default location
-    total_bales_offered: formData.indicators.find(i => i.type === 'total_lots')?.value || 0,
-    total_bales_sold: formData.indicators.find(i => i.type === 'total_lots')?.value || 0,
-    clearance_pct: 100, // Default to 100% if not specified
+    total_bales_offered: formData.indicators.find(i => i.type === 'total_lots')?.value || formData.greasy_stats?.bales || 0,
+    total_bales_sold: formData.indicators.find(i => i.type === 'total_lots')?.value || formData.greasy_stats?.bales || 0,
+    clearance_pct: formData.supply_stats?.clearance_rate_pct || 100,
+    total_volume_kg: formData.indicators.find(i => i.type === 'total_volume')?.value || formData.greasy_stats?.mass_kg || 0,
+    total_turnover: formData.indicators.find(i => i.type === 'total_value')?.value || formData.greasy_stats?.turnover_rand || 0,
     highest_price_c_per_kg_clean: Math.max(...formData.micron_prices.map(p => p.price_clean_zar_per_kg)),
     highest_price_micron: 17.0, // Default, could be calculated from micron prices
+    status: formData.status || 'draft', // Default to draft if not specified
     created_at: new Date().toISOString()
   };
 

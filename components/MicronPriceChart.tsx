@@ -77,14 +77,14 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
         text: 'Micron Grade (µm)',
         style: {
           color: '#475569',
-          fontSize: '12px',
+          fontSize: '14px',
           fontWeight: 500
         }
       },
       labels: {
         style: {
           colors: '#64748b',
-          fontSize: '11px',
+          fontSize: '13px',
           fontWeight: 400
         }
       },
@@ -96,14 +96,14 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
         text: 'Price (ZAR/kg clean)',
         style: {
           color: '#475569',
-          fontSize: '12px',
+          fontSize: '14px',
           fontWeight: 500
         }
       },
       labels: {
         style: {
           colors: '#64748b',
-          fontSize: '11px',
+          fontSize: '13px',
           fontWeight: 400
         },
         formatter: (value) => `R${value.toFixed(0)}`
@@ -182,7 +182,7 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
     legend: {
       position: 'top',
       horizontalAlign: 'center',
-      fontSize: '12px',
+      fontSize: '14px',
       fontWeight: 500,
       labels: { colors: '#475569' },
       markers: { size: 4 }
@@ -228,13 +228,13 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
               {catalogueName || 'Global Price Index'}
             </h2>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               Price performance across micron grades
             </p>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               This auction vs same auction last year comparison
             </p>
           </div>

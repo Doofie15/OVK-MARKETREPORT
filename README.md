@@ -8,16 +8,24 @@ A comprehensive React-based web application for tracking and analyzing wool mark
 
 ## 🎯 Latest Updates
 
-- ✅ **Enhanced Form Layout**: Auction data capture form now uses 95% of page width for improved usability and better space utilization
-- ✅ **Comprehensive Changelog**: Full project history and updates documented in CHANGELOG.md
-- ✅ **Updated Documentation**: All project documentation reflects latest enhancements and improvements
+- ✅ **URL-Based Auction Routing**: Direct access to specific auctions via season+catalogue URLs (e.g., /202501, /202552)
+- ✅ **Shareable Auction Links**: Bookmark and share specific auction reports with clean, descriptive URLs
+- ✅ **Browser Navigation**: Full browser back/forward button support for auction navigation
+- ✅ **SEO-Friendly URLs**: Each auction has its own unique URL for better search engine indexing
+- ✅ **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
+- ✅ **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
+- ✅ **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
+- ✅ **Season Management Analytics**: Real-time calculation of auction counts, bales, volume, and turnover per season
+- ✅ **Input Formatting Improvements**: Currency formatting with thousands separators and 2-digit catalogue number formatting
+- ✅ **AI-Powered Market Insights**: Google Gemini AI integration for intelligent market commentary generation
+- ✅ **Smart Content Enhancement**: AI analyzes auction data and Cape Wools commentary to create professional insights
+- ✅ **80-Word Card Optimization**: AI-generated content optimized for small card display format with automatic word limiting
+- ✅ **OVK Brand Enhancement**: AI always highlights OVK's positive market position and contributions
+- ✅ **Fallback Enhancement**: Robust local enhancement when AI API is not available
 - ✅ **Mobile-First Design**: Complete mobile component library with responsive layouts and touch-optimized interfaces
 - ✅ **Enhanced Mobile Experience**: Dedicated mobile components for all major features including charts, tables, and data visualization
 - ✅ **Responsive Component System**: Smart layout switching between desktop and mobile views with automatic breakpoint detection
 - ✅ **Mobile-Optimized Charts**: Touch-friendly chart components with mobile-specific interactions and sizing
-- ✅ **Consistent Card Heights**: BUYERS DIRECTORY and BROKERS cards now have perfectly aligned heights for a professional appearance
-- ✅ **Streamlined Buyer Data**: Removed YTD bales column from TOP BUYERS & MARKET SHARE table for cleaner focus on current auction performance
-- ✅ **Enhanced Layout**: Improved grid system with equal height cards using CSS Grid and Flexbox
 - ✅ **Professional Styling**: Refined visual design with consistent spacing and alignment
 
 ## 📋 Project Overview
@@ -35,9 +43,12 @@ This application serves as a comprehensive market intelligence platform for the 
 
 ### 📊 Market Reports Dashboard
 - **Interactive Auction Selection**: Choose between different auction weeks to view detailed reports
+- **URL-Based Navigation**: Direct access to specific auctions via season+catalogue URLs (e.g., /202501, /202552)
+- **Shareable Links**: Bookmark and share specific auction reports with clean, descriptive URLs
+- **Browser Navigation**: Full browser back/forward button support for seamless navigation
 - **Key Performance Indicators**: Track total lots, volume, average prices, and total value with YTD comparisons
 - **Market Benchmarks**: Monitor certified, all-Merino, and AWEX pricing benchmarks
-- **Enhanced Market Overview**: Professional information board displaying live exchange rates, next auction countdown, and RWS premium data
+- **Enhanced Market Overview**: Professional information board displaying live exchange rates, next auction countdown, and certified price difference data
 - **Micron Price Analysis**: Visualize price trends across different wool micron categories (Fine, Medium, Strong)
 
 ### 📈 Analytics & Insights
@@ -48,8 +59,15 @@ This application serves as a comprehensive market intelligence platform for the 
 - **Provincial Analysis**: Geographic breakdown of average prices and top producers by South African provinces
 
 ### 🛠️ Administrative Tools
+- **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
+- **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
+- **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
+- **Season Management Analytics**: Real-time calculation of auction counts, bales, volume, and turnover per season
 - **Cape Wools Data Capture**: Comprehensive form system for capturing all Cape Wools weekly report data
 - **Tabbed Data Entry**: Organized sections for auction details, market indices, currency exchange, supply statistics, and micron price comparisons
+- **AI-Powered Market Insights**: Google Gemini AI integration for intelligent market commentary generation
+- **Smart Content Enhancement**: AI analyzes auction data and Cape Wools commentary to create professional insights
+- **80-Word Card Optimization**: Content automatically optimized for small card display format
 - **Report Management**: Create and edit auction reports with comprehensive data entry forms
 - **Data Validation**: Built-in validation for market data consistency
 - **Historical Tracking**: Maintain complete auction history with automatic YTD calculations
@@ -99,6 +117,7 @@ This application serves as a comprehensive market intelligence platform for the 
 │   ├── admin/            # Administrative interface components
 │   │   ├── AdminForm.tsx # Comprehensive data entry form
 │   │   ├── AuctionDataCaptureForm.tsx # Cape Wools data capture form with tabbed interface
+│   │   ├── AIMarketInsightsComposer.tsx # AI-powered market insights composer
 │   │   ├── AdminDashboard.tsx # Main admin dashboard
 │   │   ├── AdminLayout.tsx # Admin layout wrapper
 │   │   ├── AdminSidebar.tsx # Navigation sidebar
@@ -135,11 +154,40 @@ This application serves as a comprehensive market intelligence platform for the 
 │   ├── Header.tsx           # Application header
 │   ├── AdminPanel.tsx       # Admin panel wrapper
 │   └── AdminFormSection.tsx # Admin form section component
+├── services/              # External service integrations
+│   └── gemini-ai.ts      # Google Gemini AI service integration
 └── public/
     └── assets/
         └── logos/
             └── ovk-logo-embedded.svg # OVK company logo
 ```
+
+## 🔗 URL Routing & Navigation
+
+The platform features an advanced URL routing system that allows direct access to specific auction reports:
+
+### URL Structure
+- **Home Page**: `/` - Shows the latest auction (defaults to most recent)
+- **Specific Auctions**: `/{year}{catalogue}` - Direct access to specific auctions
+  - `/202501` - 2025 season, CAT01 auction
+  - `/202552` - 2025 season, CAT52 auction
+  - `/202401` - 2024 season, CAT01 auction
+
+### URL Format
+- **Pattern**: 6-digit number where first 4 digits are the year, last 2 digits are the catalogue number
+- **Season Logic**: Year 2025 corresponds to season "2025/26"
+- **Validation**: Invalid URLs automatically redirect to the home page
+
+### Key Benefits
+- **Shareable Links**: Bookmark and share specific auction reports
+- **SEO Friendly**: Each auction has its own unique URL for better search engine indexing
+- **Browser Navigation**: Full browser back/forward button support
+- **Direct Access**: Users can directly access any auction by typing the URL
+
+### Example URLs
+- `www.ovkfiber.co.za/` → Latest auction (2025 season, CAT01)
+- `www.ovkfiber.co.za/202501` → 2025 season, CAT01 auction report
+- `www.ovkfiber.co.za/202552` → 2025 season, CAT52 auction report
 
 ## 🚀 Getting Started
 
@@ -163,7 +211,15 @@ This application serves as a comprehensive market intelligence platform for the 
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
    ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
+   # Google Gemini AI Configuration
+   VITE_GEMINI_API_KEY=your_gemini_api_key_here
+   
+   # Application Configuration
+   VITE_APP_NAME=OVK Wool Market Report
+   VITE_APP_VERSION=1.0.0
+   
+   # API Configuration (for backend integration)
+   VITE_API_URL=http://localhost:3001
    ```
 
 4. **Start the backend server** (in a separate terminal)
@@ -239,6 +295,31 @@ The application manages comprehensive auction data with a sophisticated data arc
 - Track buyer preferences and market demand
 - Analyze pricing trends for strategic planning
 - Generate client performance reports
+
+## 🤖 AI-Powered Market Insights
+
+The platform features an advanced AI-powered market insights composer that leverages Google Gemini AI to generate professional market commentary:
+
+### AI Enhancement Features
+- **Intelligent Analysis**: AI analyzes current week's auction data against historical trends
+- **Cape Wools Integration**: Incorporates official Cape Wools market commentary into analysis
+- **Professional Content**: Generates industry-appropriate market insights and commentary
+- **80-Word Optimization**: Content automatically optimized for small card display format
+- **Real-time Enhancement**: One-click content enhancement with immediate results
+- **OVK Brand Enhancement**: Always highlights OVK's positive market position and contributions
+- **Fallback System**: Robust local enhancement when AI API is unavailable
+
+### How It Works
+1. **Data Input**: Enter auction data, buyer information, and Cape Wools commentary
+2. **AI Analysis**: Gemini AI processes data and generates professional insights
+3. **Content Optimization**: Automatic formatting and word limit enforcement (80 words)
+4. **Visual Feedback**: Real-time word count with color-coded limits
+5. **Professional Output**: Ready-to-use market commentary for reports
+
+### Configuration
+- **API Key**: Set `VITE_GEMINI_API_KEY` in your `.env.local` file
+- **Fallback Mode**: Works without API key using local enhancement algorithms
+- **Word Limits**: Automatic enforcement of 80-word limit for card display
 
 ## 📝 Cape Wools Data Capture
 
@@ -358,7 +439,17 @@ This project is proprietary software developed for OVK. All rights reserved.
 ### Completed Features
 - ✅ **Core Application Structure**: React app with TypeScript and Vite
 - ✅ **Market Dashboard**: Interactive auction selection and data visualization
+- ✅ **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
+- ✅ **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
+- ✅ **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
+- ✅ **Season Management Analytics**: Real-time calculation of auction counts, bales, volume, and turnover per season
 - ✅ **Admin Interface**: Complete data capture system for Cape Wools reports
+- ✅ **AI-Powered Market Insights**: Google Gemini AI integration for intelligent commentary generation
+- ✅ **Smart Content Enhancement**: AI analyzes auction data and Cape Wools commentary
+- ✅ **80-Word Card Optimization**: Content automatically optimized for small card display
+- ✅ **OVK Brand Enhancement**: AI always highlights OVK's positive market position and contributions
+- ✅ **Enhanced Input Formatting**: Currency formatting with thousands separators
+- ✅ **Improved Form Controls**: Catalogue number input with 2-digit formatting and natural typing
 - ✅ **Data Management**: Local storage with structured data models
 - ✅ **Mobile-First Design**: Complete mobile component library with responsive layouts
 - ✅ **Mobile Components**: Dedicated mobile components for all major features

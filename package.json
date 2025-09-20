@@ -3,7 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "description": "A comprehensive React-based web application for tracking and analyzing wool market data from weekly auctions in South Africa",
-  "keywords": ["wool", "market", "report", "south-africa", "ovk", "auction", "analytics", "react", "typescript"],
+  "keywords": [
+    "wool",
+    "market",
+    "report",
+    "south-africa",
+    "ovk",
+    "auction",
+    "analytics",
+    "react",
+    "typescript"
+  ],
   "author": "OVK Development Team",
   "license": "PROPRIETARY",
   "repository": {
@@ -25,12 +35,15 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
+    "@types/jspdf": "^1.3.3",
+    "@types/react-router-dom": "^5.3.3",
     "apexcharts": "^5.3.4",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.2",
+    "jspdf": "^3.0.3",
     "react": "^19.1.1",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.1",
     "recharts": "^3.1.2"
   },
   "devDependencies": {

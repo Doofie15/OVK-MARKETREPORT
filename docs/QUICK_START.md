@@ -36,11 +36,20 @@ npm run dev
 - **Frontend**: Open http://localhost:5173 in your browser
 - **Backend API**: Available at http://localhost:3001
 
+### Step 4: Test URL Routing
+Try these URLs to test the new routing system:
+- **Home**: http://localhost:5173/ (latest auction)
+- **CAT01**: http://localhost:5173/202501 (2025 season, CAT01)
+- **CAT52**: http://localhost:5173/202552 (2025 season, CAT52)
+
 ## 🎯 Key Features to Explore
 
 ### 1. Market Dashboard
 - View current auction data and KPIs
 - Navigate between different auction weeks
+- **URL Navigation**: Direct access to specific auctions via URLs (e.g., /202501, /202552)
+- **Shareable Links**: Bookmark and share specific auction reports
+- **Browser Navigation**: Use browser back/forward buttons to navigate between auctions
 - Analyze market trends and insights
 - **Mobile**: Touch-optimized interface with swipe navigation
 
@@ -114,11 +123,16 @@ The OVK Wool Market Report Platform is now running locally. Start exploring the 
 
 **Next Steps:**
 1. Explore the market dashboard
-2. Try the administrative functions with the enhanced 95% width form
-3. Review the sample data
-4. Check out the analytics features
-5. Test the improved form layout for data entry
+2. **Test URL Routing**: Try navigating to different auctions using URLs like `/202501` and `/202552`
+3. **Bookmark Auctions**: Bookmark specific auction reports for quick access
+4. Try the administrative functions with the enhanced 95% width form
+5. Review the sample data
+6. Check out the analytics features
+7. Test the improved form layout for data entry
 
-**Recent Enhancement**: The auction data capture form now uses 95% of the page width for improved usability and better data entry experience!
+**Recent Enhancements**: 
+- **URL-Based Navigation**: Direct access to specific auctions via season+catalogue URLs
+- **Shareable Links**: Bookmark and share specific auction reports
+- **Enhanced Form Layout**: The auction data capture form now uses 95% of the page width for improved usability
 
 Happy exploring! 🐑📊

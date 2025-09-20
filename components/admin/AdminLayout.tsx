@@ -40,8 +40,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-2 sm:px-6 py-4">
+          <div className="w-[95%] max-w-none mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900 capitalize">
                 {activeSection.replace('-', ' ')}
@@ -93,7 +93,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="p-6">
+          <div className="w-[95%] max-w-none mx-auto p-2 sm:p-6">
             {children}
           </div>
         </main>

@@ -15,6 +15,7 @@ import type {
   Season
 } from '../../types';
 import { AuctionDataService, SeasonService } from '../../data';
+import AIMarketInsightsComposer from './AIMarketInsightsComposer';
 
 // Modern Date Picker Component
 interface ModernDatePickerProps {
@@ -443,6 +444,29 @@ interface AuctionDataCaptureFormProps {
   onCancel: () => void;
   editingReport?: AuctionReport;
 }
+
+// Utility functions for number formatting (shared across all tabs)
+const formatNumberWithSpaces = (num: number | string): string => {
+  if (!num || num === '') return '';
+  const numStr = num.toString().replace(/\D/g, ''); // Remove all non-digits
+  if (!numStr) return '';
+  return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
+const formatNumberAsUserTypes = (inputValue: string): string => {
+  // Remove all non-digits
+  const cleanValue = inputValue.replace(/\D/g, '');
+  if (!cleanValue) return '';
+  
+  // Add spaces every 3 digits from the right
+  return cleanValue.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
+const parseFormattedNumber = (formattedStr: string): number => {
+  if (!formattedStr) return 0;
+  const cleanStr = formattedStr.replace(/\s/g, ''); // Remove spaces
+  return parseFloat(cleanStr) || 0;
+};
 
 const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({ 
   onSave, 
@@ -1193,24 +1217,47 @@ const AuctionDetailsTab: React.FC<{
             </label>
             <input
               type="text"
-              value={formData.auction.catalogue_name?.split(/(\d+)/)[1] || ''}
+              value={(() => {
+                // Extract just the number part for display
+                const catalogueName = formData.auction.catalogue_name || '';
+                const numberMatch = catalogueName.match(/(\d+)$/);
+                return numberMatch ? numberMatch[1] : '';
+              })()}
               onChange={(e) => {
-                const currentPrefix = formData.auction.catalogue_name?.split(/(\d+)/)[0] || '';
+                const currentPrefix = formData.auction.catalogue_name?.replace(/\d+$/, '') || '';
                 let inputValue = e.target.value;
                 
                 // Only allow digits
                 inputValue = inputValue.replace(/\D/g, '');
                 
-                // Format as two digits with leading zero if needed
-                if (inputValue && inputValue.length <= 2) {
-                  const formattedNumber = inputValue.padStart(2, '0');
-                  const newCatalogueName = currentPrefix + formattedNumber;
+                // Allow empty input (for backspace)
+                if (inputValue === '') {
+                  const newCatalogueName = currentPrefix;
                   updateFormData({
                     auction: { ...formData.auction, catalogue_name: newCatalogueName }
                   });
-                } else if (inputValue === '') {
-                  // Allow clearing the field
-                  const newCatalogueName = currentPrefix;
+                  return;
+                }
+                
+                // Limit to 2 digits maximum
+                if (inputValue.length <= 2) {
+                  // Don't auto-format while typing - let user type naturally
+                  // Format will be applied on blur or when saving
+                  const newCatalogueName = currentPrefix + inputValue;
+                  updateFormData({
+                    auction: { ...formData.auction, catalogue_name: newCatalogueName }
+                  });
+                }
+              }}
+              onBlur={(e) => {
+                // Apply 2-digit formatting when user leaves the field
+                const currentPrefix = formData.auction.catalogue_name?.replace(/\d+$/, '') || '';
+                const currentNumber = e.target.value;
+                
+                if (currentNumber && currentNumber.length > 0) {
+                  // Format as two digits with leading zero
+                  const formattedNumber = currentNumber.padStart(2, '0');
+                  const newCatalogueName = currentPrefix + formattedNumber;
                   updateFormData({
                     auction: { ...formData.auction, catalogue_name: newCatalogueName }
                   });
@@ -2107,7 +2154,7 @@ const MarketSummaryTab: React.FC<{
 
   const handleGreasyStatsChange = (field: keyof GreasyStats, value: string) => {
     const greasy_stats = { ...formData.greasy_stats };
-    (greasy_stats as any)[field] = parseFloat(value) || 0;
+    (greasy_stats as any)[field] = parseFormattedNumber(value);
     updateFormData({ greasy_stats });
   };
 
@@ -2116,6 +2163,21 @@ const MarketSummaryTab: React.FC<{
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Market Summary</h2>
         <p className="text-gray-600 text-sm">Enter the key market summary data from the Cape Wools report - bales offered, clearance rate, and highest price achieved.</p>
+      </div>
+
+      {/* Cape Wools Market Commentary */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <label className="block text-sm font-medium text-blue-900 mb-2">
+          Cape Wools Market Commentary
+        </label>
+        <p className="text-xs text-blue-700 mb-3">Copy and paste the market commentary paragraph from the Cape Wools report (the descriptive text at the top of their report).</p>
+        <textarea
+          value={formData.cape_wools_commentary || ''}
+          onChange={(e) => updateFormData({ cape_wools_commentary: e.target.value })}
+          className="w-full p-3 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          rows={4}
+          placeholder="Paste the Cape Wools market commentary here... e.g., 'The 2025/2026 wool selling season continued today with 6 507 bales on offer on the 5th sale of the season. The offering mainly consisted of fine micron wools, with 65% testing 20 micron and finer...'"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2405,11 +2467,19 @@ const MarketSummaryTab: React.FC<{
                   <PreviousValueTag previousValue={previousData?.greasy_stats?.turnover_rand} formatType="currency" />
                 </label>
                 <input
-                  type="number"
-                  value={formData.greasy_stats?.turnover_rand || ''}
-                  onChange={(e) => handleGreasyStatsChange('turnover_rand', e.target.value)}
+                  type="text"
+                  value={formatNumberWithSpaces(formData.greasy_stats?.turnover_rand || '')}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    const formattedValue = formatNumberAsUserTypes(inputValue);
+                    const cleanValue = formattedValue.replace(/\s/g, '');
+                    
+                    if (cleanValue.length <= 12) { // Reasonable limit for currency
+                      handleGreasyStatsChange('turnover_rand', formattedValue);
+                    }
+                  }}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 120000000 (R 120 000 000.00)"
+                  placeholder="e.g., 125 000 000"
                 />
                 <PercentageChangeTag 
                   currentValue={formData.greasy_stats?.turnover_rand}
@@ -2425,11 +2495,19 @@ const MarketSummaryTab: React.FC<{
                     <PreviousValueTag previousValue={previousData?.greasy_stats?.bales} formatType="whole" />
                   </label>
                   <input
-                    type="number"
-                    value={formData.greasy_stats?.bales || ''}
-                    onChange={(e) => handleGreasyStatsChange('bales', e.target.value)}
+                    type="text"
+                    value={formatNumberWithSpaces(formData.greasy_stats?.bales || '')}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      const formattedValue = formatNumberAsUserTypes(inputValue);
+                      const cleanValue = formattedValue.replace(/\s/g, '');
+                      
+                      if (cleanValue.length <= 8) { // Reasonable limit for bales count
+                        handleGreasyStatsChange('bales', formattedValue);
+                      }
+                    }}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., 6084"
+                    placeholder="e.g., 6 084"
                   />
                   <PercentageChangeTag 
                     currentValue={formData.greasy_stats?.bales}
@@ -2444,11 +2522,19 @@ const MarketSummaryTab: React.FC<{
                     <PreviousValueTag previousValue={previousData?.greasy_stats?.mass_kg} formatType="mass" />
                   </label>
                   <input
-                    type="number"
-                    value={formData.greasy_stats?.mass_kg || ''}
-                    onChange={(e) => handleGreasyStatsChange('mass_kg', e.target.value)}
+                    type="text"
+                    value={formatNumberWithSpaces(formData.greasy_stats?.mass_kg || '')}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      const formattedValue = formatNumberAsUserTypes(inputValue);
+                      const cleanValue = formattedValue.replace(/\s/g, '');
+                      
+                      if (cleanValue.length <= 10) { // Reasonable limit for mass in kg
+                        handleGreasyStatsChange('mass_kg', formattedValue);
+                      }
+                    }}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., 1500000 (1 500 000 kg)"
+                    placeholder="e.g., 1 500 000"
                   />
                   <PercentageChangeTag 
                     currentValue={formData.greasy_stats?.mass_kg}
@@ -2474,7 +2560,8 @@ const MarketStatsTab: React.FC<{
     let indicators = [...formData.indicators];
     let yearlyPrices = [...(formData.yearly_average_prices || [])];
 
-    const numericValue = parseFloat(value) || 0;
+    // Parse formatted number (remove spaces for numeric fields)
+    const numericValue = field === 'total_lots' ? parseFormattedNumber(value) : (parseFloat(value) || 0);
 
     if (field === 'total_lots') {
       let item = indicators.find(i => i.type === 'total_lots');
@@ -2522,13 +2609,21 @@ const MarketStatsTab: React.FC<{
               Total Lots *
             </label>
             <input
-              type="number"
-              value={getStat('total_lots')}
-              onChange={e => handleStatsChange('total_lots', e.target.value)}
+              type="text"
+              value={formatNumberWithSpaces(getStat('total_lots'))}
+              onChange={e => {
+                const inputValue = e.target.value;
+                const formattedValue = formatNumberAsUserTypes(inputValue);
+                const cleanValue = formattedValue.replace(/\s/g, '');
+                
+                if (cleanValue.length <= 8) { // Reasonable limit for total lots
+                  handleStatsChange('total_lots', formattedValue);
+                }
+              }}
               className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.total_lots ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="e.g., 10250"
+              placeholder="e.g., 10 250"
             />
             {errors.total_lots && (
               <p className="mt-1 text-sm text-red-600">{errors.total_lots}</p>
@@ -4019,7 +4114,7 @@ const CompanyDataTab: React.FC<{
           </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">+{rwsPremium.toFixed(1)}%</div>
-                  <div className="text-sm text-gray-600">Certified Wool Premium</div>
+                  <div className="text-sm text-gray-600">Certified Price Difference</div>
                   <div className="text-xs text-gray-500">vs All - Merino Wool</div>
         </div>
       </div>
@@ -4141,21 +4236,14 @@ const MarketInsightsTab: React.FC<{
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Market Insights / Comments</h2>
-        <p className="text-gray-600 text-sm">Provide market commentary, insights, and analysis for this auction period.</p>
+        <p className="text-gray-600 text-sm">Use AI-powered tools to create comprehensive market commentary, insights, and analysis for this auction period.</p>
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Market Insights / Comments
-        </label>
-        <textarea 
-          value={formData.insights} 
-          onChange={e => updateFormData({ insights: e.target.value })} 
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-          rows={8}
-          placeholder="Enter market commentary, trends, and insights for this auction period..."
-        />
-      </div>
+      <AIMarketInsightsComposer 
+        value={formData.insights || ''} 
+        onChange={(value) => updateFormData({ insights: value })}
+        auctionData={formData}
+      />
     </div>
   );
 };
@@ -4168,45 +4256,327 @@ const ReviewSaveTab: React.FC<{
   isSaving: boolean;
   errors: Record<string, string>;
 }> = ({ formData, onSave, onSaveDraft, onCancel, isSaving, errors }) => {
-  // Calculate completion percentage
+  const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
+  const [showDraftConfirmation, setShowDraftConfirmation] = useState(false);
+
+  // Enhanced completion calculation with detailed field validation
   const calculateCompletion = () => {
-    const sections = [
-      formData.auction.auction_date ? 1 : 0,
-      formData.auction.catalogue_name ? 1 : 0,
-      formData.indicators.length > 0 ? 1 : 0,
-      formData.buyers.length > 0 ? 1 : 0,
-      formData.brokers.length > 0 ? 1 : 0,
-      formData.provincial_producers.length > 0 ? 1 : 0,
-      formData.micron_prices.filter(p => p.price_clean_zar_per_kg > 0).length > 0 ? 1 : 0,
-      formData.market_indices ? 1 : 0,
-      formData.currency_fx ? 1 : 0,
-      formData.supply_stats ? 1 : 0,
-      formData.insights.length > 0 ? 1 : 0
-    ];
-    return Math.round((sections.reduce((a, b) => a + b, 0) / sections.length) * 100);
+    // Helper function to check if an indicator exists and has a value
+    const hasIndicatorValue = (type: string) => {
+      const indicator = formData.indicators.find(i => i.type === type);
+      return indicator && indicator.value !== undefined && indicator.value !== null && indicator.value > 0;
+    };
+
+    // Helper function to check if greasy stats have values
+    const hasGreasyStatsValue = (field: keyof typeof formData.greasy_stats) => {
+      const value = formData.greasy_stats?.[field];
+      return value !== undefined && value !== null && value > 0;
+    };
+
+    const fieldChecks = {
+      // Essential Auction Details (30%) - Required for public report
+      auctionDate: formData.auction.auction_date ? 1 : 0,
+      catalogueName: formData.auction.catalogue_name ? 1 : 0,
+      
+      // Core Market Data (40%) - Essential for public report
+      totalLots: hasIndicatorValue('total_lots') || hasGreasyStatsValue('bales') ? 1 : 0,
+      totalVolume: hasIndicatorValue('total_volume') || hasGreasyStatsValue('mass_kg') ? 1 : 0,
+      totalValue: hasIndicatorValue('total_value') || hasGreasyStatsValue('turnover_rand') ? 1 : 0,
+      clearanceRate: formData.supply_stats?.clearance_rate_pct ? 1 : 0,
+      
+      // Market Indices (20%) - Essential for public report
+      merinoIndicator: formData.market_indices?.merino_indicator_sa_cents_clean ? 1 : 0,
+      certifiedIndicator: formData.market_indices?.certified_indicator_sa_cents_clean ? 1 : 0,
+      
+      // Currency Exchange (10%) - Essential for public report
+      zarUsd: formData.currency_fx?.ZAR_USD ? 1 : 0,
+    };
+    
+    const totalFields = Object.keys(fieldChecks).length;
+    const completedFields = Object.values(fieldChecks).reduce((a, b) => a + b, 0);
+    
+    return {
+      percentage: Math.round((completedFields / totalFields) * 100),
+      details: fieldChecks
+    };
   };
 
-  const completionPercentage = calculateCompletion();
+  const completionData = calculateCompletion();
+
+  // Get missing required fields
+  const getMissingFields = () => {
+    const missing = [];
+    const details = completionData.details;
+    
+    // Helper function to check if an indicator exists and has a value
+    const hasIndicatorValue = (type: string) => {
+      const indicator = formData.indicators.find(i => i.type === type);
+      return indicator && indicator.value !== undefined && indicator.value !== null && indicator.value > 0;
+    };
+
+    // Helper function to check if greasy stats have values
+    const hasGreasyStatsValue = (field: keyof typeof formData.greasy_stats) => {
+      const value = formData.greasy_stats?.[field];
+      return value !== undefined && value !== null && value > 0;
+    };
+    
+    if (!details.auctionDate) missing.push('Auction Date');
+    if (!details.catalogueName) missing.push('Catalogue Name');
+    if (!hasIndicatorValue('total_lots') && !hasGreasyStatsValue('bales')) missing.push('Total Lots (Bales)');
+    if (!hasIndicatorValue('total_volume') && !hasGreasyStatsValue('mass_kg')) missing.push('Total Volume (Mass)');
+    if (!hasIndicatorValue('total_value') && !hasGreasyStatsValue('turnover_rand')) missing.push('Total Value (Turnover)');
+    if (!details.clearanceRate) missing.push('Clearance Rate');
+    if (!details.merinoIndicator) missing.push('Merino Indicator');
+    if (!details.certifiedIndicator) missing.push('Certified Indicator');
+    if (!details.zarUsd) missing.push('ZAR/USD Exchange Rate');
+    
+    return missing;
+  };
+
+  const missingFields = getMissingFields();
+  const canPublish = missingFields.length === 0 && completionData.percentage >= 85;
+
+  const handlePublishClick = () => {
+    if (canPublish) {
+      setShowPublishConfirmation(true);
+    }
+  };
+
+  const handleDraftClick = () => {
+    setShowDraftConfirmation(true);
+  };
+
+  const confirmPublish = () => {
+    setShowPublishConfirmation(false);
+    onSave(); // This will save as published
+  };
+
+  const confirmDraft = () => {
+    setShowDraftConfirmation(false);
+    onSaveDraft(); // This will save as draft
+  };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Auction Report Review</h2>
         <p className="text-gray-600">Review your comprehensive auction data before finalizing the report</p>
-        <div className="mt-4">
-          <div className="flex items-center justify-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${completionPercentage >= 80 ? 'bg-green-500' : completionPercentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm font-medium text-gray-700">{completionPercentage}% Complete</span>
+        
+        {/* Status and Progress */}
+        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-4 h-4 rounded-full ${
+                  completionData.percentage >= 90 ? 'bg-green-500' : 
+                  completionData.percentage >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}></div>
+                <span className="text-lg font-semibold text-gray-700">
+                  {completionData.percentage}% Complete
+                </span>
+              </div>
+              <div className="text-sm text-gray-500">
+                {formData.auction.auction_date ? 
+                  new Date(formData.auction.auction_date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  }) : 'No date set'
+                }
+              </div>
             </div>
-            <div className="text-sm text-gray-500">
-              {new Date(formData.auction.auction_date).toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+            
+            {/* Report Status Badge */}
+            <div className="flex items-center space-x-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                formData.status === 'published' ? 'bg-green-100 text-green-800' :
+                formData.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {formData.status === 'published' ? 'Published' :
+                 formData.status === 'draft' ? 'Draft' : 'New'}
+              </span>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div 
+              className={`h-2 rounded-full transition-all duration-300 ${
+                completionData.percentage >= 90 ? 'bg-green-500' :
+                completionData.percentage >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${completionData.percentage}%` }}
+            ></div>
+          </div>
+          
+          {/* Missing Fields Alert */}
+          {missingFields.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-red-800">Missing Required Fields:</p>
+                  <p className="text-sm text-red-600">{missingFields.join(', ')}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Debug Information - Remove this after testing */}
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-xs font-medium text-gray-700 mb-2">Debug - Current Data Values:</p>
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+              <div>Total Lots (Indicators): {formData.indicators.find(i => i.type === 'total_lots')?.value || 'Not found'}</div>
+              <div>Total Lots (Greasy): {formData.greasy_stats?.bales || 'Not found'}</div>
+              <div>Total Volume (Indicators): {formData.indicators.find(i => i.type === 'total_volume')?.value || 'Not found'}</div>
+              <div>Total Volume (Greasy): {formData.greasy_stats?.mass_kg || 'Not found'}</div>
+              <div>Total Value (Indicators): {formData.indicators.find(i => i.type === 'total_value')?.value || 'Not found'}</div>
+              <div>Total Value (Greasy): {formData.greasy_stats?.turnover_rand || 'Not found'}</div>
+              <div>Clearance Rate: {formData.supply_stats?.clearance_rate_pct || 'Not found'}%</div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              All Indicators: {formData.indicators.map(i => `${i.type}: ${i.value}`).join(', ')}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Greasy Stats: {JSON.stringify(formData.greasy_stats)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Data Overview Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        {/* Data Completeness Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <span className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+              📊
+            </span>
+            Data Completeness
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Buyers</span>
+              <span className="text-sm font-semibold">{formData.buyers.length}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Brokers</span>
+              <span className="text-sm font-semibold">{formData.brokers.length}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Provinces</span>
+              <span className="text-sm font-semibold">{formData.provincial_producers.length}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Micron Prices</span>
+              <span className="text-sm font-semibold">
+                {formData.micron_prices.filter(p => p.price_clean_zar_per_kg > 0).length}/{formData.micron_prices.length}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Report Summary Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <span className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+              📋
+            </span>
+            Report Summary
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Season</span>
+              <span className="text-sm font-semibold">{formData.auction.season_label || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Catalogue</span>
+              <span className="text-sm font-semibold">{formData.auction.catalogue_name || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Sale Number</span>
+              <span className="text-sm font-semibold">{formData.auction.sale_number || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Auction Center</span>
+              <span className="text-sm font-semibold">{formData.auction.auction_center || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Market Performance Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <span className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+              📈
+            </span>
+            Market Performance
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Merino Indicator</span>
+              <span className="text-sm font-semibold">
+                {formData.market_indices?.merino_indicator_sa_cents_clean ? `${formData.market_indices.merino_indicator_sa_cents_clean} cents` : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Certified Indicator</span>
+              <span className="text-sm font-semibold">
+                {formData.market_indices?.certified_indicator_sa_cents_clean ? `${formData.market_indices.certified_indicator_sa_cents_clean} cents` : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">AWEX EMI</span>
+              <span className="text-sm font-semibold">
+                {formData.market_indices?.awex_emi_sa_cents_clean ? `${formData.market_indices.awex_emi_sa_cents_clean} cents` : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Currency Exchange Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <span className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+              💱
+            </span>
+            Currency Exchange
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">ZAR/USD</span>
+              <span className="text-sm font-semibold">
+                {formData.currency_fx?.ZAR_USD ? formData.currency_fx.ZAR_USD.toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">ZAR/EUR</span>
+              <span className="text-sm font-semibold">
+                {formData.currency_fx?.ZAR_EUR ? formData.currency_fx.ZAR_EUR.toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">ZAR/JPY</span>
+              <span className="text-sm font-semibold">
+                {formData.currency_fx?.ZAR_JPY ? formData.currency_fx.ZAR_JPY.toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">ZAR/GBP</span>
+              <span className="text-sm font-semibold">
+                {formData.currency_fx?.ZAR_GBP ? formData.currency_fx.ZAR_GBP.toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">USD/AUD</span>
+              <span className="text-sm font-semibold">
+                {formData.currency_fx?.USD_AUD ? formData.currency_fx.USD_AUD.toFixed(4) : 'N/A'}
+              </span>
             </div>
           </div>
         </div>
@@ -4224,30 +4594,24 @@ const ReviewSaveTab: React.FC<{
               </span>
               Auction Overview
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">
-                  {formData.indicators.find(i => i.type === 'total_lots')?.value.toLocaleString() || 'N/A'}
+                  {(formData.indicators.find(i => i.type === 'total_lots')?.value || formData.greasy_stats?.bales || 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Total Lots</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">
-                  {formData.indicators.find(i => i.type === 'total_volume')?.value.toFixed(1) || 'N/A'}
+                  {(formData.indicators.find(i => i.type === 'total_volume')?.value || (formData.greasy_stats?.mass_kg || 0) / 1000 || 0).toFixed(1)}
                 </div>
                 <div className="text-sm text-gray-600">Volume (MT)</div>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <div className="text-2xl font-bold text-purple-600">
-                  ZAR {formData.indicators.find(i => i.type === 'total_value')?.value.toFixed(1) || 'N/A'}M
+                  ZAR {(formData.indicators.find(i => i.type === 'total_value')?.value || (formData.greasy_stats?.turnover_rand || 0) / 1000000 || 0).toFixed(1)}M
                 </div>
                 <div className="text-sm text-gray-600">Total Value</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">
-                  {formData.supply_stats?.clearance_rate_pct ? `${formData.supply_stats.clearance_rate_pct}%` : 'N/A'}
-                </div>
-                <div className="text-sm text-gray-600">Clearance Rate</div>
               </div>
             </div>
           </div>
@@ -4548,22 +4912,31 @@ const ReviewSaveTab: React.FC<{
             )}
 
             <div className="space-y-3">
+              {/* Save as Draft Button */}
               <button
-                onClick={onSaveDraft}
+                onClick={handleDraftClick}
                 disabled={isSaving}
-                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                className="w-full px-4 py-3 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors border border-yellow-300"
               >
                 {isSaving ? 'Saving...' : '💾 Save as Draft'}
               </button>
               
+              {/* Finalize/Publish Button */}
               <button
-                onClick={onSave}
-                disabled={isSaving || completionPercentage < 80}
-                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                onClick={handlePublishClick}
+                disabled={isSaving || !canPublish}
+                className={`w-full px-4 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors ${
+                  canPublish 
+                    ? 'bg-green-600 text-white hover:bg-green-700 border border-green-600' 
+                    : 'bg-gray-300 text-gray-500 border border-gray-300'
+                }`}
               >
-                {isSaving ? 'Saving...' : '✅ Finalize Report'}
+                {isSaving ? 'Publishing...' : 
+                 formData.status === 'published' ? '✅ Update Published Report' : 
+                 '🚀 Finalize & Publish Report'}
               </button>
               
+              {/* Cancel Button */}
               <button
                 onClick={onCancel}
                 className="w-full px-4 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
@@ -4572,16 +4945,135 @@ const ReviewSaveTab: React.FC<{
               </button>
             </div>
             
-            {completionPercentage < 80 && (
+            {/* Enhanced Status Messages */}
+            {!canPublish && missingFields.length > 0 && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-700 font-medium mb-1">
+                  Cannot publish: {missingFields.length} required field(s) missing
+                </p>
+                <p className="text-xs text-red-600">
+                  Complete all required fields to publish the report.
+                </p>
+              </div>
+            )}
+            
+            {completionData.percentage < 85 && completionData.percentage >= 70 && (
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-700">
-                  Complete at least 80% of the data to finalize the report.
+                  ⚠️ Report is {completionData.percentage}% complete. Consider adding more data for better insights.
+                </p>
+              </div>
+            )}
+            
+            {canPublish && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-xs text-green-700">
+                  ✅ Report is ready for publication! All required fields are complete.
                 </p>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modals */}
+      {/* Publish Confirmation Modal */}
+      {showPublishConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Publish Report</h3>
+                  <p className="text-sm text-gray-600">This will make the report visible to the public</p>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Report Summary:</strong><br/>
+                  Auction: {formData.auction.auction_date ? new Date(formData.auction.auction_date).toLocaleDateString() : 'No date'}<br/>
+                  Catalogue: {formData.auction.catalogue_name || 'N/A'}<br/>
+                  Status: {completionData.percentage}% complete
+                </p>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to publish this auction report? Once published, it will be visible to all users on the public dashboard.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowPublishConfirmation(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmPublish}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+                >
+                  Yes, Publish Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Confirmation Modal */}
+      {showDraftConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Save as Draft</h3>
+                  <p className="text-sm text-gray-600">Save your progress and continue later</p>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Draft Details:</strong><br/>
+                  Auction: {formData.auction.auction_date ? new Date(formData.auction.auction_date).toLocaleDateString() : 'No date'}<br/>
+                  Catalogue: {formData.auction.catalogue_name || 'N/A'}<br/>
+                  Progress: {completionData.percentage}% complete
+                </p>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-6">
+                Save this report as a draft? You can continue editing it later and publish when ready.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDraftConfirmation(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDraft}
+                  className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium transition-colors"
+                >
+                  Save as Draft
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export type AdminSection = 
   | 'dashboard'
@@ -25,6 +26,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   isCollapsed, 
   onToggleCollapse 
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSectionChange = (section: AdminSection) => {
+    navigate(`/admin/${section}`);
+    onSectionChange(section);
+  };
   const menuItems = [
     {
       id: 'dashboard' as AdminSection,
@@ -162,7 +170,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {menuItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => onSectionChange(item.id)}
+            onClick={() => handleSectionChange(item.id)}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors group ${
               activeSection === item.id
                 ? 'bg-blue-600 text-white'

@@ -773,9 +773,26 @@ const QuickAddModal: React.FC<{
                         <input
                           type="text"
                           value={entry.cat_no}
-                          onChange={e => updateEntry(index, 'cat_no', e.target.value)}
+                          onChange={e => {
+                            let inputValue = e.target.value;
+                            // Only allow digits
+                            inputValue = inputValue.replace(/\D/g, '');
+                            // Limit to 2 digits maximum
+                            if (inputValue.length <= 2) {
+                              updateEntry(index, 'cat_no', inputValue);
+                            }
+                          }}
+                          onBlur={e => {
+                            // Apply 2-digit formatting when user leaves the field
+                            const currentNumber = e.target.value;
+                            if (currentNumber && currentNumber.length > 0) {
+                              const formattedNumber = currentNumber.padStart(2, '0');
+                              updateEntry(index, 'cat_no', formattedNumber);
+                            }
+                          }}
                           className="w-full p-1 border border-gray-300 rounded text-sm"
                           placeholder="01"
+                          maxLength={2}
                           required
                         />
                       </td>
