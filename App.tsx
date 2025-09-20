@@ -116,18 +116,28 @@ const App: React.FC = () => {
     
     useEffect(() => {
       if (auctionId) {
+        console.log('AuctionRoute: Processing auctionId:', auctionId);
         const seasonCatalogue = urlToSeasonCatalogue(auctionId);
+        console.log('AuctionRoute: Converted to season/catalogue:', seasonCatalogue);
         
         if (seasonCatalogue) {
           const weekId = findWeekIdBySeasonCatalogue(reports, seasonCatalogue.season, seasonCatalogue.catalogue);
+          console.log('AuctionRoute: Found weekId:', weekId);
+          console.log('AuctionRoute: Available reports:', reports.map(r => ({ 
+            week_id: r.auction.week_id, 
+            season: r.auction.season_label, 
+            catalogue: r.auction.catalogue_name 
+          })));
           
           if (weekId) {
             setSelectedWeekId(weekId);
           } else {
+            console.log('AuctionRoute: No matching report found, redirecting to home');
             // If auction not found, redirect to home
             navigate('/', { replace: true });
           }
         } else {
+          console.log('AuctionRoute: Invalid URL format, redirecting to home');
           // If URL format is invalid, redirect to home
           navigate('/', { replace: true });
         }
