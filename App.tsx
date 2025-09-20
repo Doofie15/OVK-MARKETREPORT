@@ -43,7 +43,14 @@ const getSeasonCatalogueByWeekId = (reports: AuctionReport[], weekId: string): {
 
 const App: React.FC = () => {
   const [reports, setReports] = useState<AuctionReport[]>(MOCK_REPORTS);
-  const [selectedWeekId, setSelectedWeekId] = useState<string>(reports[0].auction.week_id);
+  const [selectedWeekId, setSelectedWeekId] = useState<string>(MOCK_REPORTS[0]?.auction.week_id || '');
+
+  // Debug: Log the initial reports
+  console.log('App: Initial MOCK_REPORTS:', MOCK_REPORTS.map(r => ({ 
+    week_id: r.auction.week_id, 
+    season: r.auction.season_label, 
+    catalogue: r.auction.catalogue_name 
+  })));
 
   const handleSaveReport = (newReportData: Omit<AuctionReport, 'top_sales'>) => {
     // Find the latest report to base YTD calculations on
@@ -128,6 +135,7 @@ const App: React.FC = () => {
             season: r.auction.season_label, 
             catalogue: r.auction.catalogue_name 
           })));
+          console.log('AuctionRoute: Looking for season:', seasonCatalogue.season, 'catalogue:', seasonCatalogue.catalogue);
           
           if (weekId) {
             setSelectedWeekId(weekId);
