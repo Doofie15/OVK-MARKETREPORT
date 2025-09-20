@@ -1,0 +1,33 @@
+{
+  "name": "ovk-wool-market-report-pdf-generator",
+  "version": "1.0.0",
+  "description": "Standalone HTML/CSS/JavaScript PDF generator for OVK Wool Market Report",
+  "main": "index.html",
+  "scripts": {
+    "serve": "python -m http.server 8080",
+    "serve-node": "npx http-server -p 8080",
+    "generate-pdf": "node generate-pdf.js"
+  },
+  "keywords": [
+    "pdf",
+    "wool",
+    "market",
+    "report",
+    "ovk",
+    "html",
+    "css",
+    "javascript"
+  ],
+  "author": "OVK Development Team",
+  "license": "PROPRIETARY",
+  "devDependencies": {
+    "puppeteer": "^21.0.0",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ovk/wool-market-report.git",
+    "directory": "pdf-generator"
+  }
+}

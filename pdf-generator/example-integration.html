@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Generator Integration Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .data-preview {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .data-preview h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        .instructions {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions h4 {
+            margin-top: 0;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF Generator Integration Example</h1>
+        
+        <div class="instructions">
+            <h4>📋 Instructions</h4>
+            <p>This example shows how to integrate the PDF generator with your main React application:</p>
+            <ol>
+                <li>Click "Load Sample Data" to populate with example data</li>
+                <li>Click "Generate PDF" to open the PDF generator with the data</li>
+                <li>The PDF generator will automatically populate with the loaded data</li>
+            </ol>
+        </div>
+
+        <div class="button-group">
+            <button onclick="loadSampleData()">Load Sample Data</button>
+            <button onclick="generatePDF()">Generate PDF</button>
+            <button onclick="clearData()">Clear Data</button>
+        </div>
+
+        <div class="data-preview">
+            <h3>Current Data Preview</h3>
+            <pre id="data-preview">No data loaded. Click "Load Sample Data" to see example data structure.</pre>
+        </div>
+
+        <div class="instructions">
+            <h4>🔧 Integration Code</h4>
+            <p>Here's how to integrate this with your React app:</p>
+            <pre><code>// In your React component
+const exportToPDF = (reportData) => {
+    // Prepare data for PDF generator
+    const pdfData = {
+        auction: reportData.auction,
+        indicators: reportData.indicators,
+        benchmarks: reportData.benchmarks,
+        buyers: reportData.buyers,
+        brokers: reportData.brokers,
+        currencies: reportData.currencies,
+        insights: reportData.insights,
+        provincial_producers: reportData.provincial_producers,
+        province_avg_prices: reportData.province_avg_prices,
+        yearly_average_prices: reportData.yearly_average_prices,
+        micron_prices: reportData.micron_prices
+    };
+    
+    // Store data for PDF generator
+    localStorage.setItem('pdfData', JSON.stringify(pdfData));
+    
+    // Open PDF generator
+    window.open('/pdf-generator/index.html', '_blank');
+};</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Sample data matching the React app structure
+        const sampleData = {
+            auction: {
+                commodity: "wool",
+                season_label: "2025/26",
+                week_id: "week_2025_01",
+                week_start: "2025-01-06",
+                week_end: "2025-01-12",
+                auction_date: "2025-01-08",
+                catalogue_name: "CAT01"
+            },
+            indicators: [
+                { type: "total_lots", unit: "bales", value: 10250, value_ytd: 50123, pct_change: 5.2 },
+                { type: "total_volume", unit: "MT", value: 1550.8, value_ytd: 7580.4, pct_change: 3.1 },
+                { type: "avg_price", unit: "ZAR/kg", value: 181.45, pct_change: -2.3 },
+                { type: "total_value", unit: "ZAR M", value: 281.4, value_ytd: 1250.8, pct_change: 0.7 }
+            ],
+            benchmarks: [
+                { label: "Certified", price: 184.35, currency: "ZAR/kg clean", day_change_pct: 1.4 },
+                { label: "All-Merino", price: 179.53, currency: "ZAR/kg clean", day_change_pct: 1.0 },
+                { label: "AWEX", price: 12.61, currency: "USD/kg clean", day_change_pct: 0.6 }
+            ],
+            buyers: [
+                { buyer: "BKB PINNACLE FIBRES", share_pct: 24.89, cat: 1556, bales_ytd: 4419 },
+                { buyer: "MODIANO SA", share_pct: 22.55, cat: 1410, bales_ytd: 3441 },
+                { buyer: "STUCKEN & CO", share_pct: 18.72, cat: 1170, bales_ytd: 2980 }
+            ],
+            brokers: [
+                { name: "BKB", catalogue_offering: 2850, sold: 2720, sold_ytd: 6850, clearance_rate: 95.4 },
+                { name: "OVK", catalogue_offering: 2100, sold: 1980, sold_ytd: 5200, clearance_rate: 94.3 },
+                { name: "JLW", catalogue_offering: 1800, sold: 1720, sold_ytd: 4500, clearance_rate: 95.6 }
+            ],
+            currencies: [
+                { code: "USD", value: 18.45, change: 0.2 },
+                { code: "AUD", value: 12.20, change: -0.5 },
+                { code: "EUR", value: 20.15, change: 0.8 }
+            ],
+            insights: "Market conditions remain stable with strong demand for fine micron wool. Certified wool continues to command premium prices with RWS certification showing positive trends.",
+            provincial_producers: [
+                {
+                    province: "Western Cape",
+                    producers: [
+                        { name: "Riverside Farm", district: "Ceres", price: 245.50, micron: 17.5, certified: "RWS", buyer_name: "BKB PINNACLE FIBRES", description: "Fine Merino" },
+                        { name: "Mountain View", district: "Paarl", price: 238.20, micron: 18.0, certified: "RWS", buyer_name: "MODIANO SA", description: "Fine Merino" }
+                    ]
+                }
+            ],
+            province_avg_prices: [
+                { province: "Western Cape", avg_price: 238.83 },
+                { province: "Eastern Cape", avg_price: 227.15 }
+            ],
+            yearly_average_prices: [
+                { label: "Certified Wool Avg Price (YTD)", value: 188.50, unit: "ZAR/kg" },
+                { label: "All - Merino Wool Avg Price (YTD)", value: 175.20, unit: "ZAR/kg" }
+            ],
+            micron_prices: [
+                { bucket_micron: "17", category: "Fine", price_clean_zar_per_kg: 225.50 },
+                { bucket_micron: "18", category: "Fine", price_clean_zar_per_kg: 210.00 },
+                { bucket_micron: "19", category: "Fine", price_clean_zar_per_kg: 195.70 }
+            ]
+        };
+
+        function loadSampleData() {
+            // Store data in localStorage for PDF generator
+            localStorage.setItem('pdfData', JSON.stringify(sampleData));
+            
+            // Update preview
+            document.getElementById('data-preview').textContent = JSON.stringify(sampleData, null, 2);
+            
+            alert('Sample data loaded! Click "Generate PDF" to see it in action.');
+        }
+
+        function generatePDF() {
+            const data = localStorage.getItem('pdfData');
+            if (!data) {
+                alert('Please load sample data first!');
+                return;
+            }
+            
+            // Open PDF generator in new window
+            window.open('index.html', '_blank');
+        }
+
+        function clearData() {
+            localStorage.removeItem('pdfData');
+            document.getElementById('data-preview').textContent = 'No data loaded. Click "Load Sample Data" to see example data structure.';
+        }
+
+        // Check if data exists on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const data = localStorage.getItem('pdfData');
+            if (data) {
+                document.getElementById('data-preview').textContent = JSON.stringify(JSON.parse(data), null, 2);
+            }
+        });
+    </script>
+</body>
+</html>
