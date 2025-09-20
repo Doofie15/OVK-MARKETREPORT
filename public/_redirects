@@ -1,0 +1,8 @@
+# Netlify redirects for Single Page Application (SPA)
+# This ensures all routes are handled by React Router
+
+# Admin routes
+/admin/*    /index.html   200
+
+# Auction catalogue routes (e.g., /202501, /202502, etc.)
+/*    /index.html   200
