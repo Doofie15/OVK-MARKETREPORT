@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { SeasonService } from '../../data/service';
-import type { CreateSeasonData } from '../../types';
+import type { CreateSeasonData, Season } from '../../types';
 
 interface CreateSeasonProps {
-  onBack: () => void;
-  onSeasonCreated: () => void;
-  editingSeason?: {
-    id: string;
-    name: string;
-    start_date: string;
-    end_date: string;
-    year: string;
-  } | null;
+  onSave: (seasonData: Omit<Season, 'id' | 'created_at' | 'updated_at'>) => Promise<{ success: boolean; error?: string }>;
+  onCancel: () => void;
+  season?: Season | null;
 }
 
 const CreateSeason: React.FC<CreateSeasonProps> = ({ 
-  onBack, 
-  onSeasonCreated, 
-  editingSeason 
+  onSave, 
+  onCancel, 
+  season 
 }) => {
   // Helper function to generate default dates (July 1st to June 30th next year)
   const getDefaultDates = () => {
@@ -43,15 +36,16 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
   const defaultDates = getDefaultDates();
   
   const [formData, setFormData] = useState<CreateSeasonData>(() => {
-    const startDate = editingSeason?.start_date || defaultDates.startDate;
-    const endDate = editingSeason?.end_date || defaultDates.endDate;
-    const year = editingSeason?.year || generateYearFromDates(startDate, endDate);
+    const startDate = season?.start_date || defaultDates.startDate;
+    const endDate = season?.end_date || defaultDates.endDate;
+    const year = season?.season_year || generateYearFromDates(startDate, endDate);
     
     return {
-      name: editingSeason?.name || year, // Use year as name if no existing name
+      season_year: year,
       start_date: startDate,
       end_date: endDate,
-      year: year
+      status: season?.status || 'draft',
+      created_by: season?.created_by || ''
     };
   });
   
@@ -63,11 +57,10 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
   useEffect(() => {
     if (formData.start_date && formData.end_date) {
       const generatedYear = generateYearFromDates(formData.start_date, formData.end_date);
-      if (generatedYear && generatedYear !== formData.year) {
+      if (generatedYear && generatedYear !== formData.season_year) {
         setFormData(prev => ({ 
           ...prev, 
-          year: generatedYear,
-          name: generatedYear // Use year as the season name
+          season_year: generatedYear
         }));
       }
     }
@@ -134,15 +127,14 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
     setError(null);
 
     try {
-      if (editingSeason) {
-        await SeasonService.updateSeason(editingSeason.id, formData);
+      const result = await onSave(formData);
+      if (result.success) {
+        // Success handled by parent component
       } else {
-        await SeasonService.createSeason(formData);
+        setError(result.error || 'Failed to save season');
       }
-      
-      onSeasonCreated();
     } catch (err) {
-      setError(editingSeason ? 'Failed to update season' : 'Failed to create season');
+      setError('Failed to save season');
       console.error('Error saving season:', err);
     } finally {
       setLoading(false);
@@ -156,14 +148,14 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {editingSeason ? 'Edit Season' : 'Create New Season'}
+            {season ? 'Edit Season' : 'Create New Season'}
           </h1>
           <p className="text-gray-600">
-            {editingSeason ? 'Update season information' : 'Set up a new auction season with its time period and details'}
+            {season ? 'Update season information' : 'Set up a new auction season with its time period and details'}
           </p>
         </div>
         <button
-          onClick={onBack}
+          onClick={onCancel}
           className="inline-flex items-center px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,7 +187,7 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
               Season Year (Auto-generated)
             </label>
             <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-              {formData.year || 'Will be generated from dates'}
+              {formData.season_year || 'Will be generated from dates'}
             </div>
             <p className="mt-1 text-xs text-gray-500">
               The season year is automatically generated from the start and end dates
@@ -308,7 +300,7 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
             <button
               type="button"
-              onClick={onBack}
+              onClick={onCancel}
               className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
@@ -324,7 +316,7 @@ const CreateSeason: React.FC<CreateSeasonProps> = ({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               )}
-              {editingSeason ? 'Update Season' : 'Create Season'}
+              {season ? 'Update Season' : 'Create Season'}
             </button>
           </div>
         </form>

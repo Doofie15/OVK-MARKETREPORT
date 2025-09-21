@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigat
 import { MOCK_REPORTS } from './constants';
 import type { AuctionReport, Indicator } from './types';
 import PublicLayout from './components/PublicLayout';
-import AdminApp from './components/AdminApp';
+import AdminAppSupabase from './components/admin/AdminAppSupabase';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Helper function to convert season and catalogue to URL format (e.g., "202501")
 const seasonCatalogueToUrl = (seasonLabel: string, catalogueName: string): string => {
@@ -177,37 +179,36 @@ const App: React.FC = () => {
   };
 
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route 
-          path="/" 
-          element={<HomeRoute />}
-        />
-        
-        {/* Auction-specific routes */}
-        <Route 
-          path="/:auctionId" 
-          element={<AuctionRoute />}
-        />
-        
-        {/* Admin routes */}
-        <Route 
-          path="/admin/*" 
-          element={
-            <AdminApp 
-              reports={reports}
-              onSaveReport={handleSaveReport}
-              onDeleteReport={handleDeleteReport}
-              onViewReport={handleViewReport}
-            />
-          } 
-        />
-        
-        {/* Redirect any other routes to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route 
+            path="/" 
+            element={<HomeRoute />}
+          />
+          
+          {/* Auction-specific routes */}
+          <Route 
+            path="/:auctionId" 
+            element={<AuctionRoute />}
+          />
+          
+          {/* Admin routes - Protected */}
+          <Route 
+            path="/admin/*" 
+            element={
+              <ProtectedRoute>
+                <AdminAppSupabase />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Redirect any other routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 };
 

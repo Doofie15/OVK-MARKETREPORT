@@ -1,13 +1,27 @@
 import type { AuctionReport } from './types';
 
-export const BUYERS = [
-    "BKB PINNACLE FIBRES", "MODIANO SA", "STUCKEN & CO", 
-    "STANDARD WOOL", "TIANYU SA", "LEMPRIERE SA", 
-    "SEGARD MASUREL SA", "VBC WOOL SA", "FiberCorp SA",
-    "Textile Industries Ltd", "Global Wool Traders", "Cape Mohair & Wool"
+// Static lookup data - these will be loaded from Supabase in the future
+export const BUYERS: string[] = [
+  'BKB PINNACLE FIBRES',
+  'MODIANO SA',
+  'STUCKEN & CO',
+  'STANDARD WOOL',
+  'TIANYU SA',
+  'LEMPRIERE SA',
+  'SEGARD MASUREL SA',
+  'VBC WOOL SA',
+  'FiberCorp SA'
 ];
 
-export const BROKERS = ["BKB", "OVK", "JLW", "MAS", "QWB", "VLB"];
+export const BROKERS: string[] = [
+  'BKB',
+  'OVK',
+  'JLW',
+  'CMW',
+  'MAS',
+  'QWB',
+  'VLB'
+];
 
 const generateTrendData = (baseZar: number, baseUsd: number) => {
   const data = [];

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { AuctionReport, Buyer, BrokerData, ProvincialProducerData, ProvincialProducer, Indicator, Benchmark, Currency, YearlyAveragePrice } from '../../types';
 import { BLANK_REPORT, BUYERS, BROKERS } from '../../constants';
-import { AuctionDataService } from '../../data';
+import SupabaseService from '../../data/supabase-service';
 
 interface AdminFormProps {
     onSave: (report: Omit<AuctionReport, 'top_sales'>) => void;
@@ -339,7 +339,21 @@ const BuyersBrokersSection: React.FC<{
     };
 
     const addBroker = () => {
-        setReport(prev => ({ ...prev, brokers: [...prev.brokers, { name: BROKERS[0], catalogue_offering: 0, sold_ytd: 0 }]}));
+        setReport(prev => ({ 
+            ...prev, 
+            brokers: [...prev.brokers, { 
+                name: BROKERS[0], 
+                catalogue_offering: 0, 
+                withdrawn_before_sale: 0,
+                wool_offered: 0,
+                withdrawn_during_sale: 0,
+                passed: 0,
+                not_sold: 0,
+                sold: 0,
+                sold_pct: 0,
+                sold_ytd: 0 
+            }]
+        }));
         markDirty();
     };
 
@@ -806,7 +820,7 @@ const AdminForm: React.FC<AdminFormProps> = ({ onSave, onCancel, latestReport, e
                 setAutoSaveStatus('saving');
                 
                 // Save to data service
-                const savedSale = await AuctionDataService.saveAuctionReport(report);
+                const savedSale = await SupabaseService.saveAuctionReport(report);
                 
                 setAutoSaveStatus('saved');
                 setLastSaved(new Date());

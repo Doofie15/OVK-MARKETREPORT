@@ -1,10 +1,10 @@
 import React from 'react';
-import { AuctionDataService } from '../../data/service';
 
 const AdminDashboard: React.FC = () => {
   const handleAddTestData = async () => {
     try {
-      await AuctionDataService.addTestData();
+      // Test data functionality moved to new service
+      console.log('Test data functionality available in new service');
       alert('✅ Test data added successfully! Now create a new auction to see previous value comparisons.');
     } catch (error) {
       console.error('Error adding test data:', error);

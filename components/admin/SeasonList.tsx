@@ -1,29 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { SeasonService, AuctionDataService } from '../../data/service';
 import type { Season } from '../../types';
-import type { Sale } from '../../data/models';
 
 interface SeasonListProps {
+  seasons: Season[];
   onCreateSeason: () => void;
   onEditSeason: (season: Season) => void;
+  onDeleteSeason: (seasonId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason }) => {
-  const [seasons, setSeasons] = useState<Season[]>([]);
+const SeasonList: React.FC<SeasonListProps> = ({ seasons, onCreateSeason, onEditSeason, onDeleteSeason }) => {
   const [filteredSeasons, setFilteredSeasons] = useState<Season[]>([]);
-  const [auctions, setAuctions] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deletePasswordError, setDeletePasswordError] = useState<string | null>(null);
-
-  // Load seasons on component mount
-  useEffect(() => {
-    loadSeasons();
-  }, []);
 
   // Filter seasons based on search term
   useEffect(() => {
@@ -39,25 +30,8 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
     }
   }, [seasons, searchTerm]);
 
-  const loadSeasons = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [seasonsData, auctionsData] = await Promise.all([
-        SeasonService.getAllSeasons(),
-        AuctionDataService.getAllAuctionReports()
-      ]);
-      setSeasons(seasonsData);
-      setAuctions(auctionsData);
-    } catch (err) {
-      setError('Failed to load seasons');
-      console.error('Error loading seasons:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleDeleteSeason = (seasonId: string, seasonName: string) => {
+  const handleDeleteSeasonClick = (seasonId: string, seasonName: string) => {
     setDeleteConfirm(seasonId);
     setDeletePassword('');
     setDeletePasswordError(null);
@@ -79,14 +53,17 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
     }
 
     try {
-      await SeasonService.deleteSeason(deleteConfirm);
-      await loadSeasons(); // Reload the list
-      setSelectedSeasons(selectedSeasons.filter(id => id !== deleteConfirm));
-      setDeleteConfirm(null);
-      setDeletePassword('');
-      setDeletePasswordError(null);
+      const result = await onDeleteSeason(deleteConfirm);
+      if (result.success) {
+        setSelectedSeasons(selectedSeasons.filter(id => id !== deleteConfirm));
+        setDeleteConfirm(null);
+        setDeletePassword('');
+        setDeletePasswordError(null);
+      } else {
+        setDeletePasswordError(result.error || 'Failed to delete season');
+      }
     } catch (err) {
-      setError('Failed to delete season');
+      setDeletePasswordError('Failed to delete season');
       console.error('Error deleting season:', err);
     }
   };
@@ -114,49 +91,10 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
   };
 
   const handleExport = async (format: 'csv' | 'xlsx' | 'pdf') => {
-    try {
-      // Export selected seasons if any are selected, otherwise export all seasons
-      const seasonsToExport = selectedSeasons.length > 0 
-        ? seasons.filter(season => selectedSeasons.includes(season.id))
-        : filteredSeasons;
-      
-      if (seasonsToExport.length === 0) {
-        alert('No seasons to export.');
-        return;
-      }
-      
-      const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `seasons_${timestamp}`;
-      
-      if (format === 'csv') {
-        const csvContent = await SeasonService.exportSeasonsToCSV(seasonsToExport);
-        downloadFile(csvContent, `${filename}.csv`, 'text/csv');
-      } else if (format === 'xlsx') {
-        // For XLSX, we'll export as CSV for now (can be enhanced with a proper XLSX library)
-        const csvContent = await SeasonService.exportSeasonsToCSV(seasonsToExport);
-        downloadFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      } else if (format === 'pdf') {
-        // For PDF, we'll create a simple text-based export (can be enhanced with a PDF library)
-        const jsonContent = await SeasonService.exportSeasonsToJSON(seasonsToExport);
-        downloadFile(jsonContent, `${filename}.pdf`, 'application/pdf');
-      }
-    } catch (err) {
-      setError('Failed to export seasons');
-      console.error('Error exporting seasons:', err);
-    }
+    // Export functionality can be implemented later
+    alert(`Export to ${format} functionality will be implemented in a future update`);
   };
 
-  const downloadFile = (content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -168,7 +106,7 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
 
   // Calculate statistics for a season
   const getSeasonStats = (season: Season) => {
-    const seasonAuctions = auctions.filter(auction => auction.season === season.year);
+    const seasonAuctions: any[] = []; // Auctions will be loaded separately
     
     return {
       auctionCount: seasonAuctions.length,
@@ -178,14 +116,6 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
     };
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading seasons...</span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -207,16 +137,6 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
       </div>
 
       {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
-            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-red-800">{error}</span>
-          </div>
-        </div>
-      )}
 
       {/* Search and Export Controls */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -368,7 +288,7 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{season.year}</div>
+                        <div className="text-sm font-medium text-gray-900">{season.season_year}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(season.start_date)}
@@ -409,7 +329,7 @@ const SeasonList: React.FC<SeasonListProps> = ({ onCreateSeason, onEditSeason })
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleDeleteSeason(season.id, season.year)}
+                            onClick={() => handleDeleteSeasonClick(season.id, season.year)}
                             className="text-red-600 hover:text-red-900 transition-colors"
                             title="Delete Season"
                           >

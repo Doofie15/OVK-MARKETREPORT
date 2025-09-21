@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import type { AuctionReport } from '../../types';
-import { AuctionDataService } from '../../data';
-import type { Sale } from '../../data';
+import SupabaseService from '../../data/supabase-service';
+
+// Simplified interface for auction list display
+interface AuctionListItem {
+  id: string;
+  auction_date: string;
+  catalogue_name: string;
+  week_id: string;
+  season: string;
+  total_bales_offered: number;
+  total_bales_sold: number;
+  clearance_pct: number;
+  total_turnover: number;
+  total_volume_kg: number;
+  created_at: string;
+  is_empty: boolean;
+  status?: string;
+}
 
 interface AuctionsListProps {
   reports: AuctionReport[];
@@ -13,8 +29,8 @@ interface AuctionsListProps {
 }
 
 const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, onDelete, onView, refreshTrigger }) => {
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
+  const [sales, setSales] = useState<AuctionListItem[]>([]);
+  const [filteredSales, setFilteredSales] = useState<AuctionListItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSales, setSelectedSales] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,15 +61,15 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
 
   // Filter sales based on search term and ensure minimum 10 rows
   useEffect(() => {
-    let filtered: Sale[] = [];
+    let filtered: AuctionListItem[] = [];
     
     if (!searchTerm.trim()) {
       filtered = sales;
     } else {
       filtered = sales.filter(sale =>
-        sale.sale_date.includes(searchTerm) ||
-        `CAT${String(sale.catalogue_no).padStart(2, '0')}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `week_${new Date(sale.sale_date).getFullYear()}_${String(sale.catalogue_no).padStart(2, '0')}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sale.auction_date.includes(searchTerm) ||
+        sale.catalogue_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sale.week_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sale.season.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -61,14 +77,20 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     // Ensure minimum 10 rows by padding with empty rows if needed
     const minRows = 10;
     if (filtered.length < minRows) {
-      const emptyRows: Sale[] = Array.from({ length: minRows - filtered.length }, (_, index) => ({
+      const emptyRows: AuctionListItem[] = Array.from({ length: minRows - filtered.length }, (_, index) => ({
         id: `empty-${index}`,
         season: '',
-        catalogue_no: 0,
-        sale_date: '',
+        catalogue_name: '',
+        auction_date: '',
+        week_id: '',
+        total_bales_offered: 0,
+        total_bales_sold: 0,
+        clearance_pct: 0,
+        total_turnover: 0,
+        total_volume_kg: 0,
         created_at: new Date().toISOString(),
         is_empty: true // Custom property to identify empty rows
-      })) as Sale[];
+      }));
       filtered = [...filtered, ...emptyRows];
     }
     
@@ -80,8 +102,12 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     try {
       setLoading(true);
       setError(null);
-      const salesData = await AuctionDataService.getAllAuctionReports();
-      setSales(salesData);
+      const result = await SupabaseService.getAllAuctionReports();
+      if (result.success) {
+        setSales(result.data);
+      } else {
+        setError(result.error || 'Failed to load auction data');
+      }
     } catch (err) {
       setError('Failed to load auction data');
       console.error('Error loading sales data:', err);
@@ -112,12 +138,16 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     }
 
     try {
-      await AuctionDataService.deleteAuctionReport(deleteConfirm);
-      await loadSales(); // Reload the list
-      setSelectedSales(selectedSales.filter(id => id !== deleteConfirm));
-      setDeleteConfirm(null);
-      setDeletePassword('');
-      setDeletePasswordError(null);
+      const result = await SupabaseService.deleteAuctionReport(deleteConfirm);
+      if (result.success) {
+        await loadSales(); // Reload the list
+        setSelectedSales(selectedSales.filter(id => id !== deleteConfirm));
+        setDeleteConfirm(null);
+        setDeletePassword('');
+        setDeletePasswordError(null);
+      } else {
+        setError(result.error || 'Failed to delete auction');
+      }
     } catch (err) {
       setError('Failed to delete auction');
       console.error('Error deleting auction report:', err);
@@ -179,14 +209,14 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     }
   };
 
-  const exportSalesToCSV = async (sales: Sale[]): Promise<string> => {
+  const exportSalesToCSV = async (sales: AuctionListItem[]): Promise<string> => {
     const headers = ['Auction Date', 'Catalogue Name', 'Week ID', 'Season', 'Total Bales Offered', 'Total Bales Sold', 'Clearance %'];
     const csvContent = [
       headers.join(','),
       ...sales.map(sale => [
-        sale.sale_date,
-        `"CAT${String(sale.catalogue_no).padStart(2, '0')}"`,
-        `"week_${new Date(sale.sale_date).getFullYear()}_${String(sale.catalogue_no).padStart(2, '0')}"`,
+        sale.auction_date,
+        `"${sale.catalogue_name}"`,
+        `"${sale.week_id}"`,
         `"${sale.season}"`,
         sale.total_bales_offered || 0,
         sale.total_bales_sold || 0,
@@ -225,14 +255,20 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     if (rowsPerPage === -1) {
       const minRows = 10;
       if (realSales.length < minRows) {
-        const emptyRows: Sale[] = Array.from({ length: minRows - realSales.length }, (_, index) => ({
+        const emptyRows: AuctionListItem[] = Array.from({ length: minRows - realSales.length }, (_, index) => ({
           id: `empty-${realSales.length + index}`,
           season: '',
-          catalogue_no: 0,
-          sale_date: '',
+          catalogue_name: '',
+          auction_date: '',
+          week_id: '',
+          total_bales_offered: 0,
+          total_bales_sold: 0,
+          clearance_pct: 0,
+          total_turnover: 0,
+          total_volume_kg: 0,
           created_at: new Date().toISOString(),
           is_empty: true
-        })) as Sale[];
+        }));
         return [...realSales, ...emptyRows];
       }
       return realSales;
@@ -246,14 +282,20 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     // Ensure minimum 10 rows per page
     const minRows = 10;
     if (paginatedSales.length < minRows) {
-      const emptyRows: Sale[] = Array.from({ length: minRows - paginatedSales.length }, (_, index) => ({
+      const emptyRows: AuctionListItem[] = Array.from({ length: minRows - paginatedSales.length }, (_, index) => ({
         id: `empty-${startIndex + paginatedSales.length + index}`,
         season: '',
-        catalogue_no: 0,
-        sale_date: '',
+        catalogue_name: '',
+        auction_date: '',
+        week_id: '',
+        total_bales_offered: 0,
+        total_bales_sold: 0,
+        clearance_pct: 0,
+        total_turnover: 0,
+        total_volume_kg: 0,
         created_at: new Date().toISOString(),
         is_empty: true
-      })) as Sale[];
+      }));
       return [...paginatedSales, ...emptyRows];
     }
     
@@ -262,32 +304,36 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
 
   const totalPages = rowsPerPage === -1 ? 1 : Math.ceil(filteredSales.filter(sale => !sale.is_empty).length / rowsPerPage);
 
-  const handleViewSale = async (sale: Sale) => {
+  const handleViewSale = async (sale: AuctionListItem) => {
     try {
-      const report = await AuctionDataService.getAuctionReport(sale.id);
-      if (report) {
-        // Convert to the format expected by onView
+      const result = await SupabaseService.getAuctionReport(sale.id);
+      if (result.success) {
+        // Add top_sales property to make it a complete AuctionReport
         const auctionReport: AuctionReport = {
-          ...report,
-          top_sales: [] // This would need to be populated from provincial data
+          ...result.data,
+          top_sales: []
         };
         onView(auctionReport);
+      } else {
+        console.error('Error loading auction report:', result.error);
       }
     } catch (error) {
       console.error('Error loading auction report:', error);
     }
   };
 
-  const handleEditSale = async (sale: Sale) => {
+  const handleEditSale = async (sale: AuctionListItem) => {
     try {
-      const report = await AuctionDataService.getAuctionReport(sale.id);
-      if (report) {
-        // Convert to the format expected by onEdit
+      const result = await SupabaseService.getAuctionReport(sale.id);
+      if (result.success) {
+        // Add top_sales property to make it a complete AuctionReport
         const auctionReport: AuctionReport = {
-          ...report,
-          top_sales: [] // This would need to be populated from provincial data
+          ...result.data,
+          top_sales: []
         };
         onEdit(auctionReport);
+      } else {
+        console.error('Error loading auction report:', result.error);
       }
     } catch (error) {
       console.error('Error loading auction report:', error);
@@ -360,7 +406,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
         </div>
         <div className="bg-orange-50 p-4 rounded-lg">
           <div className="text-2xl font-bold text-orange-600">
-            {sales.length > 0 ? formatDate(sales.sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())[0].sale_date) : 'N/A'}
+            {sales.length > 0 ? formatDate(sales.sort((a, b) => new Date(b.auction_date).getTime() - new Date(a.auction_date).getTime())[0].auction_date) : 'N/A'}
           </div>
           <div className="text-sm text-orange-800">Last Auction</div>
         </div>
@@ -523,15 +569,14 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {sale.sale_date ? formatDate(sale.sale_date) : ''}
+                        {sale.auction_date ? formatDate(sale.auction_date) : ''}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sale.catalogue_no ? `CAT${String(sale.catalogue_no).padStart(2, '0')}` : ''}
+                      {sale.catalogue_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                      {sale.sale_date && sale.catalogue_no ? 
-                        `week_${new Date(sale.sale_date).getFullYear()}_${String(sale.catalogue_no).padStart(2, '0')}` : ''}
+                      {sale.week_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {sale.season}
@@ -639,7 +684,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                               <button
                                 onClick={() => {
                                   setDropdownOpen(null);
-                                  handleDeleteSale(sale.id, `CAT${String(sale.catalogue_no).padStart(2, '0')} - ${formatDate(sale.sale_date)}`);
+                                  handleDeleteSale(sale.id, `${sale.catalogue_name} - ${formatDate(sale.auction_date)}`);
                                 }}
                                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                               >

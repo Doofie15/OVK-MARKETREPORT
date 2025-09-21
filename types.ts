@@ -127,11 +127,15 @@ export interface CompanyData {
 export interface Auction {
   commodity: 'wool' | 'mohair';
   season_label: string;
+  season_id?: string; // UUID reference to seasons table
+  commodity_type_id?: string; // UUID reference to commodity_types table
   week_id?: string;
   week_start: string;
   week_end: string;
   auction_date: string;
   catalogue_name: string;
+  catalogue_prefix?: string;
+  catalogue_number?: string;
   // Cape Wools fields
   sale_number?: string;
   auction_center?: string;
@@ -258,20 +262,21 @@ export interface ProvinceAveragePrice {
 // Season management interfaces
 export interface Season {
   id: string;
-  name: string;
+  season_year: string; // e.g., '2025/2026'
   start_date: string;
   end_date: string;
-  year: string; // e.g., '2025/2026'
-  number_of_auctions: number;
+  status: 'draft' | 'active' | 'completed';
   created_at: string;
   updated_at: string;
+  created_by: string;
 }
 
 export interface CreateSeasonData {
-  name: string;
+  season_year: string;
   start_date: string;
   end_date: string;
-  year: string;
+  status?: 'draft' | 'active' | 'completed';
+  created_by: string;
 }
 
 export interface AuctionReport {

@@ -14,7 +14,7 @@ import type {
   AgencyMetrics,
   Season
 } from '../../types';
-import { AuctionDataService, SeasonService } from '../../data';
+import SupabaseService from '../../data/supabase-service';
 import AIMarketInsightsComposer from './AIMarketInsightsComposer';
 
 // Modern Date Picker Component
@@ -439,10 +439,45 @@ const AddNewModal: React.FC<{
   );
 };
 
+// Success Modal Component
+const SuccessModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+}> = ({ isOpen, onClose, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-4">
+          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        
+        <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">{title}</h3>
+        <p className="text-sm text-gray-600 text-center mb-6">{message}</p>
+        
+        <div className="flex justify-center">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface AuctionDataCaptureFormProps {
   onSave: (report: Omit<AuctionReport, 'top_sales'>) => void;
   onCancel: () => void;
   editingReport?: AuctionReport;
+  seasons?: Season[];
 }
 
 // Utility functions for number formatting (shared across all tabs)
@@ -468,10 +503,19 @@ const parseFormattedNumber = (formattedStr: string): number => {
   return parseFloat(cleanStr) || 0;
 };
 
+// Helper function to safely convert currency values to numbers
+const getNumericValue = (value: any): number => {
+  if (typeof value === 'string') {
+    return parseFloat(value) || 0;
+  }
+  return value || 0;
+};
+
 const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({ 
   onSave, 
   onCancel, 
-  editingReport 
+  editingReport,
+  seasons: propSeasons = []
 }) => {
   const [activeTab, setActiveTab] = useState('auction-details');
   const [isDragging, setIsDragging] = useState(false);
@@ -481,12 +525,12 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     editingReport || {
       auction: {
         commodity: 'wool' as const,
-        season_label: '2025/26',
+        season_label: '',
         week_start: '',
         week_end: '',
-        auction_date: '2025-09-17',
-        catalogue_name: '05',
-        sale_number: '05',
+        auction_date: '',
+        catalogue_name: '',
+        sale_number: '',
         auction_center: 'Port Elizabeth'
       },
       indicators: [],
@@ -517,46 +561,46 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       // Cape Wools fields
       market_indices: {
         // SA Merino Indicator (cents clean)
-        merino_indicator_sa_cents_clean: 19755,
+        merino_indicator_sa_cents_clean: 0,
         // US Merino Indicator (cents clean)
-        merino_indicator_us_cents_clean: 1139,
+        merino_indicator_us_cents_clean: 0,
         // Euro Merino Indicator (cents clean)
-        merino_indicator_euro_cents_clean: 963,
+        merino_indicator_euro_cents_clean: 0,
         
         // SA Certified Indicator (cents clean)
-        certified_indicator_sa_cents_clean: 20261,
+        certified_indicator_sa_cents_clean: 0,
         // US Certified Indicator (cents clean)
-        certified_indicator_us_cents_clean: 1168,
+        certified_indicator_us_cents_clean: 0,
         // Euro Certified Indicator (cents clean)
-        certified_indicator_euro_cents_clean: 987,
+        certified_indicator_euro_cents_clean: 0,
         
         // AWEX EMI (cents clean) - using SA value as base
-        awex_emi_sa_cents_clean: 1344
+        awex_emi_sa_cents_clean: 0
       },
       currency_fx: {
-        ZAR_USD: 17.35,
-        ZAR_EUR: 20.52,
-        ZAR_JPY: 8.45,
-        ZAR_GBP: 23.65,
-        USD_AUD: 0.6654
+        ZAR_USD: 0,
+        ZAR_EUR: 0,
+        ZAR_JPY: 0,
+        ZAR_GBP: 0,
+        USD_AUD: 0
       },
       supply_stats: {
-        offered_bales: 6507,
-        sold_bales: 6084,
-        clearance_rate_pct: 93.5
+        offered_bales: 0,
+        sold_bales: 0,
+        clearance_rate_pct: 0
       },
       highest_price: {
-        price_cents_clean: 26563,
-        micron: 15.5,
+        price_cents_clean: 0,
+        micron: 0,
         bales: 0
       },
       certified_share: {
-        offered_bales: 4148,
-        sold_bales: 4076,
-        all_wool_pct_offered: 60.5,
-        all_wool_pct_sold: 63.4,
-        merino_pct_offered: 67.8,
-        merino_pct_sold: 65.0
+        offered_bales: 0,
+        sold_bales: 0,
+        all_wool_pct_offered: 0,
+        all_wool_pct_sold: 0,
+        merino_pct_offered: 0,
+        merino_pct_sold: 0
       },
       greasy_stats: {
         turnover_rand: 0,
@@ -590,6 +634,13 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     }
   );
 
+  // Update form data when editingReport changes
+  useEffect(() => {
+    if (editingReport) {
+      setFormData(editingReport);
+    }
+  }, [editingReport]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [completedTabs, setCompletedTabs] = useState<Set<string>>(new Set());
@@ -606,6 +657,17 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     title: '',
     placeholder: ''
   });
+
+  // Success modal state
+  const [successModal, setSuccessModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: ''
+  });
   
   // Custom entries storage (in a real app, this would be in a database)
   const [customEntries, setCustomEntries] = useState<{
@@ -615,6 +677,11 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     buyers: [],
     brokers: []
   });
+  
+  // State to trigger buyers list refresh
+  const [buyersRefreshTrigger, setBuyersRefreshTrigger] = useState(0);
+  // State to trigger brokers list refresh
+  const [brokersRefreshTrigger, setBrokersRefreshTrigger] = useState(0);
 
   const tabs = [
     { id: 'auction-details', label: 'Auction Details', icon: '📅' },
@@ -629,9 +696,9 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     { id: 'review-save', label: 'Review & Save', icon: '✅' }
   ];
 
-  // Auto-calculate week details when auction date changes
+  // Auto-calculate week details when auction date changes (only for new reports, not when editing)
   useEffect(() => {
-    if (formData.auction.auction_date) {
+    if (!editingReport && formData.auction.auction_date) {
       const auctionDate = new Date(formData.auction.auction_date);
       const dayOfWeek = auctionDate.getUTCDay();
       const weekStart = new Date(auctionDate);
@@ -652,7 +719,7 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
           }
         }));
     }
-  }, [formData.auction.auction_date]);
+  }, [formData.auction.auction_date, editingReport]);
 
   const validateTab = (tabId: string): boolean => {
     const newErrors: Record<string, string> = {};
@@ -677,6 +744,11 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
           } else if (auctionDate > oneYearFromNow) {
             newErrors.auction_date = 'Auction date cannot be more than one year in the future';
           }
+        }
+
+        // Validate commodity type
+        if (!formData.auction.commodity_type_id) {
+          newErrors.commodity_type_id = 'Commodity type is required';
         }
         
         if (!formData.auction.catalogue_name) newErrors.catalogue_name = 'Catalogue name is required';
@@ -711,11 +783,16 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     if (allValid) {
       setIsSaving(true);
       try {
-        await AuctionDataService.saveAuctionReport(formData);
-        onSave(formData);
+        const result = await SupabaseService.saveAuctionReport(formData);
+        if (result.success) {
+          showSuccessModal('Report Published!', 'Your auction report has been successfully saved and published to the database.');
+          onSave(formData);
+        } else {
+          alert(`Failed to save report: ${result.error}`);
+        }
       } catch (error) {
         console.error('Error saving auction report:', error);
-        setErrors({ save: 'Failed to save auction report. Please try again.' });
+        alert('Failed to save report. Please try again.');
       } finally {
         setIsSaving(false);
       }
@@ -725,13 +802,37 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
-      await AuctionDataService.saveAuctionReportDraft(formData);
-      setErrors({ save: 'Draft saved successfully!' });
-      // Clear success message after 3 seconds
-      setTimeout(() => setErrors({}), 3000);
+      // Ensure season_id is set correctly before saving
+      let dataToSave = { ...formData };
+      
+      // Always try to set season_id if it's missing, using the latest season
+      if (!dataToSave.auction.season_id && propSeasons.length > 0) {
+        // First try to find by season_label if it exists
+        let matchingSeason = null;
+        if (dataToSave.auction.season_label) {
+          matchingSeason = propSeasons.find(s => s.season_year === dataToSave.auction.season_label);
+        }
+        
+        // If no match by label, use the first (latest) season
+        if (!matchingSeason) {
+          matchingSeason = propSeasons[0];
+        }
+        
+        if (matchingSeason && matchingSeason.id) {
+          dataToSave.auction.season_id = matchingSeason.id;
+          dataToSave.auction.season_label = matchingSeason.season_year;
+        }
+      }
+      
+      const result = await SupabaseService.saveAuctionReportDraft(dataToSave);
+      if (result.success) {
+        showSuccessModal('Draft Saved!', 'Your auction report has been saved as a draft and stored in the database.');
+      } else {
+        alert(`Failed to save draft: ${result.error}`);
+      }
     } catch (error) {
       console.error('Error saving auction report draft:', error);
-      setErrors({ save: 'Failed to save draft. Please try again.' });
+      alert('Failed to save draft. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -760,19 +861,80 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     });
   };
 
-  const handleAddNewEntry = (name: string, description: string) => {
-    if (modalState.type) {
-      setCustomEntries(prev => ({
-        ...prev,
-        [modalState.type + 's']: [...prev[modalState.type + 's' as keyof typeof prev], { name, description }]
-      }));
+  const showSuccessModal = (title: string, message: string) => {
+    setSuccessModal({
+      isOpen: true,
+      title,
+      message
+    });
+  };
+
+  const closeSuccessModal = () => {
+    setSuccessModal({
+      isOpen: false,
+      title: '',
+      message: ''
+    });
+  };
+
+  const handleAddNewEntry = async (name: string, description: string) => {
+    if (modalState.type === 'buyer') {
+      try {
+        const { SupabaseAuctionDataService } = await import('../../data/supabase-service');
+        const { supabase } = await import('../../lib/supabase');
+        
+        // Use the admin user ID directly to avoid foreign key issues
+        const userId = 'd5b02abc-4695-499d-bf04-0f553fdcf7c8';
+        
+        const result = await SupabaseAuctionDataService.createBuyer({
+          buyer_name: name,
+          created_by: userId
+        });
+        
+        if (result.success) {
+          // Refresh the buyers list by triggering a state update
+          setBuyersRefreshTrigger(prev => prev + 1);
+          closeModal();
+          showSuccessModal('Success!', `Buyer "${name}" has been added successfully to the database.`);
+        } else {
+          alert(`Failed to add buyer: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Error adding buyer:', error);
+        alert('Failed to add buyer. Please try again.');
+      }
+    } else if (modalState.type === 'broker') {
+      try {
+        const { SupabaseAuctionDataService } = await import('../../data/supabase-service');
+        const { supabase } = await import('../../lib/supabase');
+        
+        // Use the admin user ID directly to avoid foreign key issues
+        const userId = 'd5b02abc-4695-499d-bf04-0f553fdcf7c8';
+        
+        const result = await SupabaseAuctionDataService.createBroker({
+          name: name,
+          created_by: userId
+        });
+        
+        if (result.success) {
+          // Refresh the brokers list by triggering a state update
+          setBrokersRefreshTrigger(prev => prev + 1);
+          closeModal();
+          showSuccessModal('Success!', `Broker "${name}" has been added successfully to the database.`);
+        } else {
+          alert(`Failed to add broker: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Error adding broker:', error);
+        alert('Failed to add broker. Please try again.');
+      }
     }
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'auction-details':
-        return <AuctionDetailsTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+        return <AuctionDetailsTab formData={formData} updateFormData={updateFormData} errors={errors} seasons={propSeasons} />;
       case 'market-summary':
         return <MarketSummaryTab formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 'key-indicators':
@@ -788,6 +950,8 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
           errors={errors}
           customEntries={customEntries}
           onOpenModal={openModal}
+          buyersRefreshTrigger={buyersRefreshTrigger}
+          brokersRefreshTrigger={brokersRefreshTrigger}
         />;
       case 'provincial-data':
         return <ProvincialDataTab formData={formData} updateFormData={updateFormData} errors={errors} />;
@@ -922,6 +1086,14 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
         title={modalState.title}
         placeholder={modalState.placeholder}
       />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        onClose={closeSuccessModal}
+        title={successModal.title}
+        message={successModal.message}
+      />
     </div>
   );
 };
@@ -932,9 +1104,12 @@ const AuctionDetailsTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
-}> = ({ formData, updateFormData, errors }) => {
+  seasons?: Season[];
+}> = ({ formData, updateFormData, errors, seasons: propSeasons = [] }) => {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loadingSeasons, setLoadingSeasons] = useState(true);
+  const [commodityTypes, setCommodityTypes] = useState<any[]>([]);
+  const [loadingCommodityTypes, setLoadingCommodityTypes] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [suggestions, setSuggestions] = useState<{
     auctionDate: string;
@@ -949,14 +1124,14 @@ const AuctionDetailsTab: React.FC<{
   const loadSuggestions = async () => {
     setLoadingSuggestions(true);
     try {
-      const latestReport = await AuctionDataService.getLatestAuctionReport();
-      if (latestReport) {
-        const lastAuctionDate = new Date(latestReport.auction.auction_date);
+      const result = await SupabaseService.getAuctionReport('latest');
+      if (result.success && result.data) {
+        const lastAuctionDate = new Date(result.data.auction.auction_date);
         const nextAuctionDate = new Date(lastAuctionDate);
         nextAuctionDate.setDate(lastAuctionDate.getDate() + 7); // Add 7 days
         
         // Parse catalogue name to get prefix and number
-        const catalogueName = latestReport.auction.catalogue_name || '';
+        const catalogueName = result.data.auction.catalogue_name || '';
         const parts = catalogueName.split(/(\d+)/);
         const prefix = parts[0] || 'CG';
         const lastNumber = parseInt(parts[1]) || 0;
@@ -1007,71 +1182,115 @@ const AuctionDetailsTab: React.FC<{
     }
   };
 
-  // Load seasons on component mount
+  // Load commodity types from database
   useEffect(() => {
-    const loadSeasons = async () => {
+    const loadCommodityTypes = async () => {
       try {
-        setLoadingSeasons(true);
-        console.log('Loading seasons for auction form...');
-        
-        const seasonsData = await SeasonService.getAllSeasons();
-        console.log('Seasons loaded:', seasonsData);
-        
-        // If no seasons exist, create some default ones for testing
-        if (seasonsData.length === 0) {
-          console.log('No seasons found, creating default seasons...');
-          const currentYear = new Date().getFullYear();
-          const defaultSeasons = [
-            {
-              name: `${currentYear}/${currentYear + 1}`,
-              start_date: `${currentYear}-07-01`,
-              end_date: `${currentYear + 1}-06-30`,
-              year: `${currentYear}/${currentYear + 1}`
-            },
-            {
-              name: `${currentYear - 1}/${currentYear}`,
-              start_date: `${currentYear - 1}-07-01`,
-              end_date: `${currentYear}-06-30`,
-              year: `${currentYear - 1}/${currentYear}`
-            }
-          ];
+        const result = await SupabaseService.getAllCommodityTypes();
+        if (result.success) {
+          const types = result.data || [];
+          setCommodityTypes(types);
           
-          // Create default seasons
-          for (const seasonData of defaultSeasons) {
-            try {
-              await SeasonService.createSeason(seasonData);
-              console.log('Created default season:', seasonData.year);
-            } catch (error) {
-              console.error('Error creating default season:', error);
+          // Auto-select "Wool" if no commodity type is selected and wool is available
+          if (!formData.auction.commodity_type_id) {
+            const woolType = types.find(type => 
+              type.name.toLowerCase() === 'wool' || 
+              type.name.toLowerCase().includes('wool')
+            );
+            if (woolType) {
+              console.log('Auto-selecting default commodity type: Wool');
+              updateFormData({
+                auction: { ...formData.auction, commodity_type_id: woolType.id }
+              });
             }
           }
+        } else {
+          console.error('Error loading commodity types:', result.error);
+          // Fallback to hardcoded types if database fails
+          const fallbackTypes = [
+            { id: '1', name: 'Wool', description: 'Sheep wool' },
+            { id: '2', name: 'Mohair', description: 'Angora goat fiber' }
+          ];
+          setCommodityTypes(fallbackTypes);
           
-          // Reload seasons after creating defaults
-          const updatedSeasons = await SeasonService.getAllSeasons();
-          seasonsData.push(...updatedSeasons);
-        }
-        
-        // Sort seasons by year descending (latest first)
-        const sortedSeasons = seasonsData.sort((a, b) => b.year.localeCompare(a.year));
-        setSeasons(sortedSeasons);
-        
-        // If no season is selected and we have seasons, select the latest one
-        if (!formData.auction.season_label && sortedSeasons.length > 0) {
-          console.log('Auto-selecting latest season:', sortedSeasons[0].year);
-          updateFormData({
-            auction: { ...formData.auction, season_label: sortedSeasons[0].year }
-          });
+          // Auto-select wool from fallback types
+          if (!formData.auction.commodity_type_id) {
+            updateFormData({
+              auction: { ...formData.auction, commodity_type_id: '1' } // Wool ID
+            });
+          }
         }
       } catch (error) {
-        console.error('Error loading seasons:', error);
-        console.log('No seasons found, dropdown will be empty');
+        console.error('Error loading commodity types:', error);
+        // Fallback to hardcoded types
+        const fallbackTypes = [
+          { id: '1', name: 'Wool', description: 'Sheep wool' },
+          { id: '2', name: 'Mohair', description: 'Angora goat fiber' }
+        ];
+        setCommodityTypes(fallbackTypes);
+        
+        // Auto-select wool from fallback types
+        if (!formData.auction.commodity_type_id) {
+          updateFormData({
+            auction: { ...formData.auction, commodity_type_id: '1' } // Wool ID
+          });
+        }
       } finally {
-        setLoadingSeasons(false);
+        setLoadingCommodityTypes(false);
       }
     };
 
-    loadSeasons();
+    loadCommodityTypes();
   }, []);
+
+  // Use seasons from props
+  useEffect(() => {
+    if (propSeasons.length > 0) {
+      // Sort seasons by year descending (latest first)
+      const sortedSeasons = [...propSeasons].sort((a, b) => b.season_year.localeCompare(a.season_year));
+      setSeasons(sortedSeasons);
+      setLoadingSeasons(false);
+      
+      // If no season is selected and we have seasons, select the latest one (only for new reports, not when editing)
+      if (!editingReport && !formData.auction.season_label && sortedSeasons.length > 0) {
+        console.log('Auto-selecting latest season:', sortedSeasons[0].season_year);
+        console.log('Full season object:', sortedSeasons[0]);
+        console.log('Season ID being set:', sortedSeasons[0].id);
+        updateFormData({
+          auction: { 
+            ...formData.auction, 
+            season_label: sortedSeasons[0].season_year,
+            season_id: sortedSeasons[0].id
+          }
+        });
+      } else {
+        // Check if we have a season_label but no season_id, and try to fix it (always check this)
+        if (formData.auction.season_label && !formData.auction.season_id && sortedSeasons.length > 0) {
+          const matchingSeason = sortedSeasons.find(s => s.season_year === formData.auction.season_label);
+          if (matchingSeason) {
+            console.log('Found missing season_id for existing season_label:', {
+              season_label: formData.auction.season_label,
+              found_season_id: matchingSeason.id
+            });
+            updateFormData({
+              auction: { 
+                ...formData.auction, 
+                season_id: matchingSeason.id
+              }
+            });
+          }
+        }
+        
+        console.log('Season already selected or no seasons available:', {
+          season_label: formData.auction.season_label,
+          season_id: formData.auction.season_id,
+          seasonsCount: sortedSeasons.length
+        });
+      }
+    } else {
+      setLoadingSeasons(false);
+    }
+  }, [propSeasons, editingReport]);
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1146,9 +1365,21 @@ const AuctionDetailsTab: React.FC<{
             </label>
             <select
               value={formData.auction.season_label}
-              onChange={(e) => updateFormData({
-                auction: { ...formData.auction, season_label: e.target.value }
-              })}
+              onChange={(e) => {
+                const selectedSeason = seasons.find(s => s.season_year === e.target.value);
+                console.log('Manual season selection:', {
+                  selectedValue: e.target.value,
+                  foundSeason: selectedSeason,
+                  seasonId: selectedSeason?.id
+                });
+                updateFormData({
+                  auction: { 
+                    ...formData.auction, 
+                    season_label: e.target.value,
+                    season_id: selectedSeason?.id || null
+                  }
+                });
+              }}
               className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.season_label ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -1160,8 +1391,8 @@ const AuctionDetailsTab: React.FC<{
                 <option value="">No seasons available - Create a season first</option>
               ) : (
                 seasons.map((season) => (
-                  <option key={season.id} value={season.year}>
-                    {season.year}
+                  <option key={season.id} value={season.season_year}>
+                    {season.season_year}
                   </option>
                 ))
               )}
@@ -1276,18 +1507,41 @@ const AuctionDetailsTab: React.FC<{
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Commodity Type
+              Commodity Type *
             </label>
             <select
-              value={formData.auction.commodity}
+              value={formData.auction.commodity_type_id || ''}
               onChange={(e) => updateFormData({
-                auction: { ...formData.auction, commodity: e.target.value as 'wool' | 'mohair' }
+                auction: { ...formData.auction, commodity_type_id: e.target.value }
               })}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.commodity_type_id ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={loadingCommodityTypes}
             >
-              <option value="wool">Wool</option>
-              <option value="mohair">Mohair</option>
+              {loadingCommodityTypes ? (
+                <option value="">Loading commodity types...</option>
+              ) : commodityTypes.length === 0 ? (
+                <option value="">No commodity types available</option>
+              ) : (
+                <>
+                  <option value="">Select commodity type</option>
+                  {commodityTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name} {type.description ? `- ${type.description}` : ''}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
+            {errors.commodity_type_id && (
+              <p className="mt-1 text-sm text-red-600">{errors.commodity_type_id}</p>
+            )}
+            {!loadingCommodityTypes && commodityTypes.length === 0 && (
+              <p className="mt-1 text-sm text-amber-600">
+                💡 No commodity types found. Please ensure the commodity_types table has data.
+              </p>
+            )}
           </div>
         </div>
         
@@ -1408,18 +1662,14 @@ const KeyIndicatorsTab: React.FC<{
   useEffect(() => {
     const loadPreviousData = async () => {
       try {
-        const latestReport = await AuctionDataService.getLatestAuctionReport();
-        setPreviousData(latestReport);
+        const result = await SupabaseService.getAuctionReport('latest');
+        if (result.success && result.data) {
+          setPreviousData(result.data);
+        }
       } catch (error) {
         console.error('Error loading previous auction data:', error);
-        // Add mock previous data for testing if no data is available
-        setPreviousData({
-          market_indices: {
-            merino_indicator_cents_clean: 18917, // Old field name for testing
-            certified_indicator_cents_clean: 18250, // Old field name for testing
-            awex_emi_cents_clean: 1247 // Old field name for testing
-          }
-        } as any);
+        // No previous data available - set to null so placeholders show
+        setPreviousData(null);
       }
     };
     loadPreviousData();
@@ -1427,58 +1677,67 @@ const KeyIndicatorsTab: React.FC<{
 
 
 
-  // Recalculate US and Euro values when exchange rates change (except AWEX EMI - handled in backend)
+  // Recalculate US and Euro values when exchange rates change (only for new reports, not when editing)
   useEffect(() => {
-    const zarUsd = formData.currency_fx?.ZAR_USD || 0;
-    const zarEur = formData.currency_fx?.ZAR_EUR || 0;
-    
-    if (zarUsd > 0 && zarEur > 0) {
-      const market_indices = { ...formData.market_indices };
-      let needsUpdate = false;
+    if (!editingReport) {
+      const zarUsd = typeof formData.currency_fx?.ZAR_USD === 'string' ? parseFloat(formData.currency_fx.ZAR_USD) || 0 : (formData.currency_fx?.ZAR_USD || 0);
+      const zarEur = typeof formData.currency_fx?.ZAR_EUR === 'string' ? parseFloat(formData.currency_fx.ZAR_EUR) || 0 : (formData.currency_fx?.ZAR_EUR || 0);
       
-      // Recalculate Merino indicators
-      if (market_indices.merino_indicator_sa_cents_clean > 0) {
-        const newUsValue = parseFloat((market_indices.merino_indicator_sa_cents_clean / zarUsd).toFixed(2));
-        const newEurValue = parseFloat((market_indices.merino_indicator_sa_cents_clean / zarEur).toFixed(2));
+      if (zarUsd > 0 && zarEur > 0) {
+        const market_indices = { ...formData.market_indices };
+        let needsUpdate = false;
         
-        if (market_indices.merino_indicator_us_cents_clean !== newUsValue || 
-            market_indices.merino_indicator_euro_cents_clean !== newEurValue) {
-          market_indices.merino_indicator_us_cents_clean = newUsValue;
-          market_indices.merino_indicator_euro_cents_clean = newEurValue;
-          needsUpdate = true;
+        // Recalculate Merino indicators
+        if (market_indices.merino_indicator_sa_cents_clean > 0) {
+          const newUsValue = parseFloat((market_indices.merino_indicator_sa_cents_clean / zarUsd).toFixed(2));
+          const newEurValue = parseFloat((market_indices.merino_indicator_sa_cents_clean / zarEur).toFixed(2));
+          
+          if (market_indices.merino_indicator_us_cents_clean !== newUsValue || 
+              market_indices.merino_indicator_euro_cents_clean !== newEurValue) {
+            market_indices.merino_indicator_us_cents_clean = newUsValue;
+            market_indices.merino_indicator_euro_cents_clean = newEurValue;
+            needsUpdate = true;
+          }
         }
-      }
-      
-      // Recalculate Certified indicators
-      if (market_indices.certified_indicator_sa_cents_clean > 0) {
-        const newUsValue = parseFloat((market_indices.certified_indicator_sa_cents_clean / zarUsd).toFixed(2));
-        const newEurValue = parseFloat((market_indices.certified_indicator_sa_cents_clean / zarEur).toFixed(2));
         
-        if (market_indices.certified_indicator_us_cents_clean !== newUsValue || 
-            market_indices.certified_indicator_euro_cents_clean !== newEurValue) {
-          market_indices.certified_indicator_us_cents_clean = newUsValue;
-          market_indices.certified_indicator_euro_cents_clean = newEurValue;
-          needsUpdate = true;
+        // Recalculate Certified indicators
+        if (market_indices.certified_indicator_sa_cents_clean > 0) {
+          const newUsValue = parseFloat((market_indices.certified_indicator_sa_cents_clean / zarUsd).toFixed(2));
+          const newEurValue = parseFloat((market_indices.certified_indicator_sa_cents_clean / zarEur).toFixed(2));
+          
+          if (market_indices.certified_indicator_us_cents_clean !== newUsValue || 
+              market_indices.certified_indicator_euro_cents_clean !== newEurValue) {
+            market_indices.certified_indicator_us_cents_clean = newUsValue;
+            market_indices.certified_indicator_euro_cents_clean = newEurValue;
+            needsUpdate = true;
+          }
         }
-      }
-      
-      // AWEX EMI calculations removed - will be handled in backend
-      
-      if (needsUpdate) {
-        updateFormData({ market_indices });
+        
+        // AWEX EMI calculations removed - will be handled in backend
+        
+        if (needsUpdate) {
+          updateFormData({ market_indices });
+        }
       }
     }
-  }, [formData.currency_fx?.ZAR_USD, formData.currency_fx?.ZAR_EUR]);
+  }, [formData.currency_fx?.ZAR_USD, formData.currency_fx?.ZAR_EUR, editingReport]);
 
   const handleMarketIndicesChange = (field: keyof MarketIndices, value: string) => {
     const market_indices = { ...formData.market_indices };
-    (market_indices as any)[field] = parseFloat(value) || 0;
+    // Allow empty string, and preserve the string value for display
+    // Only convert to number when we have a valid numeric value
+    if (value === '' || value === '.') {
+      (market_indices as any)[field] = 0;
+    } else {
+      const numericValue = parseFloat(value);
+      (market_indices as any)[field] = isNaN(numericValue) ? 0 : numericValue;
+    }
     
     
     // Auto-calculate US and Euro values when SA values change (except for AWEX EMI - handled in backend)
     const saValue = parseFloat(value) || 0;
-    const zarUsd = formData.currency_fx?.ZAR_USD || 0;
-    const zarEur = formData.currency_fx?.ZAR_EUR || 0;
+    const zarUsd = typeof formData.currency_fx?.ZAR_USD === 'string' ? parseFloat(formData.currency_fx.ZAR_USD) || 0 : (formData.currency_fx?.ZAR_USD || 0);
+    const zarEur = typeof formData.currency_fx?.ZAR_EUR === 'string' ? parseFloat(formData.currency_fx.ZAR_EUR) || 0 : (formData.currency_fx?.ZAR_EUR || 0);
     
     if (saValue > 0 && zarUsd > 0 && zarEur > 0) {
       if (field === 'merino_indicator_sa_cents_clean') {
@@ -1808,10 +2067,17 @@ const ExchangeRatesTab: React.FC<{
   useEffect(() => {
     const loadPreviousData = async () => {
       try {
-        const latestReport = await AuctionDataService.getLatestAuctionReport();
-        setPreviousData(latestReport);
+        const result = await SupabaseService.getAuctionReport('latest');
+        if (result.success && result.data) {
+          setPreviousData(result.data);
+        } else {
+          // No previous data available - set to null so placeholders show
+          setPreviousData(null);
+        }
       } catch (error) {
         console.error('Error loading previous auction data:', error);
+        // No previous data available - set to null so placeholders show
+        setPreviousData(null);
       }
     };
     loadPreviousData();
@@ -1819,7 +2085,14 @@ const ExchangeRatesTab: React.FC<{
 
   const handleCurrencyChange = (field: keyof CurrencyFX, value: string) => {
     const currency_fx = { ...formData.currency_fx };
-    (currency_fx as any)[field] = parseFloat(value) || 0;
+    // Store the raw string value to allow typing decimal points
+    // Only convert to number when we have a complete valid numeric value
+    if (value === '') {
+      (currency_fx as any)[field] = 0;
+    } else {
+      // Store as string to preserve decimal point during typing
+      (currency_fx as any)[field] = value;
+    }
     updateFormData({ currency_fx });
   };
 
@@ -1853,10 +2126,21 @@ const ExchangeRatesTab: React.FC<{
               />
             </label>
             <input
-              type="number"
-              step="0.0001"
-              value={formData.currency_fx?.ZAR_USD || ''}
-              onChange={(e) => handleCurrencyChange('ZAR_USD', e.target.value)}
+              type="text"
+              value={String(formData.currency_fx?.ZAR_USD || '')}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                handleCurrencyChange('ZAR_USD', value);
+              }}
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value && !isNaN(parseFloat(value))) {
+                  const numericValue = parseFloat(value);
+                  const currency_fx = { ...formData.currency_fx };
+                  currency_fx.ZAR_USD = numericValue;
+                  updateFormData({ currency_fx });
+                }
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., 17.67"
             />
@@ -1875,10 +2159,21 @@ const ExchangeRatesTab: React.FC<{
               />
             </label>
             <input
-              type="number"
-              step="0.0001"
-              value={formData.currency_fx?.ZAR_EUR || ''}
-              onChange={(e) => handleCurrencyChange('ZAR_EUR', e.target.value)}
+              type="text"
+              value={String(formData.currency_fx?.ZAR_EUR || '')}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                handleCurrencyChange('ZAR_EUR', value);
+              }}
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value && !isNaN(parseFloat(value))) {
+                  const numericValue = parseFloat(value);
+                  const currency_fx = { ...formData.currency_fx };
+                  currency_fx.ZAR_EUR = numericValue;
+                  updateFormData({ currency_fx });
+                }
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., 20.54"
             />
@@ -1897,10 +2192,21 @@ const ExchangeRatesTab: React.FC<{
               />
             </label>
             <input
-              type="number"
-              step="0.0001"
-              value={formData.currency_fx?.ZAR_JPY || ''}
-              onChange={(e) => handleCurrencyChange('ZAR_JPY', e.target.value)}
+              type="text"
+              value={String(formData.currency_fx?.ZAR_JPY || '')}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                handleCurrencyChange('ZAR_JPY', value);
+              }}
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value && !isNaN(parseFloat(value))) {
+                  const numericValue = parseFloat(value);
+                  const currency_fx = { ...formData.currency_fx };
+                  currency_fx.ZAR_JPY = numericValue;
+                  updateFormData({ currency_fx });
+                }
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., 8.38"
             />
@@ -1922,10 +2228,21 @@ const ExchangeRatesTab: React.FC<{
               />
             </label>
             <input
-              type="number"
-              step="0.0001"
-              value={formData.currency_fx?.ZAR_GBP || ''}
-              onChange={(e) => handleCurrencyChange('ZAR_GBP', e.target.value)}
+              type="text"
+              value={String(formData.currency_fx?.ZAR_GBP || '')}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                handleCurrencyChange('ZAR_GBP', value);
+              }}
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value && !isNaN(parseFloat(value))) {
+                  const numericValue = parseFloat(value);
+                  const currency_fx = { ...formData.currency_fx };
+                  currency_fx.ZAR_GBP = numericValue;
+                  updateFormData({ currency_fx });
+                }
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., 23.79"
             />
@@ -1944,10 +2261,22 @@ const ExchangeRatesTab: React.FC<{
               />
             </label>
             <input
-              type="number"
-              step="0.0001"
-              value={formData.currency_fx?.USD_AUD || ''}
-              onChange={(e) => handleCurrencyChange('USD_AUD', e.target.value)}
+              type="text"
+              value={String(formData.currency_fx?.USD_AUD || '')}
+              onChange={(e) => {
+                // Allow only numbers, decimal point, and leading/trailing spaces
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                handleCurrencyChange('USD_AUD', value);
+              }}
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value && !isNaN(parseFloat(value))) {
+                  const numericValue = parseFloat(value);
+                  const currency_fx = { ...formData.currency_fx };
+                  currency_fx.USD_AUD = numericValue;
+                  updateFormData({ currency_fx });
+                }
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., 0.6442"
             />
@@ -1971,10 +2300,19 @@ const ExchangeRatesTab: React.FC<{
               />
             </label>
             <input
-              type="number"
-              step="0.01"
+              type="text"
               value={formData.market_indices?.awex_emi_sa_cents_clean || ''}
-              onChange={(e) => handleMarketIndicesChange('awex_emi_sa_cents_clean', e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                handleMarketIndicesChange('awex_emi_sa_cents_clean', value);
+              }}
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value && !isNaN(parseFloat(value))) {
+                  const formatted = parseFloat(value).toString();
+                  handleMarketIndicesChange('awex_emi_sa_cents_clean', formatted);
+                }
+              }}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., 1344"
             />
@@ -1997,138 +2335,17 @@ const MarketSummaryTab: React.FC<{
   useEffect(() => {
     const loadPreviousData = async () => {
       try {
-        const latestReport = await AuctionDataService.getLatestAuctionReport();
-        // Always use mock data for testing - comment out the real data loading
-        // if (latestReport) {
-        //   setPreviousData(latestReport);
-        // } else {
-        // Set mock data for testing when no previous data is available
-        // Data from Cape Wools Catalogue 202504 (10/09/2025) - Previous Auction
-        setPreviousData({
-          auction: {
-            season_label: '2025/26',
-            catalogue_name: 'CG04',
-            auction_date: '2025-09-10',
-            auction_center: 'Port Elizabeth',
-            commodity: 'wool',
-            week_start: '2025-09-08',
-            week_end: '2025-09-14'
-          },
-          indicators: [],
-          benchmarks: [],
-          micron_prices: [],
-          buyers: [],
-          brokers: [],
-          currencies: [],
-          insights: '',
-          trends: { trend_type: 'stable', description: '', confidence: 0 },
-          provincial_producers: [],
-          province_avg_prices: [],
-          market_indices: {
-            merino_indicator_sa_cents_clean: 18917,
-            merino_indicator_us_cents_clean: 1079,
-            merino_indicator_euro_cents_clean: 924,
-            certified_indicator_sa_cents_clean: 19534,
-            certified_indicator_us_cents_clean: 1114,
-            certified_indicator_euro_cents_clean: 954,
-            awex_emi_sa_cents_clean: 1319
-          },
-          currency_fx: {
-            ZAR_USD: 17.53,
-            ZAR_EUR: 20.48,
-            ZAR_JPY: 8.42,
-            ZAR_GBP: 23.66,
-            USD_AUD: 0.6585
-          },
-          supply_stats: {
-            offered_bales: 5841,
-            sold_bales: 5376,
-            clearance_rate_pct: 92.1
-          },
-          highest_price: {
-            price_cents_clean: 23264,
-            micron: 17.2,
-            bales: 7
-          },
-          certified_share: {
-            offered_bales: 3800,
-            sold_bales: 3650,
-            all_wool_pct_offered: 58.2,
-            all_wool_pct_sold: 61.8,
-            merino_pct_offered: 15.2,
-            merino_pct_sold: 16.8
-          },
-          greasy_stats: {
-            turnover_rand: 45680000,
-            bales: 5376,
-            mass_kg: 1892340
-          }
-        } as any);
-        // }
+        const result = await SupabaseService.getAuctionReport('latest');
+        if (result.success && result.data) {
+          setPreviousData(result.data);
+        } else {
+          // No previous data available - set to null so placeholders show
+          setPreviousData(null);
+        }
       } catch (error) {
         console.error('Error loading previous auction data:', error);
-        // Set mock data for testing when no previous data is available
-        // Data from Cape Wools Catalogue 202504 (10/09/2025) - Previous Auction
-        setPreviousData({
-          auction: {
-            season_label: '2025/26',
-            catalogue_name: 'CG04',
-            auction_date: '2025-09-10',
-            auction_center: 'Port Elizabeth',
-            commodity: 'wool',
-            week_start: '2025-09-08',
-            week_end: '2025-09-14'
-          },
-          indicators: [],
-          benchmarks: [],
-          micron_prices: [],
-          buyers: [],
-          brokers: [],
-          currencies: [],
-          insights: '',
-          trends: { trend_type: 'stable', description: '', confidence: 0 },
-          provincial_producers: [],
-          province_avg_prices: [],
-          market_indices: {
-            merino_indicator_sa_cents_clean: 18917,
-            merino_indicator_us_cents_clean: 1079,
-            merino_indicator_euro_cents_clean: 924,
-            certified_indicator_sa_cents_clean: 19534,
-            certified_indicator_us_cents_clean: 1114,
-            certified_indicator_euro_cents_clean: 954,
-            awex_emi_sa_cents_clean: 1319
-          },
-          currency_fx: {
-            ZAR_USD: 17.53,
-            ZAR_EUR: 20.48,
-            ZAR_JPY: 8.42,
-            ZAR_GBP: 23.66,
-            USD_AUD: 0.6585
-          },
-          supply_stats: {
-            offered_bales: 5841,
-            sold_bales: 5376,
-            clearance_rate_pct: 92.1
-          },
-          highest_price: {
-            price_cents_clean: 23264,
-            micron: 17.2,
-            bales: 7
-          },
-          certified_share: {
-            offered_bales: 3800,
-            sold_bales: 3650,
-            all_wool_pct_offered: 58.2,
-            all_wool_pct_sold: 61.8,
-            merino_pct_offered: 15.2,
-            merino_pct_sold: 16.8
-          },
-          greasy_stats: {
-            turnover_rand: 45680000,
-            bales: 5376,
-            mass_kg: 1892340
-          }
-        } as any);
+        // No previous data available - set to null so placeholders show
+        setPreviousData(null);
       }
     };
     loadPreviousData();
@@ -2137,6 +2354,19 @@ const MarketSummaryTab: React.FC<{
   const handleSupplyStatsChange = (field: keyof SupplyStats, value: string) => {
     const supply_stats = { ...formData.supply_stats };
     (supply_stats as any)[field] = parseFloat(value) || 0;
+    
+    // Auto-calculate clearance rate when sold_bales or offered_bales change
+    if (field === 'sold_bales' || field === 'offered_bales') {
+      const soldBales = field === 'sold_bales' ? (supply_stats as any)[field] : (supply_stats as any).sold_bales;
+      const offeredBales = field === 'offered_bales' ? (supply_stats as any)[field] : (supply_stats as any).offered_bales;
+      
+      if (offeredBales > 0) {
+        (supply_stats as any).clearance_rate_pct = Number(((soldBales / offeredBales) * 100).toFixed(2));
+      } else {
+        (supply_stats as any).clearance_rate_pct = 0;
+      }
+    }
+    
     updateFormData({ supply_stats });
   };
 
@@ -2236,8 +2466,11 @@ const MarketSummaryTab: React.FC<{
                   value={formData.supply_stats?.clearance_rate_pct || ''}
                   onChange={(e) => handleSupplyStatsChange('clearance_rate_pct', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 93.5"
+                  placeholder="Auto-calculated from sold/offered bales"
                 />
+                <div className="text-xs text-blue-600 mt-1">
+                  Auto-calculated: (sold bales ÷ offered bales) × 100
+                </div>
                 <PercentageChangeTag 
                   currentValue={formData.supply_stats?.clearance_rate_pct}
                   previousValue={previousData?.supply_stats?.clearance_rate_pct}
@@ -2709,20 +2942,47 @@ const MicronPricesTab: React.FC<{
   useEffect(() => {
     const loadPreviousData = async () => {
       try {
-        const latestReport = await AuctionDataService.getLatestAuctionReport();
-        setPreviousData(latestReport);
+        const result = await SupabaseService.getAuctionReport('latest');
+        if (result.success && result.data) {
+          setPreviousData(result.data);
+        } else {
+          // No previous data available - set to null so placeholders show
+          setPreviousData(null);
+        }
       } catch (error) {
         console.error('Error loading previous auction data:', error);
+        // No previous data available - set to null so placeholders show
+        setPreviousData(null);
       }
     };
     loadPreviousData();
   }, []);
 
-  const handleMicronPriceChange = (index: number, value: string) => {
-    const micron_prices = [...formData.micron_prices];
-    micron_prices[index].price_clean_zar_per_kg = parseFloat(value) || 0;
-    updateFormData({ micron_prices });
-  };
+  // Initialize common microns on component mount (only for new reports, not when editing)
+  useEffect(() => {
+    if (!editingReport && (!formData.micron_price_comparison?.rows || formData.micron_price_comparison.rows.length === 0)) {
+      const micron_price_comparison = { ...formData.micron_price_comparison };
+      if (!micron_price_comparison.rows) micron_price_comparison.rows = [];
+      
+      // Common micron values from Cape Wools reports
+      const commonMicrons = [17.0, 17.5, 18.0, 18.5, 19.0, 19.5, 20.0, 20.5, 21.0, 21.5, 22.0];
+      
+      commonMicrons.forEach(micron => {
+        // Only add if not already present
+        if (!micron_price_comparison.rows.some(row => row.micron === micron)) {
+          micron_price_comparison.rows.push({
+            micron,
+            non_cert_clean_zar_per_kg: null,
+            cert_clean_zar_per_kg: null,
+            pct_difference: null
+          });
+        }
+      });
+      
+      updateFormData({ micron_price_comparison });
+    }
+  }, [editingReport]);
+
 
   const handleMicronComparisonChange = (index: number, field: keyof MicronPriceComparison, value: string) => {
     const micron_price_comparison = { ...formData.micron_price_comparison };
@@ -2762,33 +3022,17 @@ const MicronPricesTab: React.FC<{
     const micron_price_comparison = { ...formData.micron_price_comparison };
     if (!micron_price_comparison.rows) micron_price_comparison.rows = [];
     
+    // Find the next available micron value (start from 15.0 and go up)
+    let nextMicron = 15.0;
+    while (micron_price_comparison.rows.some(row => row.micron === nextMicron)) {
+      nextMicron += 0.5;
+    }
+    
     micron_price_comparison.rows.push({
-      micron: 17.0,
+      micron: nextMicron,
       non_cert_clean_zar_per_kg: null,
       cert_clean_zar_per_kg: null,
       pct_difference: null
-    });
-    
-    updateFormData({ micron_price_comparison });
-  };
-
-  const addAllMicronComparisons = () => {
-    const micron_price_comparison = { ...formData.micron_price_comparison };
-    if (!micron_price_comparison.rows) micron_price_comparison.rows = [];
-    
-    // Common micron values from Cape Wools reports
-    const commonMicrons = [17.0, 17.5, 18.0, 18.5, 19.0, 19.5, 20.0, 20.5, 21.0, 21.5, 22.0];
-    
-    commonMicrons.forEach(micron => {
-      // Only add if not already present
-      if (!micron_price_comparison.rows.some(row => row.micron === micron)) {
-        micron_price_comparison.rows.push({
-          micron,
-          non_cert_clean_zar_per_kg: null,
-          cert_clean_zar_per_kg: null,
-          pct_difference: null
-        });
-      }
     });
     
     // Sort by micron value
@@ -2797,6 +3041,7 @@ const MicronPricesTab: React.FC<{
     updateFormData({ micron_price_comparison });
   };
 
+
   return (
     <div className="space-y-6">
       <div>
@@ -2804,28 +3049,6 @@ const MicronPricesTab: React.FC<{
         <p className="text-gray-600 text-sm">Enter clean wool prices and certified vs non-certified price comparisons.</p>
       </div>
       
-      {/* Basic Micron Prices */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Basic Micron Prices (ZAR/kg clean)</h3>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-          {formData.micron_prices.map((price, index) => (
-            <div key={price.bucket_micron} className="text-center">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                {price.bucket_micron}μ
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={price.price_clean_zar_per_kg || ''}
-                onChange={e => handleMicronPriceChange(index, e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
-                placeholder="0.00"
-              />
-              <span className="text-xs text-gray-500">{price.category}</span>
-              </div>
-          ))}
-        </div>
-      </div>
 
       {/* Cape Wools Micron Price Comparison */}
       <div>
@@ -2836,16 +3059,10 @@ const MicronPricesTab: React.FC<{
           </div>
           <div className="flex gap-2">
             <button
-              onClick={addAllMicronComparisons}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
-            >
-              Add All Microns
-            </button>
-            <button
               onClick={addMicronComparison}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
             >
-              Add Single
+              Add Extra Micron
             </button>
           </div>
         </div>
@@ -2965,17 +3182,123 @@ const BuyersBrokersTab: React.FC<{
     brokers: Array<{ name: string; description: string }>;
   };
   onOpenModal: (type: 'buyer' | 'broker') => void;
-}> = ({ formData, updateFormData, errors, customEntries, onOpenModal }) => {
-  const BUYERS = ["BKB Pinnacle Fibres", "G Modiano SA", "Lempriere (Pty) Ltd", "Modiano SA", "Ovk Wool", "Standard Wool", "Tianyu Wool", "Viterra Wool"];
-  const BROKERS = ["BKB", "OVK", "JLW", "MAS", "QWB", "VLB"];
+  buyersRefreshTrigger: number;
+  brokersRefreshTrigger: number;
+}> = ({ formData, updateFormData, errors, customEntries, onOpenModal, buyersRefreshTrigger, brokersRefreshTrigger }) => {
+  const [databaseBuyers, setDatabaseBuyers] = useState<Array<{ id: string; buyer_name: string }>>([]);
+  const [loadingBuyers, setLoadingBuyers] = useState(true);
+  const [databaseBrokers, setDatabaseBrokers] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingBrokers, setLoadingBrokers] = useState(true);
   
-  // Combine default and custom entries
-  const allBuyers = ["[+Add New]", ...BUYERS, ...customEntries.buyers.map(b => b.name)];
-  const allBrokers = ["[+Add New]", ...BROKERS, ...customEntries.brokers.map(b => b.name)];
+  // Load buyers from database
+  useEffect(() => {
+    const loadBuyers = async () => {
+      try {
+        setLoadingBuyers(true);
+        const { SupabaseAuctionDataService } = await import('../../data/supabase-service');
+        const result = await SupabaseAuctionDataService.getAllBuyers();
+        
+        if (result.success && result.data) {
+          setDatabaseBuyers(result.data);
+        } else {
+          console.error('Failed to load buyers:', result.error);
+          // Fallback to hardcoded buyers if database fails
+          setDatabaseBuyers([
+            { id: '1', buyer_name: 'BKB Pinnacle Fibres' },
+            { id: '2', buyer_name: 'G Modiano SA' },
+            { id: '3', buyer_name: 'Lempriere (Pty) Ltd' },
+            { id: '4', buyer_name: 'Modiano SA' },
+            { id: '5', buyer_name: 'Ovk Wool' },
+            { id: '6', buyer_name: 'Standard Wool' },
+            { id: '7', buyer_name: 'Tianyu Wool' },
+            { id: '8', buyer_name: 'Viterra Wool' }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading buyers:', error);
+      } finally {
+        setLoadingBuyers(false);
+      }
+    };
+    
+    loadBuyers();
+  }, [buyersRefreshTrigger]);
+  
+  // Load brokers from database
+  useEffect(() => {
+    const loadBrokers = async () => {
+      try {
+        setLoadingBrokers(true);
+        const { SupabaseAuctionDataService } = await import('../../data/supabase-service');
+        const result = await SupabaseAuctionDataService.getAllBrokers();
+        
+        if (result.success && result.data) {
+          setDatabaseBrokers(result.data);
+        } else {
+          console.error('Failed to load brokers:', result.error);
+          // Fallback to hardcoded brokers if database fails
+          setDatabaseBrokers([
+            { id: '1', name: 'BKB' },
+            { id: '2', name: 'OVK' },
+            { id: '3', name: 'JLW' },
+            { id: '4', name: 'MAS' },
+            { id: '5', name: 'QWB' },
+            { id: '6', name: 'VLB' }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading brokers:', error);
+      } finally {
+        setLoadingBrokers(false);
+      }
+    };
+    
+    loadBrokers();
+  }, [brokersRefreshTrigger]);
+  
+  // Get selected buyer names to filter them out
+  const selectedBuyerNames = formData.buyers.map(b => b.buyer).filter(Boolean);
+  
+  // Get selected broker names to filter them out
+  const selectedBrokerNames = formData.brokers.map(b => b.name).filter(Boolean);
+  
+  // Combine database buyers with custom entries, excluding already selected ones
+  const availableBuyers = databaseBuyers
+    .filter(b => !selectedBuyerNames.includes(b.buyer_name))
+    .map(b => b.buyer_name);
+    
+  // Combine database brokers with custom entries, excluding already selected ones
+  const availableBrokers = databaseBrokers
+    .filter(b => !selectedBrokerNames.includes(b.name))
+    .map(b => b.name);
+    
+  // Create buyers list with currently selected values included
+  const createBuyersList = (currentBuyerValue?: string) => {
+    const baseBuyers = ["[+Add New]", ...availableBuyers, ...customEntries.buyers.map(b => b.name).filter(name => !selectedBuyerNames.includes(name))];
+    
+    // If there's a current buyer value and it's not in the list, add it
+    if (currentBuyerValue && currentBuyerValue !== '[+Add New]' && !baseBuyers.includes(currentBuyerValue)) {
+      baseBuyers.push(currentBuyerValue);
+    }
+    
+    return baseBuyers;
+  };
+  
+  // Create brokers list with currently selected values included
+  const createBrokersList = (currentBrokerValue?: string) => {
+    const baseBrokers = ["[+Add New]", ...availableBrokers, ...customEntries.brokers.map(b => b.name).filter(name => !selectedBrokerNames.includes(name))];
+    
+    // If there's a current broker value and it's not in the list, add it
+    if (currentBrokerValue && currentBrokerValue !== '[+Add New]' && !baseBrokers.includes(currentBrokerValue)) {
+      baseBrokers.push(currentBrokerValue);
+    }
+    
+    return baseBrokers;
+  };
 
   const addBuyer = () => {
     const newBuyer = {
-      buyer: BUYERS[0],
+      buyer: availableBuyers[0] || '',
       share_pct: 0,
       cat: 0,
       bales_ytd: 0
@@ -2985,7 +3308,7 @@ const BuyersBrokersTab: React.FC<{
 
   const addBroker = () => {
     const newBroker = {
-      name: BROKERS[0],
+      name: availableBrokers[0] || '',
       catalogue_offering: 0,
       withdrawn_before_sale: 0,
       wool_offered: 0,
@@ -3148,7 +3471,7 @@ const BuyersBrokersTab: React.FC<{
                       onChange={(e) => handleBuyerChange(index, 'buyer', e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
-                      {allBuyers.map(b => (
+                      {createBuyersList(buyer.buyer).map(b => (
                         <option key={b} value={b} className={b === '[+Add New]' ? 'text-blue-600 font-medium' : ''}>
                           {b}
                         </option>
@@ -3251,7 +3574,7 @@ const BuyersBrokersTab: React.FC<{
                       onChange={(e) => handleBrokerChange(index, 'name', e.target.value)}
                       className="w-full p-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
                     >
-                      {allBrokers.map(b => (
+                      {createBrokersList(broker.name).map(b => (
                         <option key={b} value={b} className={b === '[+Add New]' ? 'text-blue-600 font-medium' : ''}>
                           {b}
                         </option>
@@ -4289,7 +4612,7 @@ const ReviewSaveTab: React.FC<{
       certifiedIndicator: formData.market_indices?.certified_indicator_sa_cents_clean ? 1 : 0,
       
       // Currency Exchange (10%) - Essential for public report
-      zarUsd: formData.currency_fx?.ZAR_USD ? 1 : 0,
+      zarUsd: getNumericValue(formData.currency_fx?.ZAR_USD) ? 1 : 0,
     };
     
     const totalFields = Object.keys(fieldChecks).length;
@@ -4551,31 +4874,31 @@ const ReviewSaveTab: React.FC<{
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">ZAR/USD</span>
               <span className="text-sm font-semibold">
-                {formData.currency_fx?.ZAR_USD ? formData.currency_fx.ZAR_USD.toFixed(2) : 'N/A'}
+                {formData.currency_fx?.ZAR_USD ? getNumericValue(formData.currency_fx.ZAR_USD).toFixed(2) : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">ZAR/EUR</span>
               <span className="text-sm font-semibold">
-                {formData.currency_fx?.ZAR_EUR ? formData.currency_fx.ZAR_EUR.toFixed(2) : 'N/A'}
+                {formData.currency_fx?.ZAR_EUR ? getNumericValue(formData.currency_fx.ZAR_EUR).toFixed(2) : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">ZAR/JPY</span>
               <span className="text-sm font-semibold">
-                {formData.currency_fx?.ZAR_JPY ? formData.currency_fx.ZAR_JPY.toFixed(2) : 'N/A'}
+                {formData.currency_fx?.ZAR_JPY ? getNumericValue(formData.currency_fx.ZAR_JPY).toFixed(2) : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">ZAR/GBP</span>
               <span className="text-sm font-semibold">
-                {formData.currency_fx?.ZAR_GBP ? formData.currency_fx.ZAR_GBP.toFixed(2) : 'N/A'}
+                {formData.currency_fx?.ZAR_GBP ? getNumericValue(formData.currency_fx.ZAR_GBP).toFixed(2) : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">USD/AUD</span>
               <span className="text-sm font-semibold">
-                {formData.currency_fx?.USD_AUD ? formData.currency_fx.USD_AUD.toFixed(4) : 'N/A'}
+                {formData.currency_fx?.USD_AUD ? getNumericValue(formData.currency_fx.USD_AUD).toFixed(4) : 'N/A'}
               </span>
             </div>
           </div>
@@ -4657,13 +4980,13 @@ const ReviewSaveTab: React.FC<{
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm text-gray-600">ZAR/USD</span>
                     <span className="font-semibold">
-                      {formData.currency_fx?.ZAR_USD ? formData.currency_fx.ZAR_USD.toFixed(2) : 'N/A'}
+                      {formData.currency_fx?.ZAR_USD ? getNumericValue(formData.currency_fx.ZAR_USD).toFixed(2) : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm text-gray-600">ZAR/Euro</span>
                     <span className="font-semibold">
-                      {formData.currency_fx?.ZAR_EUR ? formData.currency_fx.ZAR_EUR.toFixed(2) : 'N/A'}
+                      {formData.currency_fx?.ZAR_EUR ? getNumericValue(formData.currency_fx.ZAR_EUR).toFixed(2) : 'N/A'}
                     </span>
                   </div>
                 </div>
