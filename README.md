@@ -8,6 +8,17 @@ A comprehensive React-based web application for tracking and analyzing wool mark
 
 ## 🎯 Latest Updates
 
+- ✅ **Complete User Management System**: Full user administration with role-based access control and approval workflow
+- ✅ **Database Schema Normalization**: Removed redundant status column, using proper foreign key relationships with user_types table
+- ✅ **User Types & Permissions**: Comprehensive role system (super_admin, admin, editor, viewer) with granular permissions
+- ✅ **User Approval Workflow**: New users require admin approval before gaining access to the system
+- ✅ **Production Database Cleanup**: Cleaned all test data while preserving essential structure and super admin account
+- ✅ **Fixed Database Relationships**: Resolved infinite recursion in RLS policies and relationship mapping issues
+- ✅ **Enhanced Authentication**: Improved user authentication with proper profile management and session handling
+- ✅ **Complete Edit Auction Functionality**: Full CRUD operations for auction data with proper create/update logic
+- ✅ **Fixed Buyer & Broker Performance**: Resolved data saving issues with proper foreign key mapping
+- ✅ **Database Schema Optimization**: Updated table structures for micron_prices, buyer_performance, and broker_performance
+- ✅ **CASCADE Deletion**: Automatic cleanup of related data when auctions are deleted
 - ✅ **URL-Based Auction Routing**: Direct access to specific auctions via season+catalogue URLs (e.g., /202501, /202552)
 - ✅ **Shareable Auction Links**: Bookmark and share specific auction reports with clean, descriptive URLs
 - ✅ **Browser Navigation**: Full browser back/forward button support for auction navigation
@@ -59,6 +70,10 @@ This application serves as a comprehensive market intelligence platform for the 
 - **Provincial Analysis**: Geographic breakdown of average prices and top producers by South African provinces
 
 ### 🛠️ Administrative Tools
+- **Complete User Management System**: Full user administration with role-based access control and approval workflow
+- **User Types & Permissions**: Comprehensive role system (super_admin, admin, editor, viewer) with granular permissions
+- **User Approval Workflow**: New users require admin approval before gaining access to the system
+- **Enhanced Authentication**: Improved user authentication with proper profile management and session handling
 - **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
 - **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
 - **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
@@ -85,8 +100,9 @@ This application serves as a comprehensive market intelligence platform for the 
 - **HTML2Canvas & jsPDF** for report generation and PDF export
 
 ### Backend Stack
-- **Node.js** with Express.js for API server
-- **JSON-based storage** for data persistence
+- **Supabase** for PostgreSQL database with real-time capabilities
+- **Node.js** with Express.js for API server (legacy support)
+- **JSON-based storage** for data persistence (legacy support)
 - **CORS enabled** for cross-origin requests
 - **Helmet** for security headers
 - **Morgan** for request logging
@@ -101,12 +117,15 @@ This application serves as a comprehensive market intelligence platform for the 
 ├── vite.config.ts         # Build configuration with environment variables
 ├── cape-wools-weekly-reports.schema+data.json # Cape Wools data schema and sample data
 ├── data/                  # Data management layer
-│   ├── service.ts         # Auction data service for CRUD operations
-│   ├── api-service.ts     # API service for backend communication
-│   ├── storage.ts         # Local storage management
+│   ├── supabase-service.ts # Supabase database service with full CRUD operations
+│   ├── service.ts         # Auction data service for CRUD operations (legacy)
+│   ├── api-service.ts     # API service for backend communication (legacy)
+│   ├── storage.ts         # Local storage management (legacy)
 │   ├── transformers.ts    # Data transformation utilities
 │   ├── models.ts          # Data model definitions
 │   └── index.ts           # Data layer exports
+├── lib/                   # External library configurations
+│   └── supabase.ts        # Supabase client configuration
 ├── server/                # Backend API server
 │   ├── server.js          # Express.js server setup
 │   ├── database.js        # JSON database management
@@ -189,11 +208,48 @@ The platform features an advanced URL routing system that allows direct access t
 - `www.ovkfiber.co.za/202501` → 2025 season, CAT01 auction report
 - `www.ovkfiber.co.za/202552` → 2025 season, CAT52 auction report
 
+## 🗄️ Database Integration
+
+The application now features full Supabase integration with a comprehensive PostgreSQL database schema:
+
+### Database Schema
+- **users**: User management with role-based access control and approval workflow
+- **user_types**: User role definitions (super_admin, admin, editor, viewer) with granular permissions
+- **seasons**: Season management with 12-month cycles
+- **auctions**: Core auction data with status tracking (Draft/Published)
+- **micron_prices**: Micron-specific pricing data with certified vs non-certified comparisons
+- **buyer_performance**: Buyer market share and performance tracking
+- **broker_performance**: Broker catalogue offerings and sales performance
+- **top_performers**: Provincial producer rankings and performance data
+- **market_insights**: AI-generated market commentary and analysis
+- **buyers**: Buyer master data with foreign key relationships
+- **brokers**: Broker master data with foreign key relationships
+- **provinces**: South African province reference data
+- **certifications**: Certification type reference data
+- **commodity_types**: Commodity type reference data
+
+### Key Features
+- **Full CRUD Operations**: Complete Create, Read, Update, Delete functionality
+- **Foreign Key Relationships**: Proper data integrity with CASCADE deletion
+- **Real-time Updates**: Live data synchronization across the application
+- **Data Validation**: Database-level constraints and validation
+- **Audit Trail**: Created/updated timestamps and user tracking
+- **Optimized Queries**: Efficient data retrieval with proper indexing
+
+### Edit Auction Functionality
+- **Create New Auctions**: Full form-based auction creation with all data sections
+- **Edit Existing Auctions**: Complete edit functionality with data loading and saving
+- **Draft System**: Save incomplete data as drafts for later completion
+- **Publish Workflow**: Finalize and publish completed auction reports
+- **Data Persistence**: All form data properly saved to database tables
+- **Relationship Management**: Proper handling of related data across tables
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 - **Node.js** (version 18 or higher recommended)
 - **npm** or **yarn** package manager
+- **Supabase Account** for database hosting
 
 ### Installation
 
@@ -211,6 +267,10 @@ The platform features an advanced URL routing system that allows direct access t
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
    ```env
+   # Supabase Configuration
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   
    # Google Gemini AI Configuration
    VITE_GEMINI_API_KEY=your_gemini_api_key_here
    
@@ -295,6 +355,37 @@ The application manages comprehensive auction data with a sophisticated data arc
 - Track buyer preferences and market demand
 - Analyze pricing trends for strategic planning
 - Generate client performance reports
+
+## 👥 User Management System
+
+The platform features a comprehensive user management system with role-based access control and approval workflow:
+
+### User Roles & Permissions
+- **Super Admin**: Full system access including user management, system configuration, and all data operations
+- **Admin**: Administrative access including user management, auction management, and data operations
+- **Editor**: Can create and edit auction reports, manage market data, and view analytics
+- **Viewer**: Read-only access to view auction reports and market analytics
+
+### User Approval Workflow
+- **New User Registration**: Users sign up through the authentication system
+- **Pending Approval**: New users are created with "pending" approval status
+- **Admin Approval**: Super admins and admins can approve or reject new user requests
+- **Access Control**: Only approved users can access the admin interface
+- **Role Assignment**: Admins can assign appropriate roles to approved users
+
+### User Management Features
+- **User Creation**: Admins can create new users directly from the admin interface
+- **Role Management**: Assign and modify user roles with granular permissions
+- **User Status Control**: Activate/deactivate users and manage their access
+- **Approval Tracking**: Track who approved users and when
+- **User Analytics**: View user activity and system usage statistics
+- **Password Management**: Secure password handling with temporary password generation
+
+### Security Features
+- **Row Level Security (RLS)**: Database-level security policies for data access control
+- **Session Management**: Secure user sessions with proper authentication
+- **Foreign Key Relationships**: Proper data integrity with user type references
+- **Audit Trail**: Complete tracking of user actions and system changes
 
 ## 🤖 AI-Powered Market Insights
 
@@ -438,7 +529,16 @@ This project is proprietary software developed for OVK. All rights reserved.
 
 ### Completed Features
 - ✅ **Core Application Structure**: React app with TypeScript and Vite
+- ✅ **Complete User Management System**: Full user administration with role-based access control and approval workflow
+- ✅ **User Types & Permissions**: Comprehensive role system (super_admin, admin, editor, viewer) with granular permissions
+- ✅ **User Approval Workflow**: New users require admin approval before gaining access to the system
+- ✅ **Database Schema Normalization**: Removed redundant status column, using proper foreign key relationships
+- ✅ **Enhanced Authentication**: Improved user authentication with proper profile management and session handling
 - ✅ **Market Dashboard**: Interactive auction selection and data visualization
+- ✅ **Complete Edit Auction Functionality**: Full CRUD operations with proper create/update logic
+- ✅ **Database Integration**: Full Supabase PostgreSQL integration with comprehensive schema
+- ✅ **Buyer & Broker Performance**: Fixed data saving with proper foreign key mapping
+- ✅ **CASCADE Deletion**: Automatic cleanup of related data when auctions are deleted
 - ✅ **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
 - ✅ **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
 - ✅ **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
@@ -450,21 +550,20 @@ This project is proprietary software developed for OVK. All rights reserved.
 - ✅ **OVK Brand Enhancement**: AI always highlights OVK's positive market position and contributions
 - ✅ **Enhanced Input Formatting**: Currency formatting with thousands separators
 - ✅ **Improved Form Controls**: Catalogue number input with 2-digit formatting and natural typing
-- ✅ **Data Management**: Local storage with structured data models
+- ✅ **Data Management**: Supabase database with structured data models and relationships
 - ✅ **Mobile-First Design**: Complete mobile component library with responsive layouts
 - ✅ **Mobile Components**: Dedicated mobile components for all major features
 - ✅ **Responsive Layout System**: Smart breakpoint detection and component switching
 - ✅ **Touch Optimization**: Mobile-friendly interactions and gesture support
 - ✅ **Chart Integration**: ApexCharts and Recharts for data visualization
 - ✅ **Mobile Charts**: Touch-optimized chart components with mobile-specific features
-- ✅ **Authentication**: Basic admin authentication system
+- ✅ **Authentication**: Complete admin authentication system with user management
 - ✅ **Data Validation**: Form validation and data integrity checks
 
 ### In Development
 - 🔄 **Enhanced Analytics**: Advanced market trend analysis
 - 🔄 **Report Generation**: PDF export functionality
 - 🔄 **Data Import/Export**: CSV and JSON data handling
-- 🔄 **User Management**: Multi-user support and role-based access
 
 ### Planned Features
 - 📋 **Cape Mohair Reports**: Extension for mohair market data
