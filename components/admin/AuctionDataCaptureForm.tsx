@@ -448,24 +448,58 @@ const SuccessModal: React.FC<{
 }> = ({ isOpen, onClose, title, message }) => {
   if (!isOpen) return null;
 
+  const isPublished = title.includes('Published');
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-4">
-          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+        <div className={`flex items-center justify-center w-16 h-16 rounded-full mx-auto mb-4 ${
+          isPublished ? 'bg-green-100' : 'bg-blue-100'
+        }`}>
+          {isPublished ? (
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
         </div>
         
-        <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">{title}</h3>
+        <h3 className={`text-lg font-semibold text-center mb-2 ${
+          isPublished ? 'text-green-900' : 'text-gray-900'
+        }`}>{title}</h3>
         <p className="text-sm text-gray-600 text-center mb-6">{message}</p>
+        
+        {isPublished && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+            <p className="text-xs text-green-800 text-center">
+              🎉 Your report is now live and visible to all users!
+            </p>
+            <p className="text-xs text-green-700 text-center mt-1">
+              Published on {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          </div>
+        )}
         
         <div className="flex justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+            className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isPublished 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            OK
+            {isPublished ? '🎉 Awesome!' : 'OK'}
           </button>
         </div>
       </div>
@@ -540,14 +574,14 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
         { bucket_micron: '17.0', category: 'Fine', price_clean_zar_per_kg: 0 },
         { bucket_micron: '17.5', category: 'Fine', price_clean_zar_per_kg: 0 },
         { bucket_micron: '18.0', category: 'Fine', price_clean_zar_per_kg: 0 },
-        { bucket_micron: '18.5', category: 'Medium', price_clean_zar_per_kg: 0 },
+        { bucket_micron: '18.5', category: 'Fine', price_clean_zar_per_kg: 0 },
         { bucket_micron: '19.0', category: 'Medium', price_clean_zar_per_kg: 0 },
         { bucket_micron: '19.5', category: 'Medium', price_clean_zar_per_kg: 0 },
         { bucket_micron: '20.0', category: 'Medium', price_clean_zar_per_kg: 0 },
-        { bucket_micron: '20.5', category: 'Strong', price_clean_zar_per_kg: 0 },
-        { bucket_micron: '21.0', category: 'Strong', price_clean_zar_per_kg: 0 },
-        { bucket_micron: '21.5', category: 'Strong', price_clean_zar_per_kg: 0 },
-        { bucket_micron: '22.0', category: 'Strong', price_clean_zar_per_kg: 0 }
+        { bucket_micron: '20.5', category: 'Medium', price_clean_zar_per_kg: 0 },
+        { bucket_micron: '21.0', category: 'Medium', price_clean_zar_per_kg: 0 },
+        { bucket_micron: '21.5', category: 'Medium', price_clean_zar_per_kg: 0 },
+        { bucket_micron: '22.0', category: 'Medium', price_clean_zar_per_kg: 0 }
       ],
       buyers: [],
       brokers: [],
@@ -4800,9 +4834,41 @@ const ReviewSaveTab: React.FC<{
     setShowDraftConfirmation(true);
   };
 
-  const confirmPublish = () => {
+  const confirmPublish = async () => {
     setShowPublishConfirmation(false);
-    onSave(); // This will save as published
+    setIsSaving(true);
+    
+    try {
+      // Set status to published and add published timestamp
+      const publishedData = {
+        ...formData,
+        status: 'published' as const,
+        published_at: new Date().toISOString()
+      };
+      
+      const result = await SupabaseService.saveAuctionReport(publishedData);
+      
+      if (result.success) {
+        // Show success modal for published report
+        showSuccessModal('Report Published Successfully!', 'Your auction report has been finalized and published. It is now live and visible to users.');
+        
+        // Update the form data to reflect published status
+        updateFormData({ 
+          status: 'published',
+          published_at: new Date().toISOString()
+        });
+        
+        // Call the parent save handler
+        onSave(publishedData);
+      } else {
+        alert(`Failed to publish report: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error publishing auction report:', error);
+      alert('Failed to publish report. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const confirmDraft = () => {
@@ -4853,6 +4919,11 @@ const ReviewSaveTab: React.FC<{
                 {formData.status === 'published' ? 'Published' :
                  formData.status === 'draft' ? 'Draft' : 'New'}
               </span>
+              {formData.status === 'published' && formData.published_at && (
+                <span className="text-xs text-gray-500">
+                  Published {new Date(formData.published_at).toLocaleDateString()}
+                </span>
+              )}
             </div>
           </div>
           
@@ -5451,9 +5522,9 @@ const ReviewSaveTab: React.FC<{
               {/* Finalize/Publish Button */}
               <button
                 onClick={handlePublishClick}
-                disabled={isSaving || !canPublish}
+                disabled={isSaving || (!canPublish && formData.status !== 'published')}
                 className={`w-full px-4 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors ${
-                  canPublish 
+                  (canPublish || formData.status === 'published')
                     ? 'bg-green-600 text-white hover:bg-green-700 border border-green-600' 
                     : 'bg-gray-300 text-gray-500 border border-gray-300'
                 }`}

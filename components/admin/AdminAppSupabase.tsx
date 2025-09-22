@@ -114,8 +114,12 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
       let result;
       if (isEditing) {
         console.log('🔄 Updating existing auction:', editingReport.auction.id);
-        // For editing, use the draft save method to update existing auction
-        result = await SupabaseService.saveAuctionReportDraft(newReportData);
+        // For editing, use the appropriate save method based on status
+        if (newReportData.status === 'published') {
+          result = await SupabaseService.saveAuctionReport(newReportData);
+        } else {
+          result = await SupabaseService.saveAuctionReportDraft(newReportData);
+        }
       } else {
         console.log('🆕 Creating new auction');
         // For new auctions, use the regular save method

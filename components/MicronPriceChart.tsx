@@ -14,6 +14,10 @@ interface MicronPriceChartProps {
 
 const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData, catalogueName, currentAuction, previousAuction }) => {
   
+  // Debug logging
+  console.log('🔍 MicronPriceChart data:', data);
+  console.log('🔍 MicronPriceChart previousData:', previousData);
+  
   // Ensure data is available and is an array
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
@@ -30,16 +34,17 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
     ? [...previousData].sort((a, b) => parseFloat(a.bucket_micron) - parseFloat(b.bucket_micron)) 
     : [];
 
-  const currentYearData = sortedData.map(item => item.price_clean_zar_per_kg);
-  const previousYearData = sortedPreviousData.map(item => item.price_clean_zar_per_kg);
+  // Create two series: certified and non-certified prices
+  const certifiedData = sortedData.map(item => item.certified_price_clean_zar_per_kg || 0);
+  const nonCertifiedData = sortedData.map(item => item.price_clean_zar_per_kg || 0);
   
   const categories = sortedData.map(item => `${item.bucket_micron}µm`);
   
   // Debug logging
   console.log('Chart Data Debug:', {
     sortedData,
-    currentYearData,
-    previousYearData,
+    certifiedData,
+    nonCertifiedData,
     categories
   });
 
@@ -120,16 +125,15 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
           ? w.globals.labels[dataPointIndex] 
           : `Micron ${dataPointIndex + 17}µm`;
         
-        // Get current year price (first series)
-        const currentPrice = series[0] && series[0][dataPointIndex] ? series[0][dataPointIndex] : 0;
+        // Get certified price (first series)
+        const certifiedPrice = series[0] && series[0][dataPointIndex] ? series[0][dataPointIndex] : 0;
         
-        // Get previous year price (second series if it exists)
-        const previousPrice = series[1] && series[1][dataPointIndex] ? series[1][dataPointIndex] : null;
+        // Get non-certified price (second series)
+        const nonCertifiedPrice = series[1] && series[1][dataPointIndex] ? series[1][dataPointIndex] : 0;
         
-        // Calculate year-over-year change if both prices exist
-        const priceChange = previousPrice && previousPrice > 0 
-          ? ((currentPrice - previousPrice) / previousPrice * 100) 
-          : null;
+        // Calculate price difference between certified and non-certified
+        const priceDifference = certifiedPrice - nonCertifiedPrice;
+        const priceDifferencePct = nonCertifiedPrice > 0 ? (priceDifference / nonCertifiedPrice * 100) : 0;
         
         return `
           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 180px;">
@@ -139,24 +143,20 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
             <div style="margin-bottom: 6px;">
               <div style="display: flex; align-items: center; margin-bottom: 4px;">
                 <div style="width: 8px; height: 8px; background: #1e40af; border-radius: 50%; margin-right: 8px;"></div>
-                <span style="color: #64748b; font-size: 11px; margin-right: 8px;">${getCurrentAuctionName()}:</span>
-                <span style="color: #1e40af; font-weight: 600; font-size: 12px;">R${currentPrice.toFixed(2)}/kg</span>
+                <span style="color: #64748b; font-size: 11px; margin-right: 8px;">Certified:</span>
+                <span style="color: #1e40af; font-weight: 600; font-size: 12px;">R${certifiedPrice.toFixed(2)}/kg</span>
               </div>
-              ${previousPrice ? `
-                <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                  <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 8px;"></div>
-                  <span style="color: #64748b; font-size: 11px; margin-right: 8px;">${getPreviousAuctionName()}:</span>
-                  <span style="color: #10b981; font-weight: 600; font-size: 12px;">R${previousPrice.toFixed(2)}/kg</span>
-                </div>
-                ${priceChange !== null ? `
-                  <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
-                    <span style="color: #64748b; font-size: 10px;">Year-over-year change:</span>
-                    <span style="color: ${priceChange >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600; font-size: 11px; margin-left: 4px;">
-                      ${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(1)}%
-                    </span>
-                  </div>
-                ` : ''}
-              ` : ''}
+              <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 8px;"></div>
+                <span style="color: #64748b; font-size: 11px; margin-right: 8px;">Non-Certified:</span>
+                <span style="color: #10b981; font-weight: 600; font-size: 12px;">R${nonCertifiedPrice.toFixed(2)}/kg</span>
+              </div>
+              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 10px;">Premium:</span>
+                <span style="color: ${priceDifference >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600; font-size: 11px; margin-left: 4px;">
+                  R${priceDifference.toFixed(2)} (${priceDifferencePct.toFixed(1)}%)
+                </span>
+              </div>
             </div>
           </div>
         `;
@@ -209,13 +209,13 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
 
   const series = [
     {
-      name: getCurrentAuctionName(),
-      data: currentYearData
+      name: 'Certified',
+      data: certifiedData
     },
-    ...(previousData && previousData.length > 0 ? [{
-      name: getPreviousAuctionName(),
-      data: previousYearData
-    }] : [])
+    {
+      name: 'Non-Certified',
+      data: nonCertifiedData
+    }
   ];
 
   return (
@@ -235,7 +235,7 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
               Price performance across micron grades
             </p>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              This auction vs same auction last year comparison
+              Certified vs Non-Certified price comparison
             </p>
           </div>
         </div>

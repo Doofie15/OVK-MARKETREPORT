@@ -12,12 +12,14 @@ import BuyerListTable from './BuyerListTable';
 import BuyerShareChart from './BuyerShareChart';
 import BrokersGrid from './BrokersGrid';
 import TopPerformers from './TopPerformers';
+import ProvincePriceMapCard from './ProvincePriceMapCard';
 import { 
   MobileLayout, 
   MobileBrokersGrid, 
   MobileMarketTrends, 
   MobileBuyerShareChart,
-  MobileTopPerformers
+  MobileTopPerformers,
+  MobileProvincePriceMapCard
 } from './mobile';
 import type { AuctionReport, TopSale } from '../types';
 
@@ -25,12 +27,14 @@ interface PublicLayoutProps {
   reports: AuctionReport[];
   selectedWeekId: string;
   onWeekChange: (weekId: string) => void;
+  error?: string | null;
 }
 
 const PublicLayout: React.FC<PublicLayoutProps> = ({ 
   reports, 
   selectedWeekId, 
-  onWeekChange 
+  onWeekChange,
+  error 
 }) => {
   const activeReport = reports.find(report => report.auction.week_id === selectedWeekId);
   
@@ -80,6 +84,19 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
       <PublicHeader />
       <main className="w-[95%] max-w-none mx-auto px-2 sm:px-4 py-4">
         <div className="space-y-4">
+          {/* Error Banner */}
+          {error && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p className="text-yellow-800 text-sm">
+                  <strong>Notice:</strong> {error}
+                </p>
+              </div>
+            </div>
+          )}
           <AuctionSelector
             weeks={availableWeeks}
             selectedWeekId={selectedWeekId}
@@ -179,14 +196,24 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                   <MobileTopPerformers 
                     topSales={topSalesForActiveReport}
                     provincialProducers={activeReport.provincial_producers}
-                    provinceAvgPrices={activeReport.province_avg_prices}
                   />
                 }
               >
                 <TopPerformers 
                   topSales={topSalesForActiveReport}
                   provincialProducers={activeReport.provincial_producers}
-                  provinceAvgPrices={activeReport.province_avg_prices}
+                />
+              </MobileLayout>
+              
+              <MobileLayout
+                mobileComponent={
+                  <MobileProvincePriceMapCard 
+                    data={activeReport.provincial_producers}
+                  />
+                }
+              >
+                <ProvincePriceMapCard 
+                  data={activeReport.provincial_producers}
                 />
               </MobileLayout>
             </div>

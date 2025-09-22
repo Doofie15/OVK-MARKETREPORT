@@ -6,6 +6,7 @@ export { default as MobileBrokersGrid } from './MobileBrokersGrid';
 export { default as MobileMarketTrends } from './MobileMarketTrends';
 export { default as MobileBuyerShareChart } from './MobileBuyerShareChart';
 export { default as MobileTopPerformers } from './MobileTopPerformers';
+export { default as MobileProvincePriceMapCard } from './MobileProvincePriceMapCard';
 export { default as MobileProvincialTopProducers } from './MobileProvincialTopProducers';
 export { default as MobileProvincePriceMap } from './MobileProvincePriceMap';
 export { default as SamsungS25Optimizer } from './SamsungS25Optimizer';

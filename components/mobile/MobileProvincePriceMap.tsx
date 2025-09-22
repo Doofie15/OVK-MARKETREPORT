@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import type { ProvinceAveragePrice } from '../../types';
+import type { ProvincialProducerData } from '../../types';
 import zaGeoJSON from '../../za.json';
 
 interface MobileProvincePriceMapProps {
-  data: ProvinceAveragePrice[];
+  data: ProvincialProducerData[];
 }
 
 const MobileSouthAfricaMap = ({
@@ -126,21 +126,29 @@ const MobileSouthAfricaMap = ({
   };
 
   return (
-    <svg
-      viewBox="0 0 300 250"
-      className="w-full h-auto"
-      aria-label="Map of South Africa"
-    >
+    <div className="w-full" style={{ aspectRatio: '6/5', maxHeight: '300px' }}>
+      <svg
+        viewBox="0 0 300 250"
+        className="w-full h-full"
+        preserveAspectRatio="xMidYMid meet"
+        aria-label="Map of South Africa"
+      >
       {/* Background */}
-      <rect width="300" height="250" fill="#f8fafc" />
+      <rect width="300" height="250" fill="transparent" />
 
       <g>
-        {zaGeoJSON.features.map((feature) => {
+        {zaGeoJSON.features
+          .filter((feature) => {
+            console.log('🔍 Mobile processing feature:', feature.properties.name);
+            return feature.properties.name !== 'Lesotho'; // Exclude Lesotho
+          })
+          .map((feature) => {
           const geoId = feature.properties.id;
           const componentId = provinceIdMap[geoId];
           const provinceData = data.find((p) => p.id === componentId);
-
-          if (!provinceData) return null;
+          
+          // Always use the GeoJSON province name, never use data-provided names
+          const provinceName = feature.properties.name;
 
           const coordinates = feature.geometry.coordinates;
           const pathData = coordinatesToPath(coordinates);
@@ -152,7 +160,7 @@ const MobileSouthAfricaMap = ({
             <g key={geoId}>
               <path
                 d={pathData}
-                fill={getColor(isHovered ? provinceData.avg_price + 5 : provinceData.avg_price)}
+                fill={provinceData ? getColor(isHovered ? provinceData.merino_avg + 5 : provinceData.merino_avg) : '#1e40af'}
                 stroke="#ffffff"
                 strokeWidth={isSelected ? '3' : '1.5'}
                 onTouchStart={() => onTouch(componentId)}
@@ -207,13 +215,14 @@ const MobileSouthAfricaMap = ({
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
               >
-                R{provinceData.avg_price.toFixed(0)}
+                {provinceData ? `R${provinceData.merino_avg.toFixed(0)}` : ''}
               </text>
             </g>
           );
         })}
       </g>
     </svg>
+    </div>
   );
 };
 
@@ -260,13 +269,13 @@ const MobileTooltip: React.FC<{ province: ProvinceAveragePrice; x: number; y: nu
         <div className="flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
           <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-            Certified: R{province.avg_price.toFixed(0)}/kg
+            Certified: R{province.certified_avg.toFixed(0)}/kg
           </p>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
           <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-            Merino: R{(province.avg_price * 1.1).toFixed(0)}/kg
+            Merino: R{province.merino_avg.toFixed(0)}/kg
           </p>
         </div>
       </div>
@@ -279,19 +288,90 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
-    province: ProvinceAveragePrice;
+    province: { id: string; name: string; certified_avg: number; merino_avg: number };
     containerRect: DOMRect;
   } | null>(null);
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
 
-  // Use the actual data passed from parent component
-  const mapData = data || [];
+  // Calculate averages from provincial producer data
+  const calculateProvincialAverages = (provincialData: ProvincialProducerData[]) => {
+    const provinceMap: Record<string, { certified: number[]; merino: number[] }> = {};
+    
+    provincialData.forEach(province => {
+      // Skip Lesotho for map display (it's not a South African province)
+      if (province.province === 'Lesotho') {
+        return;
+      }
+      
+      if (!provinceMap[province.province]) {
+        provinceMap[province.province] = { certified: [], merino: [] };
+      }
+      
+      // Take top 10 performers (already sorted by position)
+      const topPerformers = province.producers.slice(0, 10);
+      
+      topPerformers.forEach(producer => {
+        if (producer.certified === 'RWS') {
+          provinceMap[province.province].certified.push(producer.price);
+        }
+        provinceMap[province.province].merino.push(producer.price);
+      });
+    });
+    
+    // Convert to map data format
+    const mapData = Object.entries(provinceMap).map(([provinceName, prices]) => {
+      const certifiedAvg = prices.certified.length > 0 
+        ? prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length 
+        : 0;
+      const merinoAvg = prices.merino.length > 0 
+        ? prices.merino.reduce((sum, price) => sum + price, 0) / prices.merino.length 
+        : 0;
+      
+      return {
+        id: getProvinceId(provinceName),
+        name: provinceName,
+        certified_avg: certifiedAvg,
+        merino_avg: merinoAvg
+      };
+    });
+    
+    return mapData;
+  };
+
+  const getProvinceId = (provinceName: string): string => {
+    const provinceMap: Record<string, string> = {
+      'Eastern Cape': 'ZA-EC',
+      'Western Cape': 'ZA-WC',
+      'Northern Cape': 'ZA-NC',
+      'KwaZulu-Natal': 'ZA-KZN',
+      'Free State': 'ZA-FS',
+      'North West': 'ZA-NW',
+      'Gauteng': 'ZA-GP',
+      'Mpumalanga': 'ZA-MP',
+      'Limpopo': 'ZA-LP'
+    };
+    return provinceMap[provinceName] || 'ZA-EC';
+  };
+
+  const sampleData = [
+    { id: 'ZA-EC', name: 'Eastern Cape', certified_avg: 183.0, merino_avg: 200.0 },
+    { id: 'ZA-WC', name: 'Western Cape', certified_avg: 179.0, merino_avg: 197.0 },
+    { id: 'ZA-NC', name: 'Northern Cape', certified_avg: 175.0, merino_avg: 193.0 },
+    { id: 'ZA-KZN', name: 'KwaZulu-Natal', certified_avg: 168.0, merino_avg: 185.0 },
+    { id: 'ZA-FS', name: 'Free State', certified_avg: 166.0, merino_avg: 183.0 },
+    { id: 'ZA-NW', name: 'North West', certified_avg: 162.0, merino_avg: 178.0 },
+    { id: 'ZA-GP', name: 'Gauteng', certified_avg: 160.0, merino_avg: 176.0 },
+    { id: 'ZA-MP', name: 'Mpumalanga', certified_avg: 159.0, merino_avg: 175.0 },
+    { id: 'ZA-LP', name: 'Limpopo', certified_avg: 155.0, merino_avg: 171.0 },
+  ];
+
+  const mapData = data && data.length > 0 ? calculateProvincialAverages(data) : sampleData;
 
   const getColor = useCallback((price: number) => {
     if (!mapData || mapData.length === 0) return '#e5e7eb';
     
-    const maxPrice = Math.max(...mapData.map(p => p.avg_price));
-    const minPrice = Math.min(...mapData.map(p => p.avg_price));
+    const maxPrice = Math.max(...mapData.map(p => p.merino_avg));
+    const minPrice = Math.min(...mapData.map(p => p.merino_avg));
     const range = maxPrice - minPrice;
     
     if (range === 0) return '#e5e7eb';
@@ -329,15 +409,11 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
     : null;
 
   return (
-    <div>
-      <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-        Provincial Price Map
-      </h3>
-      
+    <div className="w-full">
       {/* Map */}
       <div 
         ref={setContainerRef}
-        className="bg-white rounded-lg border border-gray-200 p-3 mb-3 relative" 
+        className="w-full relative" 
         onMouseLeave={handleMouseLeave}
       >
         <MobileSouthAfricaMap
@@ -380,7 +456,7 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
                 </p>
               </div>
               <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-                R{selectedProvinceData.avg_price.toFixed(0)}/kg
+                R{selectedProvinceData.certified_avg.toFixed(0)}/kg
               </p>
             </div>
             <div className="flex items-center justify-between">
@@ -391,7 +467,7 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
                 </p>
               </div>
               <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-                R{(selectedProvinceData.avg_price * 1.1).toFixed(0)}/kg
+                R{selectedProvinceData.merino_avg.toFixed(0)}/kg
               </p>
             </div>
           </div>

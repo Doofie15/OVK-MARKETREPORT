@@ -36,13 +36,46 @@ const EuFlagIcon: React.FC = () => (
   </svg>
 );
 
+const JapanFlagIcon: React.FC = () => (
+  <svg className="w-4 h-4 rounded-full" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#FFFFFF" d="M0 0h20v20H0z"/>
+    <circle cx="10" cy="10" r="6" fill="#C1272D"/>
+  </svg>
+);
+
+const UkFlagIcon: React.FC = () => (
+  <svg className="w-4 h-4 rounded-full" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#012169" d="M0 0h20v20H0z"/>
+    <path stroke="#FFFFFF" strokeWidth="2" d="M0 0l20 20M20 0L0 20"/>
+    <path stroke="#C8102E" strokeWidth="1.5" d="M0 0l20 20M20 0L0 20"/>
+    <path stroke="#FFFFFF" strokeWidth="2" d="M10 0v20M0 10h20"/>
+    <path stroke="#C8102E" strokeWidth="1.5" d="M10 0v20M0 10h20"/>
+  </svg>
+);
+
 const flagIcons: Record<string, React.FC> = {
   USD: UsaFlagIcon,
   AUD: AustraliaFlagIcon,
   EUR: EuFlagIcon,
+  JPY: JapanFlagIcon,
+  GBP: UkFlagIcon,
 };
 
 const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuctionDate, rwsPremium = 0 }) => {
+  // Debug currencies data
+  console.log('🔍 MarketOverview currencies:', currencies);
+  
+  // Temporary test with hardcoded data
+  const testCurrencies = [
+    { code: 'USD', value: 17.67, change: 0 },
+    { code: 'EUR', value: 20.54, change: 0 },
+    { code: 'JPY', value: 8.38, change: 0 },
+    { code: 'GBP', value: 23.79, change: 0 }
+  ];
+  
+  // Use test data if currencies is empty
+  const displayCurrencies = currencies && currencies.length > 0 ? currencies : testCurrencies;
+  
   // Calculate next auction date
   const getNextAuctionDate = () => {
     if (nextAuctionDate) return nextAuctionDate;
@@ -106,7 +139,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
             <h3 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text-primary)' }}>RATES</h3>
           </div>
           <div className="space-y-1">
-            {currencies.map((currency) => {
+            {displayCurrencies.map((currency) => {
               const FlagIcon = flagIcons[currency.code];
               return (
                 <div key={currency.code} className="flex items-center justify-between bg-slate-50 rounded p-1.5 border border-slate-150">

@@ -10,9 +10,12 @@ interface MobileBrokersGridProps {
 const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
   const colors = ['#0ea5e9', '#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
   
+  // Sort data by bales offered from high to low
+  const sortedData = [...data].sort((a, b) => b.catalogue_offering - a.catalogue_offering);
+  
   // Calculate totals
-  const totalOffered = data.reduce((sum, broker) => sum + broker.catalogue_offering, 0);
-  const totalSold = data.reduce((sum, broker) => sum + broker.sold_ytd, 0);
+  const totalOffered = sortedData.reduce((sum, broker) => sum + broker.catalogue_offering, 0);
+  const totalSold = sortedData.reduce((sum, broker) => sum + broker.sold_ytd, 0);
   
   const icon = (
     <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,7 +71,7 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
     }
   ];
 
-  const tableData = data.map(broker => ({
+  const tableData = sortedData.map(broker => ({
     broker: broker.name,
     offered: broker.catalogue_offering,
     sold: broker.sold_ytd,
@@ -100,7 +103,7 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
           </div>
           <div className="text-center">
             <div className="font-bold" style={{ color: 'var(--accent-primary)' }}>
-              {data.length}
+              {sortedData.length}
             </div>
             <div style={{ color: 'var(--text-muted)' }}>Brokers</div>
           </div>

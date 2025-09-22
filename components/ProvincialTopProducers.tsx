@@ -18,6 +18,15 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
     'North West': '#06b6d4'
   };
   
+  // Sort provinces alphabetically, but put Lesotho at the bottom
+  const sortedData = [...data].sort((a, b) => {
+    // If one is Lesotho, put it at the bottom
+    if (a.province === 'Lesotho') return 1;
+    if (b.province === 'Lesotho') return -1;
+    // Otherwise sort alphabetically
+    return a.province.localeCompare(b.province);
+  });
+  
   return (
     <div>
       <h3 className="text-md font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
@@ -25,7 +34,7 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
       </h3>
       
       <div className="space-y-4">
-        {data.map((provinceData, provinceIndex) => (
+        {sortedData.map((provinceData, provinceIndex) => (
           <div key={provinceData.province}>
             <div className="flex items-center gap-2 mb-2">
               <div 
@@ -49,10 +58,19 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
             </div>
             
             <div className="overflow-x-auto rounded-md" style={{ background: 'var(--bg-hover)' }}>
-              <table className="w-full text-xs">
+              <table className="w-full text-xs table-fixed">
+                <colgroup>
+                  <col className="w-12" /> {/* POS */}
+                  <col className="w-48 sm:w-64" /> {/* PRODUCER NAME */}
+                  <col className="w-24 sm:w-32 hidden sm:table-column" /> {/* DISTRICT */}
+                  <col className="w-12 hidden md:table-column" /> {/* DESC */}
+                  <col className="w-16" /> {/* MICRON */}
+                  <col className="w-20" /> {/* PRICE/KG */}
+                  <col className="w-20 hidden md:table-column" /> {/* CERTIFIED */}
+                </colgroup>
                 <thead>
                   <tr>
-                    <th className="text-left font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
+                    <th className="text-center font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
                       POS
                     </th>
                     <th className="text-left font-semibold px-2 py-1" style={{ color: 'var(--text-muted)' }}>
@@ -80,23 +98,23 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data })
                 <tbody>
                   {provinceData.producers.map((producer, index) => (
                     <tr key={index} className="border-t" style={{ borderColor: 'var(--border-primary)' }}>
-                      <td className="px-2 py-1">
-                        <span className="w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                      <td className="px-2 py-1 text-center">
+                        <span className="w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-xs font-bold text-white mx-auto">
                           {producer.position}
                         </span>
                       </td>
                       <td className="px-2 py-1">
-                        <div>
-                          <span className="font-medium text-xs" style={{ color: 'var(--text-primary)' }}>
+                        <div className="truncate">
+                          <span className="font-medium text-xs block truncate" style={{ color: 'var(--text-primary)' }} title={producer.name}>
                             {producer.name}
                           </span>
-                          <div className="sm:hidden text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          <div className="sm:hidden text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
                             {producer.district} • {producer.description}
                           </div>
                         </div>
                       </td>
                       <td className="px-2 py-1 hidden sm:table-cell">
-                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="text-xs truncate block" style={{ color: 'var(--text-secondary)' }} title={producer.district}>
                           {producer.district}
                         </span>
                       </td>

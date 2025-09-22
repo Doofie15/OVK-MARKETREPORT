@@ -6,6 +6,7 @@ import PublicLayout from './components/PublicLayout';
 import AdminAppSupabase from './components/admin/AdminAppSupabase';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import PublicDataService from './services/public-data-service';
 
 // Helper function to convert season and catalogue to URL format (e.g., "202501")
 const seasonCatalogueToUrl = (seasonLabel: string, catalogueName: string): string => {
@@ -45,8 +46,53 @@ const getSeasonCatalogueByWeekId = (reports: AuctionReport[], weekId: string): {
 };
 
 const App: React.FC = () => {
-  const [reports, setReports] = useState<AuctionReport[]>(MOCK_REPORTS);
-  const [selectedWeekId, setSelectedWeekId] = useState<string>(MOCK_REPORTS[0]?.auction.week_id || '');
+  const [reports, setReports] = useState<AuctionReport[]>([]);
+  const [selectedWeekId, setSelectedWeekId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load published reports from database
+  const loadPublishedReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔄 Loading published reports from database...');
+      const result = await PublicDataService.getPublishedReports();
+      
+      if (result.success && result.data) {
+        setReports(result.data);
+        
+        // Set the latest report as selected by default
+        if (result.data.length > 0) {
+          setSelectedWeekId(result.data[0].auction.week_id);
+        }
+        
+        console.log(`✅ Loaded ${result.data.length} published reports`);
+      } else {
+        console.warn('⚠️ No published reports found, falling back to mock data');
+        setReports(MOCK_REPORTS);
+        setSelectedWeekId(MOCK_REPORTS[0]?.auction.week_id || '');
+        setError('No published reports available. Showing sample data.');
+      }
+    } catch (error) {
+      console.error('❌ Error loading published reports:', error);
+      setError('Failed to load auction data. Showing sample data.');
+      setReports(MOCK_REPORTS);
+      setSelectedWeekId(MOCK_REPORTS[0]?.auction.week_id || '');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPublishedReports();
+  }, []); // Empty dependency array to run only once
+
+  // Refresh data when reports are updated (for admin users)
+  const handleReportUpdate = () => {
+    loadPublishedReports();
+  };
 
 
   const handleSaveReport = (newReportData: Omit<AuctionReport, 'top_sales'>) => {
@@ -119,7 +165,7 @@ const App: React.FC = () => {
     const navigate = useNavigate();
     
     useEffect(() => {
-      if (auctionId) {
+      if (auctionId && !loading) {
         const seasonCatalogue = urlToSeasonCatalogue(auctionId);
         
         if (seasonCatalogue) {
@@ -136,7 +182,7 @@ const App: React.FC = () => {
           navigate('/', { replace: true });
         }
       }
-    }, [auctionId, reports, navigate]);
+    }, [auctionId, reports, navigate, loading]);
 
     const handleWeekChange = (weekId: string) => {
       setSelectedWeekId(weekId);
@@ -147,11 +193,23 @@ const App: React.FC = () => {
       }
     };
 
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading auction data...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <PublicLayout 
         reports={reports}
         selectedWeekId={selectedWeekId}
         onWeekChange={handleWeekChange}
+        error={error}
       />
     );
   };
@@ -169,11 +227,23 @@ const App: React.FC = () => {
       }
     };
 
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading auction data...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <PublicLayout 
         reports={reports}
         selectedWeekId={selectedWeekId}
         onWeekChange={handleWeekChange}
+        error={error}
       />
     );
   };

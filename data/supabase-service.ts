@@ -1087,6 +1087,108 @@ export class SupabaseAuctionDataService {
     }
   }
 
+  static async getBuyerSeasonTotals(seasonId: string) {
+    try {
+      console.log('🔍 Getting buyer season totals for season:', seasonId);
+      
+      // Get all published auctions for this season
+      const auctionsResult = await supabaseClient
+        .from('auctions')
+        .select('id')
+        .eq('season_id', seasonId)
+        .eq('status', 'published');
+      
+      if (auctionsResult.error) throw auctionsResult.error;
+      
+      const auctionIds = auctionsResult.data.map(a => a.id);
+      console.log('📊 Found published auctions for season:', auctionIds);
+      
+      if (auctionIds.length === 0) {
+        return { success: true, data: [] };
+      }
+      
+      // Get buyer performance for all auctions in this season
+      const { data, error } = await supabaseClient
+        .from('buyer_performance')
+        .select(`
+          buyer_id,
+          cat,
+          buyers!buyer_id (
+            id,
+            buyer_name
+          )
+        `)
+        .in('auction_id', auctionIds);
+      
+      if (error) throw error;
+      
+      // Sum up bales by buyer
+      const buyerTotals = new Map();
+      
+      data.forEach(performance => {
+        const buyerName = (performance as any).buyers?.buyer_name;
+        const bales = performance.cat || 0;
+        
+        if (buyerName) {
+          if (buyerTotals.has(buyerName)) {
+            buyerTotals.set(buyerName, buyerTotals.get(buyerName) + bales);
+          } else {
+            buyerTotals.set(buyerName, bales);
+          }
+        }
+      });
+      
+      const seasonTotals = Array.from(buyerTotals.entries()).map(([buyerName, totalBales]) => ({
+        buyer: buyerName,
+        total_bales_season: totalBales
+      }));
+      
+      console.log('📈 Buyer season totals:', seasonTotals);
+      return { success: true, data: seasonTotals };
+      
+    } catch (error) {
+      console.error('Get buyer season totals error:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  static async getSeasonIndicatorTotals(seasonId: string) {
+    try {
+      console.log('🔍 Getting season indicator totals for season:', seasonId);
+      
+      // Get all published auctions for this season
+      const auctionsResult = await supabaseClient
+        .from('auctions')
+        .select('id, supply_statistics_bales_offered, greasy_statistics_mass, greasy_statistics_turnover')
+        .eq('season_id', seasonId)
+        .eq('status', 'published')
+        .order('auction_date', { ascending: true });
+      
+      if (auctionsResult.error) throw auctionsResult.error;
+      
+      console.log('📊 Found', auctionsResult.data.length, 'published auctions for season indicator totals');
+      
+      // Sum up the totals
+      const seasonTotals = auctionsResult.data.reduce((totals, auction) => {
+        totals.totalBales += auction.supply_statistics_bales_offered || 0;
+        totals.totalVolume += auction.greasy_statistics_mass || 0;
+        totals.totalValue += auction.greasy_statistics_turnover || 0;
+        return totals;
+      }, {
+        totalBales: 0,
+        totalVolume: 0,
+        totalValue: 0
+      });
+      
+      console.log('📈 Season indicator totals calculated:', seasonTotals);
+      return { success: true, data: seasonTotals };
+      
+    } catch (error) {
+      console.error('Get season indicator totals error:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
   static async updateBuyerPerformance(auctionId: string, buyers: BuyerPerformanceInsert[]) {
     try {
       console.log('🔄 Updating buyer performance for auction:', auctionId, 'with data:', buyers);
@@ -1481,7 +1583,7 @@ export class SupabaseAuctionDataService {
     return this.saveCompleteAuctionReportWithStatus(formData, 'published')
   }
 
-  static async getCompleteAuctionReport(auctionId: string) {
+  static async getCompleteAuctionReport(auctionId: string): Promise<{ success: boolean; data?: AuctionReport; error?: string }> {
     try {
       console.log('🔍 Loading complete auction report for ID:', auctionId);
       
@@ -1490,6 +1592,10 @@ export class SupabaseAuctionDataService {
       if (!auctionResult.success) throw new Error(auctionResult.error)
 
       const auction = auctionResult.data
+      if (!auction) {
+        throw new Error('Auction data not found');
+      }
+      
       console.log('📊 Auction data loaded:', {
         id: auction.id,
         catalogue_prefix: auction.catalogue_prefix,
@@ -1503,6 +1609,9 @@ export class SupabaseAuctionDataService {
 
       // Use the new reference columns to determine what data to load
       const promises: Promise<any>[] = []
+      
+      // Always load seasons data
+      promises.push(this.getSeasons())
       
       // Only load data if the auction has the respective data
       if (auction.has_micron_prices) {
@@ -1531,24 +1640,33 @@ export class SupabaseAuctionDataService {
       
       if (auction.has_buyer_data) {
         promises.push(this.getBuyerPerformanceByAuction(auctionId))
+        promises.push(this.getBuyerSeasonTotals(auction.season_id))
       } else {
+        promises.push(Promise.resolve({ success: true, data: [] }))
         promises.push(Promise.resolve({ success: true, data: [] }))
       }
 
-      const [micronPricesResult, marketInsightResult, topPerformersResult, brokerPerformanceResult, buyerPerformanceResult] = await Promise.all(promises)
+      // Always load season indicator totals for the overview cards
+      promises.push(this.getSeasonIndicatorTotals(auction.season_id))
+
+      const [seasonsResult, micronPricesResult, marketInsightResult, topPerformersResult, brokerPerformanceResult, buyerPerformanceResult, buyerSeasonTotalsResult, seasonIndicatorTotalsResult] = await Promise.all(promises)
       
       console.log('📈 Data loading results:', {
+        seasons: seasonsResult.success ? seasonsResult.data.length : 0,
         micronPrices: micronPricesResult.success ? micronPricesResult.data.length : 0,
         marketInsight: marketInsightResult.success ? (marketInsightResult.data ? 1 : 0) : 0,
         topPerformers: topPerformersResult.success ? topPerformersResult.data.length : 0,
         brokerPerformance: brokerPerformanceResult.success ? brokerPerformanceResult.data.length : 0,
-        buyerPerformance: buyerPerformanceResult.success ? buyerPerformanceResult.data.length : 0
+        buyerPerformance: buyerPerformanceResult.success ? buyerPerformanceResult.data.length : 0,
+        buyerSeasonTotals: buyerSeasonTotalsResult.success ? buyerSeasonTotalsResult.data.length : 0,
+        seasonIndicatorTotals: seasonIndicatorTotalsResult.success ? 1 : 0
       });
 
       // Transform data back to form format
-      const formData: Omit<AuctionReport, 'top_sales'> = {
+      const formData: AuctionReport = {
         auction: {
           id: auction.id, // Include auction ID for edit mode
+          commodity: 'wool', // Default commodity type
           season_id: auction.season_id,
           auction_date: auction.auction_date,
           catalogue_prefix: auction.catalogue_prefix,
@@ -1556,7 +1674,10 @@ export class SupabaseAuctionDataService {
           catalogue_name: `${auction.catalogue_prefix}${auction.catalogue_number}`, // Combined field for form compatibility
           commodity_type_id: auction.commodity_type_id,
           week_start: auction.week_start,
-          week_end: auction.week_end
+          week_end: auction.week_end,
+          season_label: seasonsResult.success && seasonsResult.data ? 
+            seasonsResult.data.find(s => s.id === auction.season_id)?.season_year || '2025/26' : '2025/26',
+          week_id: `week_${auction.auction_date?.replace(/-/g, '_') || 'unknown'}`
         },
         market_indices: {
           merino_indicator_sa_cents_clean: auction.all_merino_sa_c_kg_clean,
@@ -1597,13 +1718,36 @@ export class SupabaseAuctionDataService {
           bales: auction.greasy_statistics_bales,
           mass_kg: auction.greasy_statistics_mass
         },
-        micron_prices: micronPricesResult.success ? micronPricesResult.data.map(price => ({
-          bucket_micron: price.micron.toString(),
-          category: 'Medium' as const, // Default category since we removed it from the table
-          price_clean_zar_per_kg: price.non_cert_clean_zar_per_kg || 0,
-          certified_price_clean_zar_per_kg: price.cert_clean_zar_per_kg,
-          all_merino_price_clean_zar_per_kg: null
-        })) : [],
+        micron_prices: (() => {
+          console.log('🔍 Micron prices result:', micronPricesResult);
+          if (micronPricesResult.success && micronPricesResult.data) {
+            const transformedPrices = micronPricesResult.data.map(price => {
+              const micron = parseFloat(price.micron.toString());
+              let category: 'Fine' | 'Medium' | 'Strong';
+              
+              // Industry standard wool categories based on micron values
+              if (micron <= 18.5) {
+                category = 'Fine';
+              } else if (micron <= 22.0) {
+                category = 'Medium';
+              } else {
+                category = 'Strong';
+              }
+              
+              return {
+                bucket_micron: price.micron.toString(),
+                category: category,
+                price_clean_zar_per_kg: parseFloat(price.non_cert_clean_zar_per_kg) || 0,
+                certified_price_clean_zar_per_kg: parseFloat(price.cert_clean_zar_per_kg) || 0,
+                all_merino_price_clean_zar_per_kg: null
+              };
+            });
+            console.log('🔍 Transformed micron prices:', transformedPrices);
+            return transformedPrices;
+          }
+          console.log('🔍 No micron prices data available');
+          return [];
+        })(),
         micron_price_comparison: {
           rows: micronPricesResult.success ? micronPricesResult.data.map(price => ({
             micron: parseFloat(price.micron.toString()),
@@ -1613,12 +1757,20 @@ export class SupabaseAuctionDataService {
           })) : [],
           notes: ''
         },
-        buyers: buyerPerformanceResult.success ? buyerPerformanceResult.data.map(buyer => ({
-          buyer: (buyer as any).buyers?.buyer_name || buyer.buyer, // Use joined buyer name or fallback to legacy field
-          cat: buyer.cat ? parseInt(buyer.cat.toString()) : 0,
-          share_pct: buyer.share_pct ? parseFloat(buyer.share_pct.toString()) : 0,
-          bales_ytd: buyer.bales_ytd ? parseInt(buyer.bales_ytd.toString()) : 0
-        })) : [],
+        buyers: buyerPerformanceResult.success ? buyerPerformanceResult.data.map(buyer => {
+          const buyerName = (buyer as any).buyers?.buyer_name || buyer.buyer;
+          // Find season total for this buyer
+          const seasonTotal = buyerSeasonTotalsResult.success 
+            ? buyerSeasonTotalsResult.data.find(st => st.buyer === buyerName)?.total_bales_season || 0
+            : 0;
+          
+          return {
+            buyer: buyerName,
+            cat: buyer.cat ? parseInt(buyer.cat.toString()) : 0,
+            share_pct: buyer.share_pct ? parseFloat(buyer.share_pct.toString()) : 0,
+            bales_ytd: seasonTotal // Use season total instead of YTD
+          };
+        }) : [],
         brokers: brokerPerformanceResult.success ? brokerPerformanceResult.data.map(broker => ({
           name: (broker as any).brokers?.name || broker.name, // Use joined broker name or fallback to legacy field
           catalogue_offering: broker.catalogue_offering ? parseInt(broker.catalogue_offering.toString()) : 0,
@@ -1631,14 +1783,161 @@ export class SupabaseAuctionDataService {
           sold_pct: broker.sold_pct ? parseFloat(broker.sold_pct.toString()) : 0,
           sold_ytd: broker.sold_ytd ? parseInt(broker.sold_ytd.toString()) : 0
         })) : [],
-        currencies: [],
+        currencies: (() => {
+          console.log('🔍 Raw auction exchange rates:', {
+            zar_usd: auction.exchange_rates_zar_usd,
+            zar_eur: auction.exchange_rates_zar_eur,
+            zar_jpy: auction.exchange_rates_zar_jpy,
+            zar_gbp: auction.exchange_rates_zar_gbp,
+            usd_aud: auction.exchange_rates_usd_aud
+          });
+          
+          const currencies = [
+            {
+              code: 'USD',
+              value: parseFloat(auction.exchange_rates_zar_usd) || 0,
+              change: 0
+            },
+            {
+              code: 'AUD',
+              value: auction.exchange_rates_usd_aud ? (parseFloat(auction.exchange_rates_zar_usd) / parseFloat(auction.exchange_rates_usd_aud)) : 0,
+              change: 0
+            },
+            {
+              code: 'EUR',
+              value: parseFloat(auction.exchange_rates_zar_eur) || 0,
+              change: 0
+            },
+            {
+              code: 'JPY',
+              value: parseFloat(auction.exchange_rates_zar_jpy) || 0,
+              change: 0
+            },
+            {
+              code: 'GBP',
+              value: parseFloat(auction.exchange_rates_zar_gbp) || 0,
+              change: 0
+            }
+          ];
+          
+          console.log('🔍 Processed currencies:', currencies);
+          return currencies;
+        })(),
         provincial_producers: topPerformersResult.success ? this.groupTopPerformersByProvince(topPerformersResult.data) : [],
-        indicators: [],
-        benchmarks: [],
-        trends: { rws: [], non_rws: [] },
-        yearly_average_prices: [],
+        indicators: [
+          {
+            type: 'total_lots',
+            unit: 'bales',
+            value: auction.supply_statistics_bales_offered || 0,
+            value_ytd: seasonIndicatorTotalsResult.success ? seasonIndicatorTotalsResult.data.totalBales : 0,
+            pct_change: 0
+          },
+          {
+            type: 'total_volume',
+            unit: 'MT',
+            value: auction.greasy_statistics_mass ? (auction.greasy_statistics_mass / 1000) : 0,
+            value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalVolume / 1000) : 0,
+            pct_change: 0
+          },
+          {
+            type: 'avg_price',
+            unit: 'ZAR/kg',
+            value: auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0,
+            pct_change: 0
+          },
+          {
+            type: 'total_value',
+            unit: 'ZAR M',
+            value: auction.greasy_statistics_turnover ? (auction.greasy_statistics_turnover / 1000000) : 0,
+            value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalValue / 1000000) : 0,
+            pct_change: 0
+          }
+        ],
+        benchmarks: [
+          {
+            label: 'Certified',
+            price: auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0,
+            currency: 'ZAR/kg clean',
+            day_change_pct: 0
+          },
+          {
+            label: 'All-Merino',
+            price: auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0,
+            currency: 'ZAR/kg clean',
+            day_change_pct: 0
+          },
+          {
+            label: 'AWEX',
+            price: auction.exchange_rates_sa_c_kg_clean_awex_emi ? (parseFloat(auction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : 0,
+            currency: 'USD/kg clean',
+            day_change_pct: 0
+          }
+        ],
+        trends: (() => {
+          // For now, create trend data from current auction
+          // TODO: In the future, this should load all auctions from the current season
+          const auctionCatalogue = `${auction.catalogue_prefix}${auction.catalogue_number}`;
+          
+          // Convert prices from cents to Rands for display
+          const certifiedPriceZAR = auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0;
+          const allMerinoPriceZAR = auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0;
+          const awexPriceUSD = auction.exchange_rates_sa_c_kg_clean_awex_emi ? (parseFloat(auction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : 0;
+          
+          // Calculate USD prices using exchange rate
+          const exchangeRate = auction.exchange_rates_zar_usd ? parseFloat(auction.exchange_rates_zar_usd) : 1;
+          const certifiedPriceUSD = certifiedPriceZAR / exchangeRate;
+          const allMerinoPriceUSD = allMerinoPriceZAR / exchangeRate;
+          
+          console.log('🔍 Creating trend data:', {
+            auctionCatalogue,
+            certifiedPriceZAR,
+            allMerinoPriceZAR,
+            awexPriceUSD,
+            exchangeRate
+          });
+          
+          return {
+            rws: [{
+              period: auctionCatalogue, // Use auction catalogue as period
+              auction_catalogue: auctionCatalogue,
+              '2025_zar': certifiedPriceZAR,
+              '2024_zar': undefined, // No previous year data
+              '2025_usd': certifiedPriceUSD,
+              '2024_usd': undefined
+            }],
+            non_rws: [{
+              period: auctionCatalogue, // Use auction catalogue as period
+              auction_catalogue: auctionCatalogue,
+              '2025_zar': allMerinoPriceZAR,
+              '2024_zar': undefined, // No previous year data
+              '2025_usd': allMerinoPriceUSD,
+              '2024_usd': undefined
+            }],
+            awex: [{
+              period: auctionCatalogue, // Use auction catalogue as period
+              auction_catalogue: auctionCatalogue,
+              '2025_zar': undefined, // AWEX is typically in USD
+              '2024_zar': undefined,
+              '2025_usd': awexPriceUSD,
+              '2024_usd': undefined
+            }]
+          };
+        })(),
+        yearly_average_prices: [
+          {
+            label: 'Certified Wool Avg Price (YTD)',
+            value: auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0,
+            unit: 'ZAR/kg'
+          },
+          {
+            label: 'All - Merino Wool Avg Price (YTD)',
+            value: auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0,
+            unit: 'ZAR/kg'
+          }
+        ],
         province_avg_prices: [],
-        insights: marketInsightResult.success ? marketInsightResult.data?.market_insights_text : ''
+        insights: marketInsightResult.success ? marketInsightResult.data?.market_insights_text : '',
+        top_sales: [] // Empty array for top_sales as it's derived from provincial_producers
       }
 
       console.log('🎯 Form data created:', {
@@ -1646,9 +1945,12 @@ export class SupabaseAuctionDataService {
         auction_catalogue_prefix: formData.auction.catalogue_prefix,
         auction_catalogue_number: formData.auction.catalogue_number,
         micron_price_comparison_rows: formData.micron_price_comparison.rows.length,
+        micron_prices_count: formData.micron_prices.length,
         buyers_count: formData.buyers.length,
         brokers_count: formData.brokers.length,
         provincial_producers_count: formData.provincial_producers.length,
+        currencies_count: formData.currencies.length,
+        currencies_data: formData.currencies,
         first_micron_row: formData.micron_price_comparison.rows[0],
         first_buyer: formData.buyers[0],
         first_broker: formData.brokers[0],
@@ -1663,8 +1965,13 @@ export class SupabaseAuctionDataService {
   }
 
   private static groupTopPerformersByProvince(performers: TopPerformerRow[]) {
+    console.log('🔍 Grouping top performers by province. Input data:', performers);
     const grouped = performers.reduce((acc, performer) => {
       const provinceName = (performer as any).provinces?.name || 'Unknown'
+      console.log('🔍 Processing performer:', performer.name, 'from province:', provinceName, 'province data:', (performer as any).provinces);
+      
+      // Include all provinces including Lesotho in the data
+      
       if (!acc[provinceName]) {
         acc[provinceName] = {
           province: provinceName,
@@ -1689,7 +1996,10 @@ export class SupabaseAuctionDataService {
       return acc
     }, {} as Record<string, ProvincialProducerData>)
 
-    return Object.values(grouped)
+    console.log('🔍 Grouped provincial data:', grouped);
+    const result = Object.values(grouped);
+    console.log('🔍 Final provincial producer data:', result);
+    return result
   }
 
   // Auction Report methods (for compatibility with existing components)

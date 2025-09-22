@@ -35,7 +35,7 @@ const TopSalesTable: React.FC<TopSalesTableProps> = ({ data }) => {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-              {['FARM', 'REGION', 'LOTS', 'TYPE', 'MICRON', 'PRICE (ZAR/KG)', 'Certification', 'BUYER'].map((header, index) => (
+              {['FARM', 'REGION', 'LOTS', 'TYPE', 'MICRON', 'PRICE (ZAR/KG)', 'Certification'].map((header, index) => (
                 <th key={header} className={`py-2 px-2 font-medium ${index === 6 ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-muted)' }}>
                   {header}
                 </th>
@@ -84,11 +84,6 @@ const TopSalesTable: React.FC<TopSalesTableProps> = ({ data }) => {
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
                     )}
                   </div>
-                </td>
-                <td className="py-1 px-2">
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {sale.buyer_name}
-                  </span>
                 </td>
               </tr>
             ))}

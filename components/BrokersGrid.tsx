@@ -8,9 +8,12 @@ interface BrokersGridProps {
 const BrokersGrid: React.FC<BrokersGridProps> = ({ data }) => {
   const colors = ['#0ea5e9', '#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
   
+  // Sort data by bales offered from high to low
+  const sortedData = [...data].sort((a, b) => b.catalogue_offering - a.catalogue_offering);
+  
   // Calculate totals
-  const totalOffered = data.reduce((sum, broker) => sum + broker.catalogue_offering, 0);
-  const totalSold = data.reduce((sum, broker) => sum + broker.sold_ytd, 0);
+  const totalOffered = sortedData.reduce((sum, broker) => sum + broker.catalogue_offering, 0);
+  const totalSold = sortedData.reduce((sum, broker) => sum + broker.sold_ytd, 0);
   
   return (
     <div className="card h-full flex flex-col">
@@ -38,7 +41,7 @@ const BrokersGrid: React.FC<BrokersGridProps> = ({ data }) => {
       </div>
       
       <div className="space-y-1 flex-1">
-        {data.map((broker, index) => {
+        {sortedData.map((broker, index) => {
           const clearanceRate = broker.catalogue_offering > 0 
             ? (broker.sold_ytd / broker.catalogue_offering * 100) 
             : 0;
@@ -90,7 +93,7 @@ const BrokersGrid: React.FC<BrokersGridProps> = ({ data }) => {
           </div>
           <div className="text-center">
             <div className="font-bold" style={{ color: 'var(--accent-primary)' }}>
-              {data.length}
+              {sortedData.length}
             </div>
             <div style={{ color: 'var(--text-muted)' }}>Brokers</div>
           </div>

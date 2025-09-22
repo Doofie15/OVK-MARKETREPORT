@@ -7,12 +7,20 @@ interface AuctionComparisonProps {
 }
 
 const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, previousData }) => {
-  if (!previousData || previousData.length === 0) {
+  // Debug logging
+  console.log('🔍 AuctionComparison currentData:', currentData);
+  console.log('🔍 AuctionComparison previousData:', previousData);
+  
+  // Show current data even if no previous data is available
+  if (!currentData || currentData.length === 0) {
+    console.log('🔍 AuctionComparison: No current data available');
     return null;
   }
 
   const sortedCurrentData = [...currentData].sort((a, b) => parseFloat(a.bucket_micron) - parseFloat(b.bucket_micron));
-  const sortedPreviousData = [...previousData].sort((a, b) => parseFloat(a.bucket_micron) - parseFloat(b.bucket_micron));
+  const sortedPreviousData = previousData && previousData.length > 0 
+    ? [...previousData].sort((a, b) => parseFloat(a.bucket_micron) - parseFloat(b.bucket_micron))
+    : [];
 
   // Create comparison data for the table
   const comparisonData = sortedCurrentData.map(current => {
@@ -79,7 +87,9 @@ const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, prev
             Auction Comparison
           </h2>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Price changes vs previous auction
+            {previousData && previousData.length > 0 
+              ? 'Price changes vs previous auction' 
+              : 'Current auction micron price data'}
           </p>
         </div>
       </div>
@@ -90,22 +100,31 @@ const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, prev
             <tr className="bg-gray-50">
               <th className="px-2 py-2 text-left font-semibold border-r border-gray-200" style={{ color: 'var(--text-primary)' }}>Micron</th>
               <th className="px-2 py-2 text-left font-semibold border-r border-gray-200" style={{ color: 'var(--text-primary)' }}>Category</th>
-              <th className="px-2 py-2 text-center font-semibold border-l-2 border-blue-200 bg-blue-100" style={{ color: 'var(--text-primary)' }} colSpan={3}>
-                Certified (Previous & Current) Change
+              <th className="px-2 py-2 text-center font-semibold border-l-2 border-blue-200 bg-blue-100" style={{ color: 'var(--text-primary)' }} colSpan={previousData && previousData.length > 0 ? 3 : 1}>
+                Certified {previousData && previousData.length > 0 ? '(Previous & Current) Change' : 'Current Prices'}
               </th>
-              <th className="px-2 py-2 text-center font-semibold border-l-2 border-green-200 bg-green-100" style={{ color: 'var(--text-primary)' }} colSpan={3}>
-                All Merino (Previous & Current) Change
+              <th className="px-2 py-2 text-center font-semibold border-l-2 border-green-200 bg-green-100" style={{ color: 'var(--text-primary)' }} colSpan={previousData && previousData.length > 0 ? 3 : 1}>
+                All Merino {previousData && previousData.length > 0 ? '(Previous & Current) Change' : 'Current Prices'}
               </th>
             </tr>
             <tr className="bg-gray-50">
               <th className="border-r border-gray-200"></th>
               <th className="border-r border-gray-200"></th>
-              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
-              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
-              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Change</th>
-              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
-              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
-              <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Change</th>
+              {previousData && previousData.length > 0 ? (
+                <>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Change</th>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Change</th>
+                </>
+              ) : (
+                <>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Certified</th>
+                  <th className="px-1 py-1 text-right font-medium text-xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>All Merino</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -126,25 +145,38 @@ const AuctionComparison: React.FC<AuctionComparisonProps> = ({ currentData, prev
                   </span>
                 </td>
                 {/* Certified columns */}
-                <td className="px-1 py-1 text-right font-medium border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>
-                  R{item.certified.previous.toFixed(2)}
-                </td>
-                <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-primary)' }}>
-                  R{item.certified.current.toFixed(2)}
-                </td>
-                <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25">
-                  {renderChangeIndicator(item.certified.change)}
-                </td>
-                {/* All Merino columns */}
-                <td className="px-1 py-1 text-right font-medium border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>
-                  R{item.allMerino.previous.toFixed(2)}
-                </td>
-                <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-primary)' }}>
-                  R{item.allMerino.current.toFixed(2)}
-                </td>
-                <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25">
-                  {renderChangeIndicator(item.allMerino.change)}
-                </td>
+                {previousData && previousData.length > 0 ? (
+                  <>
+                    <td className="px-1 py-1 text-right font-medium border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>
+                      R{item.certified.previous.toFixed(2)}
+                    </td>
+                    <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-primary)' }}>
+                      R{item.certified.current.toFixed(2)}
+                    </td>
+                    <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25">
+                      {renderChangeIndicator(item.certified.change)}
+                    </td>
+                    {/* All Merino columns */}
+                    <td className="px-1 py-1 text-right font-medium border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>
+                      R{item.allMerino.previous.toFixed(2)}
+                    </td>
+                    <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-primary)' }}>
+                      R{item.allMerino.current.toFixed(2)}
+                    </td>
+                    <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25">
+                      {renderChangeIndicator(item.allMerino.change)}
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="px-1 py-1 text-right font-semibold border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-primary)' }}>
+                      R{item.certified.current.toFixed(2)}
+                    </td>
+                    <td className="px-1 py-1 text-right font-semibold border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-primary)' }}>
+                      R{item.allMerino.current.toFixed(2)}
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

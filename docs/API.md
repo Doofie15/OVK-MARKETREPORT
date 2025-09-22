@@ -2,20 +2,175 @@
 
 ## Overview
 
-The OVK Wool Market Report Platform includes a RESTful API server built with Node.js and Express.js. The API provides endpoints for managing auction reports, market data, and administrative functions. The platform features an enhanced form interface that utilizes 95% of the page width for improved data entry efficiency.
+The OVK Wool Market Report Platform features a comprehensive Supabase-based backend with PostgreSQL database integration. The platform provides both RESTful API endpoints and direct database access through Supabase services. The system includes enhanced data management, real-time synchronization, and advanced analytics capabilities.
 
-## Base URL
+## Database Integration
 
+### Supabase Configuration
+- **Database**: PostgreSQL with real-time capabilities
+- **Authentication**: Supabase Auth with role-based access control
+- **Storage**: Row Level Security (RLS) for data protection
+- **Real-time**: Live data synchronization across all clients
+
+### Base URLs
 ```
+# Supabase API (Primary)
+https://your-project.supabase.co
+
+# Legacy Node.js API (Optional)
 http://localhost:3001/api
 ```
 
 ## Authentication
 
-Currently, the API uses basic authentication. Include credentials in the request headers:
+### Supabase Authentication
+The platform uses Supabase Auth with JWT tokens:
 
 ```
-Authorization: Basic <base64-encoded-credentials>
+Authorization: Bearer <jwt-token>
+```
+
+### User Roles & Permissions
+- **super_admin**: Full system access including user management
+- **admin**: Administrative access including auction management
+- **editor**: Can create and edit auction reports
+- **viewer**: Read-only access to view reports
+
+## Supabase Service Methods
+
+### Auction Management
+
+#### `getCompleteAuctionReport(auctionId: string)`
+Retrieve a complete auction report with all related data including season-to-date totals.
+
+**Parameters:**
+- `auctionId` (string): Auction UUID
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: AuctionReport;
+  error?: string;
+}
+```
+
+**Features:**
+- Loads all related data (buyers, brokers, provincial producers, micron prices)
+- Calculates season-to-date totals for indicators
+- Includes market insights and currency data
+- Handles data transformation from database to UI format
+
+#### `getSeasonIndicatorTotals(seasonId: string)`
+Calculate season-to-date totals for market indicators.
+
+**Parameters:**
+- `seasonId` (string): Season UUID
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: {
+    totalBales: number;
+    totalVolume: number;
+    totalValue: number;
+  };
+  error?: string;
+}
+```
+
+#### `getBuyerSeasonTotals(seasonId: string)`
+Calculate season-to-date totals for buyer performance.
+
+**Parameters:**
+- `seasonId` (string): Season UUID
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: Array<{
+    buyer: string;
+    total_bales_season: number;
+  }>;
+  error?: string;
+}
+```
+
+### User Management
+
+#### `getUsers()`
+Retrieve all users with their roles and approval status.
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: Array<{
+    id: string;
+    email: string;
+    user_type: string;
+    is_approved: boolean;
+    created_at: string;
+  }>;
+  error?: string;
+}
+```
+
+#### `approveUser(userId: string)`
+Approve a pending user for system access.
+
+**Parameters:**
+- `userId` (string): User UUID
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: User;
+  error?: string;
+}
+```
+
+### Season Management
+
+#### `getSeasons()`
+Retrieve all seasons with their statistics.
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: Array<{
+    id: string;
+    season_year: string;
+    start_date: string;
+    end_date: string;
+    created_at: string;
+  }>;
+  error?: string;
+}
+```
+
+### Published Reports
+
+#### `getPublishedReports()`
+Retrieve all published auction reports for public display.
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  data?: Array<{
+    id: string;
+    catalogue_name: string;
+    auction_date: string;
+    published_at: string;
+    report: AuctionReport;
+  }>;
+  error?: string;
+}
 ```
 
 ## Endpoints
@@ -442,6 +597,9 @@ interface AuctionReport {
   trends: Trend[];
   insights: MarketInsights;
   currencies: CurrencyData;
+  indicators: Indicator[];
+  benchmarks: Benchmark[];
+  yearly_average_prices: YearlyAveragePrice[];
   // New status and metadata fields
   status: 'draft' | 'published' | 'archived';
   cape_wools_commentary?: string;
@@ -451,6 +609,36 @@ interface AuctionReport {
   created_by?: string;
   approved_by?: string;
   version?: number;
+}
+```
+
+### Indicator (Enhanced with Season-to-Date)
+```typescript
+interface Indicator {
+  type: 'total_lots' | 'total_volume' | 'avg_price' | 'total_value';
+  unit: string;
+  value: number;
+  value_ytd: number; // Season-to-date total
+  pct_change: number;
+}
+```
+
+### Benchmark
+```typescript
+interface Benchmark {
+  label: string;
+  price: number;
+  currency: string;
+  day_change_pct: number;
+}
+```
+
+### YearlyAveragePrice
+```typescript
+interface YearlyAveragePrice {
+  label: string;
+  value: number;
+  unit: string;
 }
 ```
 
@@ -618,23 +806,40 @@ The API includes built-in monitoring:
 
 ## Recent Updates
 
-### Enhanced Report Management
-- **Status Management**: New endpoints for draft/publish workflow with status tracking
-- **Season Management**: Complete CRUD operations for season data with statistics
-- **Enhanced Data Models**: Updated AuctionReport interface with status and metadata fields
-- **Pagination Support**: Improved data retrieval with pagination for large datasets
-- **Real-time Statistics**: Dynamic calculation of season and auction statistics
+### Supabase Integration
+- **Database Migration**: Complete migration from JSON storage to PostgreSQL with Supabase
+- **Real-time Synchronization**: Live data updates across all clients using Supabase real-time
+- **Row Level Security**: Database-level security policies for data access control
+- **Enhanced Authentication**: JWT-based authentication with role-based access control
+- **User Management**: Complete user administration system with approval workflow
 
-### Enhanced Form Interface
-- **95% Width Utilization**: The auction data capture form now uses 95% of the available page width
-- **Improved API Integration**: Enhanced form layout provides better integration with API endpoints
-- **Better Data Validation**: Improved form validation with wider layout for better error handling
-- **Mobile Responsiveness**: API maintains full mobile compatibility with enhanced form interface
+### Season-to-Date Analytics
+- **Enhanced Market Overview**: Market overview cards now display both current auction and season-to-date totals
+- **Season Indicator Totals**: New service method to calculate cumulative season totals
+- **Buyer Season Totals**: Season-to-date buyer performance tracking
+- **Real-time Calculations**: Dynamic calculation of season totals from all published auctions
+- **Public Data Integration**: Public page now displays live data from published reports
 
-### Input Formatting
+### Enhanced Data Models
+- **Indicator Enhancement**: Added `value_ytd` field for season-to-date totals
+- **Benchmark Integration**: Enhanced benchmark data with currency and change tracking
+- **Yearly Average Prices**: New data structure for year-to-date average pricing
+- **Provincial Data**: Enhanced provincial producer data with proper sorting and filtering
+- **Complete Data Pipeline**: End-to-end data flow from admin capture to public display
+
+### Public Page Integration
+- **Live Data Display**: Public page now shows data from published auction reports
+- **Interactive Price Map**: Responsive SVG map showing provincial price averages
+- **Enhanced Charts**: Improved data visualization with proper currency formatting
+- **Mobile Optimization**: Complete mobile responsiveness for all public components
+- **Data Validation**: Robust error handling and fallback mechanisms
+
+### Form Interface Enhancements
+- **95% Width Utilization**: The auction data capture form uses 95% of available page width
+- **Enhanced Validation**: Improved form validation with real-time feedback
 - **Currency Formatting**: Support for thousands separators in numeric inputs
 - **Catalogue Number Formatting**: 2-digit formatting with natural typing support
-- **Real-time Validation**: Enhanced validation with immediate feedback
+- **Mobile Responsiveness**: Full mobile compatibility with enhanced form interface
 
 ## Support
 

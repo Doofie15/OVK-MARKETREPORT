@@ -18,6 +18,15 @@ const MobileProvincialTopProducers: React.FC<MobileProvincialTopProducersProps> 
     'North West': '#06b6d4'
   };
   
+  // Sort provinces alphabetically, but put Lesotho at the bottom
+  const sortedData = [...data].sort((a, b) => {
+    // If one is Lesotho, put it at the bottom
+    if (a.province === 'Lesotho') return 1;
+    if (b.province === 'Lesotho') return -1;
+    // Otherwise sort alphabetically
+    return a.province.localeCompare(b.province);
+  });
+  
   return (
     <div>
       <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
@@ -25,7 +34,7 @@ const MobileProvincialTopProducers: React.FC<MobileProvincialTopProducersProps> 
       </h3>
       
       <div className="space-y-2">
-        {data.map((provinceData, provinceIndex) => (
+        {sortedData.map((provinceData, provinceIndex) => (
           <div key={provinceData.province} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 p-2 bg-gray-50 border-b border-gray-200">
               <div 

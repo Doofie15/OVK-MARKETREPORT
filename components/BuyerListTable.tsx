@@ -29,7 +29,7 @@ const BuyerListTable: React.FC<BuyerListTableProps> = ({ data }) => {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-              {['Company', 'Volume (Bales)', '% Share', 'YTD Bales'].map(header => (
+              {['Company', 'Volume (Bales this auction)', '% Share of season total', 'Total Bales for Season'].map(header => (
                 <th key={header} className="text-left py-2 px-2 font-medium" style={{ color: 'var(--text-muted)' }}>
                   {header}
                 </th>

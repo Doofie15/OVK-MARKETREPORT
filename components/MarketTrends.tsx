@@ -18,6 +18,18 @@ const ModernTrendChart: React.FC<{
   
   const dataKey2025 = isZAR ? '2025_zar' : '2025_usd';
   const dataKey2024 = isZAR ? '2024_zar' : '2024_usd';
+
+  // Handle empty or undefined data
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold mb-4">{title}</h3>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">No trend data available</p>
+        </div>
+      </div>
+    );
+  }
   
   // Use specific colors for different chart types
   const isAWEX = title.includes('AWEX');
@@ -39,22 +51,43 @@ const ModernTrendChart: React.FC<{
     secondaryColor = isCertified ? '#3b82f6' : '#34d399';
   }
 
-  const chartSeries = [
-    {
-      name: `2025 ${currency}`,
+  // Create chart series only for available data
+  const chartSeries = [];
+  
+  // Add 2025 series if data exists (using auction catalogue name)
+  const has2025Data = data.some(point => point[dataKey2025] !== undefined && point[dataKey2025] !== null);
+  if (has2025Data) {
+    chartSeries.push({
+      name: data[0]?.auction_catalogue || `2025 ${currency}`, // Use auction catalogue name if available
       data: data.map(point => ({
         x: point.period,
-        y: point[dataKey2025]
+        y: point[dataKey2025] || 0
       }))
-    },
-    {
-      name: `2024 ${currency}`,
+    });
+  }
+  
+  // Add 2024 series if data exists (using auction catalogue name)
+  const has2024Data = data.some(point => point[dataKey2024] !== undefined && point[dataKey2024] !== null);
+  if (has2024Data) {
+    chartSeries.push({
+      name: data[0]?.auction_catalogue || `2024 ${currency}`, // Use auction catalogue name if available
       data: data.map(point => ({
         x: point.period,
-        y: point[dataKey2024]
+        y: point[dataKey2024] || 0
       }))
-    }
-  ];
+    });
+  }
+  
+  // If no data available, show a single point
+  if (chartSeries.length === 0) {
+    chartSeries.push({
+      name: data[0]?.auction_catalogue || `Current ${currency}`,
+      data: data.map(point => ({
+        x: point.period,
+        y: 0
+      }))
+    });
+  }
 
   const options: ApexOptions = {
     theme: { mode: 'light' },
@@ -109,7 +142,13 @@ const ModernTrendChart: React.FC<{
       shared: true,
       intersect: false,
       style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
-      x: { formatter: (val) => `Period ${val}` }
+      x: { formatter: (val) => `${val}` }, // Show auction catalogue name directly
+      y: { 
+        formatter: (val, opts) => {
+          const currencySymbol = currency; // Use the currency prop from component
+          return `${val.toFixed(2)} ${currencySymbol}`;
+        }
+      }
     },
     legend: {
       position: 'top',
@@ -168,6 +207,25 @@ const ModernTrendChart: React.FC<{
 };
 
 const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
+  // Handle empty or undefined data
+  if (!data || (!data.rws && !data.non_rws && !data.awex)) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <h2 className="text-sm font-bold gradient-text">2 YEAR MARKET TRENDS</h2>
+        </div>
+        <div className="card p-6">
+          <p className="text-gray-500 text-center">No trend data available for this auction</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-3">
@@ -181,10 +239,10 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
 
       {/* All 4 Charts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws} currency="ZAR" type="CERTIFIED" />
-        <ModernTrendChart title="ALL MERINO 2 YEAR TREND" data={data.non_rws} currency="ZAR" type="ALL-MERINO" />
-        <ModernTrendChart title="EXCHANGE RATE 2 YEAR TREND" data={data.rws} currency="USD" type="CERTIFIED" />
-        <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex} currency="USD" type="ALL-MERINO" />
+        <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws || []} currency="ZAR" type="CERTIFIED" />
+        <ModernTrendChart title="ALL MERINO 2 YEAR TREND" data={data.non_rws || []} currency="ZAR" type="ALL-MERINO" />
+        <ModernTrendChart title="EXCHANGE RATE 2 YEAR TREND" data={data.rws || []} currency="USD" type="CERTIFIED" />
+        <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex || []} currency="USD" type="ALL-MERINO" />
       </div>
     </div>
   );

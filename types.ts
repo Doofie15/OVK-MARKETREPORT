@@ -218,6 +218,7 @@ export interface Currency {
 
 export interface TrendPoint {
   period: string;
+  auction_catalogue?: string; // Auction catalogue name (e.g., "CG01")
   '2025_zar'?: number;
   '2024_zar'?: number;
   '2025_usd'?: number;

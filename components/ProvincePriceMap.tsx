@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import type { ProvinceAveragePrice } from '../types';
+import type { ProvincialProducerData } from '../types';
 import zaGeoJSON from '../za.json';
 
 interface ProvincePriceMapProps {
-  data: ProvinceAveragePrice[];
+  data: ProvincialProducerData[];
 }
 
 const SouthAfricaMap = ({
@@ -12,7 +12,7 @@ const SouthAfricaMap = ({
   hoveredId,
   getColor,
 }: {
-  data: ProvinceAveragePrice[];
+  data: { id: string; name: string; certified_avg: number; merino_avg: number }[];
   onMouseMove: (e: React.MouseEvent, id: string) => void;
   hoveredId: string | null;
   getColor: (price: number) => string;
@@ -75,21 +75,40 @@ const SouthAfricaMap = ({
   );
 
   return (
-    <svg
-      viewBox="0 0 600 500"
-      className="w-full h-auto"
-      aria-label="Map of South Africa"
-    >
+    <div className="w-full" style={{ aspectRatio: '6/5', maxHeight: '625px' }}>
+      <svg
+        viewBox="0 0 600 500"
+        className="w-full h-full"
+        preserveAspectRatio="xMidYMid meet"
+        aria-label="Map of South Africa"
+      >
       {/* Background */}
-      <rect width="600" height="500" fill="#f8fafc" />
+      <rect width="600" height="500" fill="transparent" />
 
       <g>
-        {zaGeoJSON.features.map((feature) => {
+        {zaGeoJSON.features
+          .filter((feature) => {
+            console.log('🔍 Processing feature:', feature.properties.name);
+            return feature.properties.name !== 'Lesotho'; // Exclude Lesotho
+          })
+          .map((feature) => {
           const geoId = feature.properties.id;
           const componentId = provinceIdMap[geoId];
           const provinceData = data.find((p) => p.id === componentId);
-
-          if (!provinceData) return null;
+          
+          // Always use the GeoJSON province name, never use data-provided names
+          const provinceName = feature.properties.name;
+          
+          // Debug logging for Eastern Cape
+          if (feature.properties.name === 'Eastern Cape') {
+            console.log('🔍 Eastern Cape feature found:', {
+              geoId,
+              componentId,
+              provinceData,
+              provinceName,
+              featureProperties: feature.properties
+            });
+          }
 
           const coordinates = feature.geometry.coordinates;
           const pathData = coordinatesToPath(coordinates);
@@ -165,7 +184,7 @@ const SouthAfricaMap = ({
             <g key={geoId}>
               <path
                 d={pathData}
-                fill={getColor(isHovered)}
+                fill={provinceData ? getColor(isHovered ? provinceData.merino_avg + 5 : provinceData.merino_avg) : '#1e40af'}
                 stroke="#ffffff"
                 strokeWidth={isHovered ? '3' : '1.5'}
                 onMouseMove={(e) => onMouseMove(e, componentId)}
@@ -200,59 +219,64 @@ const SouthAfricaMap = ({
                    fontFamily: 'system-ui, -apple-system, sans-serif',
                  }}
                >
-                 {provinceData.name}
+                 {provinceName}
                </text>
                
-               {/* Certified Wool price label - Green */}
-               <text
-                 x={centerX}
-                 y={centerY + 6}
-                 className="pointer-events-none"
-                 textAnchor="middle"
-                 dominantBaseline="middle"
-                 fill={isHovered ? '#ffffff' : '#ffffff'}
-                 style={{
-                   textShadow: isHovered
-                     ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
-                     : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
-                   fontSize: isSmallProvince ? '6px' : '7px',
-                   fontWeight: '600',
-                   letterSpacing: '0.025em',
-                   fontFamily: 'system-ui, -apple-system, sans-serif',
-                 }}
-               >
-                 <tspan fill="#10b981">Certified:</tspan> R{provinceData.avg_price.toFixed(0)}/kg
-               </text>
+               {/* Certified Wool price label - Green (only show if data available) */}
+               {provinceData && (
+                 <text
+                   x={centerX}
+                   y={centerY + 6}
+                   className="pointer-events-none"
+                   textAnchor="middle"
+                   dominantBaseline="middle"
+                   fill={isHovered ? '#ffffff' : '#ffffff'}
+                   style={{
+                     textShadow: isHovered
+                       ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
+                       : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
+                     fontSize: isSmallProvince ? '6px' : '7px',
+                     fontWeight: '600',
+                     letterSpacing: '0.025em',
+                     fontFamily: 'system-ui, -apple-system, sans-serif',
+                   }}
+                 >
+                   <tspan fill="#10b981">Certified:</tspan> R{provinceData.certified_avg.toFixed(0)}/kg
+                 </text>
+               )}
                
-               {/* All Merino Wool price label - Blue */}
-               <text
-                 x={centerX}
-                 y={centerY + 14}
-                 className="pointer-events-none"
-                 textAnchor="middle"
-                 dominantBaseline="middle"
-                 fill={isHovered ? '#ffffff' : '#ffffff'}
-                 style={{
-                   textShadow: isHovered
-                     ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
-                     : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
-                   fontSize: isSmallProvince ? '6px' : '7px',
-                   fontWeight: '600',
-                   letterSpacing: '0.025em',
-                   fontFamily: 'system-ui, -apple-system, sans-serif',
-                 }}
-               >
-                 <tspan fill="#3b82f6">Merino:</tspan> R{(provinceData.avg_price * 1.1).toFixed(0)}/kg
-               </text>
+               {/* All Merino Wool price label - Blue (only show if data available) */}
+               {provinceData && (
+                 <text
+                   x={centerX}
+                   y={centerY + 14}
+                   className="pointer-events-none"
+                   textAnchor="middle"
+                   dominantBaseline="middle"
+                   fill={isHovered ? '#ffffff' : '#ffffff'}
+                   style={{
+                     textShadow: isHovered
+                       ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
+                       : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
+                     fontSize: isSmallProvince ? '6px' : '7px',
+                     fontWeight: '600',
+                     letterSpacing: '0.025em',
+                     fontFamily: 'system-ui, -apple-system, sans-serif',
+                   }}
+                 >
+                   <tspan fill="#3b82f6">Merino:</tspan> R{provinceData.merino_avg.toFixed(0)}/kg
+                 </text>
+               )}
             </g>
           );
         })}
       </g>
     </svg>
+    </div>
   );
 };
 
-const Tooltip: React.FC<{ province: ProvinceAveragePrice }> = ({ province }) => (
+const Tooltip: React.FC<{ province: { id: string; name: string; certified_avg: number; merino_avg: number } }> = ({ province }) => (
   <div
     className="p-3 rounded-lg shadow-lg z-10 text-center border border-white/20 backdrop-blur-sm max-w-xs"
     style={{
@@ -271,13 +295,13 @@ const Tooltip: React.FC<{ province: ProvinceAveragePrice }> = ({ province }) => 
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
         <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-          Certified: R{province.avg_price.toFixed(0)}/kg
+          Certified: R{province.certified_avg.toFixed(0)}/kg
         </p>
       </div>
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
         <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-          Merino: R{(province.avg_price * 1.1).toFixed(0)}/kg
+          Merino: R{province.merino_avg.toFixed(0)}/kg
         </p>
       </div>
     </div>
@@ -285,25 +309,100 @@ const Tooltip: React.FC<{ province: ProvinceAveragePrice }> = ({ province }) => 
 );
 
 const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
+  console.log('🔍 ProvincePriceMap component rendered with data:', data);
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
-    province: ProvinceAveragePrice;
+    province: { id: string; name: string; certified_avg: number; merino_avg: number };
   } | null>(null);
 
-  const sampleData: ProvinceAveragePrice[] = [
-    { id: 'ZA-EC', name: 'Eastern Cape', avg_price: 183.0 },
-    { id: 'ZA-WC', name: 'Western Cape', avg_price: 179.0 },
-    { id: 'ZA-NC', name: 'Northern Cape', avg_price: 175.0 },
-    { id: 'ZA-KZN', name: 'KwaZulu-Natal', avg_price: 168.0 },
-    { id: 'ZA-FS', name: 'Free State', avg_price: 166.0 },
-    { id: 'ZA-NW', name: 'North West', avg_price: 162.0 },
-    { id: 'ZA-GP', name: 'Gauteng', avg_price: 160.0 },
-    { id: 'ZA-MP', name: 'Mpumalanga', avg_price: 159.0 },
-    { id: 'ZA-LP', name: 'Limpopo', avg_price: 155.0 },
+  // Calculate averages from provincial producer data
+  const calculateProvincialAverages = (provincialData: ProvincialProducerData[]) => {
+    console.log('🔍 Input provincial data:', provincialData);
+    const provinceMap: Record<string, { certified: number[]; merino: number[] }> = {};
+    
+    provincialData.forEach(province => {
+      console.log('🔍 Processing province:', province.province, 'with', province.producers.length, 'producers');
+      
+      // Skip Lesotho for map display (it's not a South African province)
+      if (province.province === 'Lesotho') {
+        console.log('🔍 Skipping Lesotho for map display');
+        return;
+      }
+      
+      if (!provinceMap[province.province]) {
+        provinceMap[province.province] = { certified: [], merino: [] };
+      }
+      
+      // Take top 10 performers (already sorted by position)
+      const topPerformers = province.producers.slice(0, 10);
+      console.log('🔍 Top 10 performers for', province.province, ':', topPerformers.map(p => ({ name: p.name, price: p.price, certified: p.certified })));
+      
+      topPerformers.forEach(producer => {
+        if (producer.certified === 'RWS') {
+          provinceMap[province.province].certified.push(producer.price);
+        }
+        provinceMap[province.province].merino.push(producer.price);
+      });
+    });
+    
+    console.log('🔍 Province map after processing:', provinceMap);
+    
+    // Convert to map data format
+    const mapData = Object.entries(provinceMap).map(([provinceName, prices]) => {
+      const certifiedAvg = prices.certified.length > 0 
+        ? prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length 
+        : 0;
+      const merinoAvg = prices.merino.length > 0 
+        ? prices.merino.reduce((sum, price) => sum + price, 0) / prices.merino.length 
+        : 0;
+      
+      const result = {
+        id: getProvinceId(provinceName),
+        name: provinceName,
+        certified_avg: certifiedAvg,
+        merino_avg: merinoAvg
+      };
+      console.log('🔍 Calculated averages for', provinceName, ':', result);
+      return result;
+    });
+    
+    console.log('🔍 Final map data:', mapData);
+    return mapData;
+  };
+
+  const getProvinceId = (provinceName: string): string => {
+    const provinceMap: Record<string, string> = {
+      'Eastern Cape': 'ZA-EC',
+      'Western Cape': 'ZA-WC',
+      'Northern Cape': 'ZA-NC',
+      'KwaZulu-Natal': 'ZA-KZN',
+      'Free State': 'ZA-FS',
+      'North West': 'ZA-NW',
+      'Gauteng': 'ZA-GP',
+      'Mpumalanga': 'ZA-MP',
+      'Limpopo': 'ZA-LP'
+    };
+    return provinceMap[provinceName] || 'ZA-EC';
+  };
+
+  const sampleData = [
+    { id: 'ZA-EC', name: 'Eastern Cape', certified_avg: 183.0, merino_avg: 200.0 },
+    { id: 'ZA-WC', name: 'Western Cape', certified_avg: 179.0, merino_avg: 197.0 },
+    { id: 'ZA-NC', name: 'Northern Cape', certified_avg: 175.0, merino_avg: 193.0 },
+    { id: 'ZA-KZN', name: 'KwaZulu-Natal', certified_avg: 168.0, merino_avg: 185.0 },
+    { id: 'ZA-FS', name: 'Free State', certified_avg: 166.0, merino_avg: 183.0 },
+    { id: 'ZA-NW', name: 'North West', certified_avg: 162.0, merino_avg: 178.0 },
+    { id: 'ZA-GP', name: 'Gauteng', certified_avg: 160.0, merino_avg: 176.0 },
+    { id: 'ZA-MP', name: 'Mpumalanga', certified_avg: 159.0, merino_avg: 175.0 },
+    { id: 'ZA-LP', name: 'Limpopo', certified_avg: 155.0, merino_avg: 171.0 },
   ];
 
-  const mapData = data && data.length > 0 ? data : sampleData;
+  const mapData = data && data.length > 0 ? calculateProvincialAverages(data) : sampleData;
+  
+  // Debug logging
+  console.log('🔍 Map data being used:', mapData);
+  console.log('🔍 Original data passed to component:', data);
 
   const handleMouseMove = (e: React.MouseEvent, provinceId: string) => {
     const provinceData = mapData.find((p) => p.id === provinceId);
@@ -323,9 +422,24 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
    const mapColor = '#1e40af'; // Modern blue for wool
    const hoverColor = '#3b82f6'; // Lighter blue for hover
 
-   const getColor = useCallback((isHovered: boolean) => {
-     return isHovered ? hoverColor : mapColor;
-   }, []);
+   const getColor = useCallback((price: number) => {
+     if (!mapData || mapData.length === 0) return mapColor;
+     
+     const maxPrice = Math.max(...mapData.map(p => p.merino_avg));
+     const minPrice = Math.min(...mapData.map(p => p.merino_avg));
+     const range = maxPrice - minPrice;
+     
+     if (range === 0) return mapColor;
+     
+     const ratio = (price - minPrice) / range;
+     
+     // Color scale from light blue (low) to dark blue (high)
+     if (ratio < 0.2) return '#dbeafe'; // Light blue
+     if (ratio < 0.4) return '#bfdbfe'; // Blue
+     if (ratio < 0.6) return '#93c5fd'; // Medium blue
+     if (ratio < 0.8) return '#60a5fa'; // Dark blue
+     return '#3b82f6'; // Darker blue
+   }, [mapData]);
 
   return (
     <div className="w-full">
