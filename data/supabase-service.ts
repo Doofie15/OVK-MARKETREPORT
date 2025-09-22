@@ -788,18 +788,6 @@ export class SupabaseAuctionDataService {
       
       if (error) throw error
       
-      // Debug Eastern Cape data specifically
-      const easternCapeData = data?.filter((performer: any) => 
-        performer.provinces?.name === 'Eastern Cape'
-      );
-      if (easternCapeData && easternCapeData.length > 0) {
-        console.log('🔍 Eastern Cape raw data from database:', easternCapeData.map((p: any) => ({
-          name: p.name,
-          price: p.price,
-          certification: p.certifications,
-          certificationCode: p.certifications?.code
-        })));
-      }
       
       return { success: true, data }
     } catch (error) {
@@ -1979,10 +1967,8 @@ export class SupabaseAuctionDataService {
   }
 
   private static groupTopPerformersByProvince(performers: TopPerformerRow[]) {
-    console.log('🔍 Grouping top performers by province. Input data:', performers);
     const grouped = performers.reduce((acc, performer) => {
       const provinceName = (performer as any).provinces?.name || 'Unknown'
-      console.log('🔍 Processing performer:', performer.name, 'from province:', provinceName, 'province data:', (performer as any).provinces);
       
       // Include all provinces including Lesotho in the data
       
@@ -1992,17 +1978,6 @@ export class SupabaseAuctionDataService {
           province_id: performer.province_id,
           producers: []
         }
-      }
-      
-      // Debug Eastern Cape specifically
-      if (provinceName === 'Eastern Cape') {
-        console.log('🔍 Eastern Cape performer data:', {
-          name: performer.name,
-          price: performer.price,
-          certifications: (performer as any).certifications,
-          certificationCode: (performer as any).certifications?.code,
-          isRWS: (performer as any).certifications?.code === 'RWS'
-        });
       }
       
       acc[provinceName].producers.push({
@@ -2021,10 +1996,7 @@ export class SupabaseAuctionDataService {
       return acc
     }, {} as Record<string, ProvincialProducerData>)
 
-    console.log('🔍 Grouped provincial data:', grouped);
-    const result = Object.values(grouped);
-    console.log('🔍 Final provincial producer data:', result);
-    return result
+    return Object.values(grouped)
   }
 
   // Auction Report methods (for compatibility with existing components)

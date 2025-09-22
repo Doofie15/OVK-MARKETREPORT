@@ -215,7 +215,7 @@ const MobileSouthAfricaMap = ({
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
               >
-                R{provinceData ? provinceData.merino_avg.toFixed(0) : '0'}
+                R{provinceData ? provinceData.merino_avg.toFixed(1) : '0.0'}
               </text>
             </g>
           );

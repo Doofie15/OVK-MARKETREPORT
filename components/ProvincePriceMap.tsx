@@ -87,10 +87,7 @@ const SouthAfricaMap = ({
 
       <g>
         {zaGeoJSON.features
-          .filter((feature) => {
-            console.log('🔍 Processing feature:', feature.properties.name);
-            return feature.properties.name !== 'Lesotho'; // Exclude Lesotho
-          })
+          .filter((feature) => feature.properties.name !== 'Lesotho') // Exclude Lesotho
           .map((feature) => {
           const geoId = feature.properties.id;
           const componentId = provinceIdMap[geoId];
@@ -98,17 +95,6 @@ const SouthAfricaMap = ({
           
           // Always use the GeoJSON province name, never use data-provided names
           const provinceName = feature.properties.name;
-          
-          // Debug logging for Eastern Cape
-          if (feature.properties.name === 'Eastern Cape') {
-            console.log('🔍 Eastern Cape feature found:', {
-              geoId,
-              componentId,
-              provinceData,
-              provinceName,
-              featureProperties: feature.properties
-            });
-          }
 
           const coordinates = feature.geometry.coordinates;
           const pathData = coordinatesToPath(coordinates);
@@ -240,7 +226,7 @@ const SouthAfricaMap = ({
                    fontFamily: 'system-ui, -apple-system, sans-serif',
                  }}
                >
-                 <tspan fill="#10b981">Certified:</tspan> R{provinceData ? provinceData.certified_avg.toFixed(0) : '0'}/kg
+                 <tspan fill="#10b981">Certified:</tspan> R{provinceData ? provinceData.certified_avg.toFixed(1) : '0.0'}/kg
                </text>
                
                {/* All Merino Wool price label - Blue (always show, even if 0) */}
@@ -261,7 +247,7 @@ const SouthAfricaMap = ({
                    fontFamily: 'system-ui, -apple-system, sans-serif',
                  }}
                >
-                 <tspan fill="#3b82f6">Merino:</tspan> R{provinceData ? provinceData.merino_avg.toFixed(0) : '0'}/kg
+                 <tspan fill="#3b82f6">Merino:</tspan> R{provinceData ? provinceData.merino_avg.toFixed(1) : '0.0'}/kg
                </text>
             </g>
           );
@@ -291,13 +277,13 @@ const Tooltip: React.FC<{ province: { id: string; name: string; certified_avg: n
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
         <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-          Certified: R{province.certified_avg.toFixed(0)}/kg
+          Certified: R{province.certified_avg.toFixed(1)}/kg
         </p>
       </div>
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
         <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-          Merino: R{province.merino_avg.toFixed(0)}/kg
+          Merino: R{province.merino_avg.toFixed(1)}/kg
         </p>
       </div>
     </div>
@@ -305,23 +291,6 @@ const Tooltip: React.FC<{ province: { id: string; name: string; certified_avg: n
 );
 
 const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
-  console.log('🔍 ProvincePriceMap component rendered with data:', data);
-  
-  // Debug Eastern Cape data specifically
-  if (data && data.length > 0) {
-    const easternCapeData = data.find(province => province.province === 'Eastern Cape');
-    if (easternCapeData) {
-      console.log('🔍 Eastern Cape data received by map component:', {
-        province: easternCapeData.province,
-        producersCount: easternCapeData.producers.length,
-        producers: easternCapeData.producers.map(p => ({
-          name: p.name,
-          price: p.price,
-          certified: p.certified
-        }))
-      });
-    }
-  }
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -330,7 +299,6 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
 
   // Calculate averages from provincial producer data
   const calculateProvincialAverages = (provincialData: ProvincialProducerData[]) => {
-    console.log('🔍 Input provincial data:', provincialData);
     const provinceMap: Record<string, { certified: number[]; merino: number[] }> = {};
     
     // Initialize all South African provinces with empty arrays
@@ -344,29 +312,15 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
     });
     
     provincialData.forEach(province => {
-      console.log('🔍 Processing province:', province.province, 'with', province.producers.length, 'producers');
-      
       // Skip Lesotho for map display (it's not a South African province)
       if (province.province === 'Lesotho') {
-        console.log('🔍 Skipping Lesotho for map display');
         return;
       }
       
       // Take top 10 performers (already sorted by position)
       const topPerformers = province.producers.slice(0, 10);
-      console.log('🔍 Top 10 performers for', province.province, ':', topPerformers.map(p => ({ name: p.name, price: p.price, certified: p.certified })));
       
       topPerformers.forEach(producer => {
-        // Debug Eastern Cape specifically
-        if (province.province === 'Eastern Cape') {
-          console.log('🔍 Eastern Cape producer:', {
-            name: producer.name,
-            price: producer.price,
-            certified: producer.certified,
-            isRWS: producer.certified === 'RWS'
-          });
-        }
-        
         // Certified: Only producers with RWS certification
         if (producer.certified === 'RWS') {
           provinceMap[province.province].certified.push(producer.price);
@@ -375,8 +329,6 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
         provinceMap[province.province].merino.push(producer.price);
       });
     });
-    
-    console.log('🔍 Province map after processing:', provinceMap);
     
     // Convert to map data format - always show all provinces, even with 0 values
     const mapData = Object.entries(provinceMap).map(([provinceName, prices]) => {
@@ -387,39 +339,14 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
         ? prices.merino.reduce((sum, price) => sum + price, 0) / prices.merino.length 
         : 0;
       
-      const result = {
+      return {
         id: getProvinceId(provinceName),
         name: provinceName,
         certified_avg: certifiedAvg,
         merino_avg: merinoAvg
       };
-      
-      // Debug Eastern Cape specifically
-      if (provinceName === 'Eastern Cape') {
-        console.log('🔍 Eastern Cape calculation details:', {
-          certifiedPrices: prices.certified,
-          merinoPrices: prices.merino,
-          certifiedCount: prices.certified.length,
-          merinoCount: prices.merino.length,
-          certifiedSum: prices.certified.reduce((sum, price) => sum + price, 0),
-          merinoSum: prices.merino.reduce((sum, price) => sum + price, 0),
-          certifiedAvg,
-          merinoAvg,
-          result
-        });
-        
-        // Calculate expected average manually
-        if (prices.certified.length > 0) {
-          const manualCertifiedAvg = prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length;
-          console.log('🔍 Manual certified average calculation:', manualCertifiedAvg);
-        }
-      }
-      
-      console.log('🔍 Calculated averages for', provinceName, ':', result);
-      return result;
     });
     
-    console.log('🔍 Final map data:', mapData);
     return mapData;
   };
 
@@ -451,10 +378,6 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
   ];
 
   const mapData = data && data.length > 0 ? calculateProvincialAverages(data) : sampleData;
-  
-  // Debug logging
-  console.log('🔍 Map data being used:', mapData);
-  console.log('🔍 Original data passed to component:', data);
 
   const handleMouseMove = (e: React.MouseEvent, provinceId: string) => {
     const provinceData = mapData.find((p) => p.id === provinceId);
