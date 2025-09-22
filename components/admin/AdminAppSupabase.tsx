@@ -7,6 +7,7 @@ import AdminForm from './AdminForm';
 import AuctionDataCaptureForm from './AuctionDataCaptureForm';
 import SeasonList from './SeasonList';
 import CreateSeason from './CreateSeason';
+import UserManagement from './UserManagement';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
 import SupabaseService from '../../data/supabase-service';
@@ -26,6 +27,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
   const [editingReport, setEditingReport] = useState<AuctionReport | undefined>(undefined);
   const [editingSeason, setEditingSeason] = useState<Season | null>(null);
   const [auctionsRefreshTrigger, setAuctionsRefreshTrigger] = useState(0);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Load initial data
   useEffect(() => {
@@ -35,29 +37,63 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      // Load seasons and auctions in parallel
-      const [seasonsResult, auctionsResult] = await Promise.all([
+      console.log('Loading initial data...');
+      
+      // Load seasons, auctions, and current user in parallel
+      const [seasonsResult, auctionsResult, usersResult] = await Promise.all([
         SupabaseService.getSeasons(),
-        SupabaseService.getAuctions()
+        SupabaseService.getAuctions(),
+        SupabaseService.getUsers()
       ]);
+
+      console.log('Seasons result:', seasonsResult);
+      console.log('Auctions result:', auctionsResult);
+      console.log('Users result:', usersResult);
 
       if (seasonsResult.success) {
         setSeasons(seasonsResult.data);
+        console.log('Seasons loaded:', seasonsResult.data.length);
+      } else {
+        console.error('Failed to load seasons:', seasonsResult.error);
+        setSeasons([]); // Set empty array as fallback
       }
 
       if (auctionsResult.success) {
         // Convert auction data to report format
         const reportData = await Promise.all(
-          auctionsResult.data.map(async (auction) => {
+          auctionsResult.data.map(async (auction: any) => {
             const reportResult = await SupabaseService.getCompleteAuctionReport(auction.id);
             return reportResult.success ? reportResult.data : null;
           })
         );
         
         setReports(reportData.filter(Boolean) as AuctionReport[]);
+        console.log('Reports loaded:', reportData.filter(Boolean).length);
+      } else {
+        console.error('Failed to load auctions:', auctionsResult.error);
+        setReports([]); // Set empty array as fallback
+      }
+
+      // Find current user in users table
+      if (usersResult.success && user) {
+        console.log('🔍 Looking for user with ID:', user.id);
+        console.log('📋 Available users:', usersResult.data.map((u: any) => ({ id: u.id, email: u.email, status: u.status })));
+        
+        const foundUser = usersResult.data.find((u: any) => u.id === user.id);
+        if (foundUser) {
+          setCurrentUser(foundUser);
+          console.log('✅ Current user loaded:', foundUser);
+        } else {
+          console.warn('❌ Current user not found in users table');
+          console.warn('Auth user ID:', user.id);
+          console.warn('Available user IDs:', usersResult.data.map((u: any) => u.id));
+        }
       }
     } catch (error) {
       console.error('Error loading initial data:', error);
+      // Set fallback empty arrays
+      setSeasons([]);
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -65,12 +101,27 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
 
   const handleEditReport = (report: AuctionReport) => {
     setEditingReport(report);
-    navigate('/admin/create');
+    // Create a URL-friendly auction name from catalogue prefix and number
+    const auctionName = `${report.auction.catalogue_prefix || 'CW'}${report.auction.catalogue_number || '001'}`;
+    navigate(`/admin/Auctions/edit/${auctionName}`);
   };
 
   const handleSaveReport = async (newReportData: Omit<AuctionReport, 'top_sales'>) => {
     try {
-      const result = await SupabaseService.saveAuctionReport(newReportData);
+      // Check if we're editing an existing report or creating a new one
+      const isEditing = editingReport && editingReport.auction.id;
+      
+      let result;
+      if (isEditing) {
+        console.log('🔄 Updating existing auction:', editingReport.auction.id);
+        // For editing, use the draft save method to update existing auction
+        result = await SupabaseService.saveAuctionReportDraft(newReportData);
+      } else {
+        console.log('🆕 Creating new auction');
+        // For new auctions, use the regular save method
+        result = await SupabaseService.saveAuctionReport(newReportData);
+      }
+      
       if (result.success) {
         // Reload data to get the updated reports
         await loadInitialData();
@@ -125,7 +176,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
         // Check if the current user exists in the users table
         const userResult = await SupabaseService.getUsers();
         if (userResult.success) {
-          const userExists = userResult.data.find(u => u.id === user.id);
+          const userExists = userResult.data.find((u: any) => u.id === user.id);
           if (userExists) {
             createdByUserId = user.id;
           }
@@ -200,6 +251,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
     if (path.includes('/admin/auctions')) return 'auctions';
     if (path.includes('/admin/form')) return 'form';
     if (path.includes('/admin/capture')) return 'capture';
+    if (path.includes('/admin/users')) return 'users';
     return 'dashboard';
   };
 
@@ -226,15 +278,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
         {/* Dashboard */}
         <Route 
           path="/" 
-          element={
-            <AdminDashboard 
-              reports={reports}
-              seasons={seasons}
-              onViewReport={handleViewReport}
-              onEditReport={handleEditReport}
-              onDeleteReport={handleDeleteReport}
-            />
-          } 
+          element={<AdminDashboard />} 
         />
         
         {/* Seasons Management */}
@@ -297,9 +341,8 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
           path="/form" 
           element={
             <AdminForm 
-              seasons={seasons}
               editingReport={editingReport}
-              onSaveReport={handleSaveReport}
+              onSave={handleSaveReport}
               onCancel={() => setEditingReport(undefined)}
             />
           } 
@@ -314,6 +357,29 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
               editingReport={editingReport}
               onSave={handleSaveReport}
               onCancel={() => setEditingReport(undefined)}
+            />
+          } 
+        />
+        
+        {/* Edit Auction Form */}
+        <Route 
+          path="/Auctions/edit/:auctionName" 
+          element={
+            <AuctionDataCaptureForm 
+              seasons={seasons}
+              editingReport={editingReport}
+              onSave={handleSaveReport}
+              onCancel={() => setEditingReport(undefined)}
+            />
+          } 
+        />
+        
+        {/* User Management */}
+        <Route 
+          path="/users" 
+          element={
+            <UserManagement 
+              currentUser={currentUser}
             />
           } 
         />

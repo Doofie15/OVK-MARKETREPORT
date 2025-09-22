@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Complete Edit Auction Functionality**: Full CRUD operations for auction data with proper create/update logic
+- **Database Integration**: Full Supabase PostgreSQL integration with comprehensive schema
+- **Buyer & Broker Performance**: Fixed data saving with proper foreign key mapping
+- **CASCADE Deletion**: Automatic cleanup of related data when auctions are deleted
+- **Database Triggers**: Automatic count updates for reference columns and data availability flags
 - **Enhanced Auction Report Review**: Comprehensive validation system with completion tracking and draft/publish workflow
 - **Status Management**: Real-time auction status tracking (Draft/Published) with automatic refresh
 - **Advanced Auctions Management**: Enhanced table with pagination, dropdown actions, and comprehensive statistics
@@ -47,6 +52,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated GitHub workflows to include enhanced form testing
 
 ### Fixed
+- **Buyer Performance Data Saving**: Fixed issue where buyer performance data wasn't being saved to database
+- **Broker Performance Data Saving**: Fixed issue where broker performance data wasn't being saved to database
+- **Duplicate Auction Creation**: Fixed issue where editing existing auctions created duplicate entries instead of updating
+- **Foreign Key Mapping**: Fixed buyer and broker name-to-ID mapping in database operations
+- **Data Type Conversions**: Fixed data type conversion issues in form data mapping
+- **CASCADE Deletion**: Implemented proper cleanup of related data when auctions are deleted
 - **Report Status Refresh**: Fixed issue where auction status wasn't updating after saving reports
 - **Validation Logic**: Fixed validation to recognize data from both indicators and greasy_stats
 - **Turnover Display**: Fixed empty turnover column in auctions table

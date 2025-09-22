@@ -637,6 +637,17 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
   // Update form data when editingReport changes
   useEffect(() => {
     if (editingReport) {
+      console.log('🔄 Loading editing report data:', {
+        catalogue: `${editingReport.auction.catalogue_prefix}${editingReport.auction.catalogue_number}`,
+        micron_price_comparison_rows: editingReport.micron_price_comparison?.rows?.length || 0,
+        buyers_count: editingReport.buyers?.length || 0,
+        brokers_count: editingReport.brokers?.length || 0,
+        provincial_producers_count: editingReport.provincial_producers?.length || 0,
+        first_micron_row: editingReport.micron_price_comparison?.rows?.[0],
+        first_buyer: editingReport.buyers?.[0],
+        first_broker: editingReport.brokers?.[0],
+        first_provincial: editingReport.provincial_producers?.[0]
+      });
       setFormData(editingReport);
     }
   }, [editingReport]);
@@ -934,15 +945,15 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
   const renderTabContent = () => {
     switch (activeTab) {
       case 'auction-details':
-        return <AuctionDetailsTab formData={formData} updateFormData={updateFormData} errors={errors} seasons={propSeasons} />;
+        return <AuctionDetailsTab formData={formData} updateFormData={updateFormData} errors={errors} seasons={propSeasons} editingReport={editingReport} />;
       case 'market-summary':
-        return <MarketSummaryTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+        return <MarketSummaryTab formData={formData} updateFormData={updateFormData} errors={errors} editingReport={editingReport} />;
       case 'key-indicators':
-        return <KeyIndicatorsTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+        return <KeyIndicatorsTab formData={formData} updateFormData={updateFormData} errors={errors} editingReport={editingReport} />;
       case 'exchange-rates':
         return <ExchangeRatesTab formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 'micron-prices':
-        return <MicronPricesTab formData={formData} updateFormData={updateFormData} errors={errors} />;
+        return <MicronPricesTab formData={formData} updateFormData={updateFormData} errors={errors} editingReport={editingReport} />;
       case 'buyers-brokers':
         return <BuyersBrokersTab 
           formData={formData} 
@@ -965,6 +976,19 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
         return null;
     }
   };
+
+  // Add safety check to ensure component renders
+  if (!formData) {
+    console.error('FormData is not initialized properly');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing form...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1105,9 +1129,9 @@ const AuctionDetailsTab: React.FC<{
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
   seasons?: Season[];
-}> = ({ formData, updateFormData, errors, seasons: propSeasons = [] }) => {
-  const [seasons, setSeasons] = useState<Season[]>([]);
-  const [loadingSeasons, setLoadingSeasons] = useState(true);
+  editingReport?: AuctionReport;
+}> = ({ formData, updateFormData, errors, seasons: propSeasons = [], editingReport }) => {
+  const [loadingSeasons, setLoadingSeasons] = useState(false);
   const [commodityTypes, setCommodityTypes] = useState<any[]>([]);
   const [loadingCommodityTypes, setLoadingCommodityTypes] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -1243,13 +1267,13 @@ const AuctionDetailsTab: React.FC<{
     loadCommodityTypes();
   }, []);
 
-  // Use seasons from props
+  // Use seasons from props - moved to main component
   useEffect(() => {
-    if (propSeasons.length > 0) {
+    console.log('Seasons useEffect triggered:', { propSeasonsLength: propSeasons.length, editingReport: !!editingReport });
+    
+    if (propSeasons && propSeasons.length > 0) {
       // Sort seasons by year descending (latest first)
       const sortedSeasons = [...propSeasons].sort((a, b) => b.season_year.localeCompare(a.season_year));
-      setSeasons(sortedSeasons);
-      setLoadingSeasons(false);
       
       // If no season is selected and we have seasons, select the latest one (only for new reports, not when editing)
       if (!editingReport && !formData.auction.season_label && sortedSeasons.length > 0) {
@@ -1287,10 +1311,8 @@ const AuctionDetailsTab: React.FC<{
           seasonsCount: sortedSeasons.length
         });
       }
-    } else {
-      setLoadingSeasons(false);
     }
-  }, [propSeasons, editingReport]);
+  }, [propSeasons, editingReport, formData.auction.season_label, formData.auction.season_id]);
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1366,7 +1388,7 @@ const AuctionDetailsTab: React.FC<{
             <select
               value={formData.auction.season_label}
               onChange={(e) => {
-                const selectedSeason = seasons.find(s => s.season_year === e.target.value);
+                const selectedSeason = propSeasons.find(s => s.season_year === e.target.value);
                 console.log('Manual season selection:', {
                   selectedValue: e.target.value,
                   foundSeason: selectedSeason,
@@ -1387,10 +1409,10 @@ const AuctionDetailsTab: React.FC<{
             >
               {loadingSeasons ? (
                 <option value="">Loading seasons...</option>
-              ) : seasons.length === 0 ? (
+              ) : propSeasons.length === 0 ? (
                 <option value="">No seasons available - Create a season first</option>
               ) : (
-                seasons.map((season) => (
+                propSeasons.map((season) => (
                   <option key={season.id} value={season.season_year}>
                     {season.season_year}
                   </option>
@@ -1400,7 +1422,7 @@ const AuctionDetailsTab: React.FC<{
             {errors.season_label && (
               <p className="mt-1 text-sm text-red-600">{errors.season_label}</p>
             )}
-            {!loadingSeasons && seasons.length === 0 && (
+            {!loadingSeasons && propSeasons.length === 0 && (
               <p className="mt-1 text-sm text-amber-600">
                 💡 No seasons found. Please create a season in the Seasons section first.
               </p>
@@ -1655,7 +1677,8 @@ const KeyIndicatorsTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
-}> = ({ formData, updateFormData, errors }) => {
+  editingReport?: AuctionReport;
+}> = ({ formData, updateFormData, errors, editingReport }) => {
   const [previousData, setPreviousData] = useState<Omit<AuctionReport, 'top_sales'> | null>(null);
 
   // Load previous auction data for comparison
@@ -1733,22 +1756,9 @@ const KeyIndicatorsTab: React.FC<{
       (market_indices as any)[field] = isNaN(numericValue) ? 0 : numericValue;
     }
     
-    
-    // Auto-calculate US and Euro values when SA values change (except for AWEX EMI - handled in backend)
-    const saValue = parseFloat(value) || 0;
-    const zarUsd = typeof formData.currency_fx?.ZAR_USD === 'string' ? parseFloat(formData.currency_fx.ZAR_USD) || 0 : (formData.currency_fx?.ZAR_USD || 0);
-    const zarEur = typeof formData.currency_fx?.ZAR_EUR === 'string' ? parseFloat(formData.currency_fx.ZAR_EUR) || 0 : (formData.currency_fx?.ZAR_EUR || 0);
-    
-    if (saValue > 0 && zarUsd > 0 && zarEur > 0) {
-      if (field === 'merino_indicator_sa_cents_clean') {
-        market_indices.merino_indicator_us_cents_clean = parseFloat((saValue / zarUsd).toFixed(2));
-        market_indices.merino_indicator_euro_cents_clean = parseFloat((saValue / zarEur).toFixed(2));
-      } else if (field === 'certified_indicator_sa_cents_clean') {
-        market_indices.certified_indicator_us_cents_clean = parseFloat((saValue / zarUsd).toFixed(2));
-        market_indices.certified_indicator_euro_cents_clean = parseFloat((saValue / zarEur).toFixed(2));
-      }
-      // AWEX EMI calculations removed - will be handled in backend
-    }
+    // REMOVED AUTO-CALCULATION: Let users enter values manually
+    // Auto-calculation was causing unwanted field changes when typing
+    // Users can manually enter US and Euro values if needed
     
     updateFormData({ market_indices });
   };
@@ -2328,7 +2338,8 @@ const MarketSummaryTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
-}> = ({ formData, updateFormData, errors }) => {
+  editingReport?: AuctionReport;
+}> = ({ formData, updateFormData, errors, editingReport }) => {
   const [previousData, setPreviousData] = useState<Omit<AuctionReport, 'top_sales'> | null>(null);
 
   // Load previous auction data for comparison
@@ -2935,7 +2946,20 @@ const MicronPricesTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
-}> = ({ formData, updateFormData, errors }) => {
+  editingReport?: AuctionReport;
+}> = ({ formData, updateFormData, errors, editingReport }) => {
+  
+  // Debug logging for micron prices data
+  useEffect(() => {
+    console.log('🔬 MicronPricesTab data:', {
+      hasFormData: !!formData,
+      micron_price_comparison: formData.micron_price_comparison,
+      rowsCount: formData.micron_price_comparison?.rows?.length || 0,
+      isEditing: !!editingReport,
+      firstRow: formData.micron_price_comparison?.rows?.[0],
+      allRows: formData.micron_price_comparison?.rows
+    });
+  }, [formData.micron_price_comparison, editingReport]);
   const [previousData, setPreviousData] = useState<Omit<AuctionReport, 'top_sales'> | null>(null);
 
   // Load previous auction data for comparison
@@ -3185,6 +3209,17 @@ const BuyersBrokersTab: React.FC<{
   buyersRefreshTrigger: number;
   brokersRefreshTrigger: number;
 }> = ({ formData, updateFormData, errors, customEntries, onOpenModal, buyersRefreshTrigger, brokersRefreshTrigger }) => {
+  
+  // Debug logging for buyers and brokers data
+  useEffect(() => {
+    console.log('👥 BuyersBrokersTab data:', {
+      buyersCount: formData.buyers?.length || 0,
+      brokersCount: formData.brokers?.length || 0,
+      buyers: formData.buyers,
+      brokers: formData.brokers
+    });
+  }, [formData.buyers, formData.brokers]);
+  
   const [databaseBuyers, setDatabaseBuyers] = useState<Array<{ id: string; buyer_name: string }>>([]);
   const [loadingBuyers, setLoadingBuyers] = useState(true);
   const [databaseBrokers, setDatabaseBrokers] = useState<Array<{ id: string; name: string }>>([]);
@@ -3805,6 +3840,16 @@ const ProvincialDataTab: React.FC<{
   updateFormData: (updates: Partial<Omit<AuctionReport, 'top_sales'>>) => void;
   errors: Record<string, string>;
 }> = ({ formData, updateFormData, errors }) => {
+  
+  // Debug logging for provincial data
+  useEffect(() => {
+    console.log('🏛️ ProvincialDataTab data:', {
+      provincial_producers: formData.provincial_producers,
+      producersCount: formData.provincial_producers?.length || 0,
+      firstProducer: formData.provincial_producers?.[0]
+    });
+  }, [formData.provincial_producers]);
+  
   const [isImporting, setIsImporting] = useState(false);
 
   const handleCSVImport = (event: React.ChangeEvent<HTMLInputElement>) => {

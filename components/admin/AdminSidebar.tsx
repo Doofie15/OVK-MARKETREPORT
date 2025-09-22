@@ -11,7 +11,9 @@ export type AdminSection =
   | 'insights'
   | 'users'
   | 'settings'
-  | 'import-export';
+  | 'import-export'
+  | 'form'
+  | 'capture';
 
 interface AdminSidebarProps {
   activeSection: AdminSection;

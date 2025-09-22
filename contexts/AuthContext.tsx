@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabaseClient } from '../lib/supabase'
+import { SupabaseAuctionDataService } from '../data/supabase-service'
 
 interface AuthContextType {
   user: User | null
@@ -69,19 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signUp = async (email: string, password: string, userData: { name: string; surname: string; mobile_number?: string }) => {
     try {
-      const { error } = await supabaseClient.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userData
-        }
-      })
-      
-      if (error) {
-        return { success: false, error: error.message }
-      }
-      
-      return { success: true }
+      const result = await SupabaseAuctionDataService.signUp(email, password, userData)
+      return result
     } catch (error) {
       return { success: false, error: error.message }
     }

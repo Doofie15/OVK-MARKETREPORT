@@ -125,6 +125,7 @@ export interface CompanyData {
 // Enhanced Auction interface to include Cape Wools fields
 // Updated to make week_id optional
 export interface Auction {
+  id?: string; // UUID for existing auctions (used in edit mode)
   commodity: 'wool' | 'mohair';
   season_label: string;
   season_id?: string; // UUID reference to seasons table
@@ -316,4 +317,35 @@ export interface AuctionReport {
   created_by?: string;
   approved_by?: string;
   version?: number;
+}
+
+// User management interfaces
+export interface UserType {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  mobile_number: string;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  approved_by: string | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  user_type_id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  // Extended properties for UI
+  is_empty?: boolean;
+  user_types?: UserType;
 }

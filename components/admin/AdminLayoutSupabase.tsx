@@ -56,6 +56,7 @@ const AdminLayoutSupabase: React.FC<AdminLayoutSupabaseProps> = ({
       case 'auctions': return 'Auctions Management';
       case 'form': return 'Report Form';
       case 'capture': return 'Data Capture';
+      case 'users': return 'User Management';
       default: return 'Admin Panel';
     }
   };
@@ -67,6 +68,7 @@ const AdminLayoutSupabase: React.FC<AdminLayoutSupabaseProps> = ({
       case 'auctions': return 'View and manage auction reports and data';
       case 'form': return 'Create and edit auction reports using the form interface';
       case 'capture': return 'Capture auction data with the advanced data capture form';
+      case 'users': return 'Manage admin users, roles, and access permissions';
       default: return 'Administrative interface for the wool market report system';
     }
   };

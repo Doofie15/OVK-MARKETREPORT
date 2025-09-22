@@ -22,7 +22,11 @@ export interface Database {
           surname: string
           email: string
           mobile_number: string
-          status: 'super_admin' | 'admin' | 'editor' | 'viewer'
+          approval_status: 'pending' | 'approved' | 'rejected'
+          approved_by: string | null
+          approved_at: string | null
+          rejection_reason: string | null
+          user_type_id: string
           created_at: string
           updated_at: string
           created_by: string
@@ -33,7 +37,11 @@ export interface Database {
           surname: string
           email: string
           mobile_number: string
-          status: 'super_admin' | 'admin' | 'editor' | 'viewer'
+          approval_status?: 'pending' | 'approved' | 'rejected'
+          approved_by?: string | null
+          approved_at?: string | null
+          rejection_reason?: string | null
+          user_type_id: string
           created_at?: string
           updated_at?: string
           created_by: string
@@ -44,7 +52,43 @@ export interface Database {
           surname?: string
           email?: string
           mobile_number?: string
-          status?: 'super_admin' | 'admin' | 'editor' | 'viewer'
+          approval_status?: 'pending' | 'approved' | 'rejected'
+          approved_by?: string | null
+          approved_at?: string | null
+          rejection_reason?: string | null
+          user_type_id?: string
+          created_at?: string
+          updated_at?: string
+          created_by?: string
+        }
+      }
+      user_types: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          permissions: Record<string, any>
+          is_active: boolean
+          created_at: string
+          updated_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          permissions?: Record<string, any>
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          permissions?: Record<string, any>
+          is_active?: boolean
           created_at?: string
           updated_at?: string
           created_by?: string
