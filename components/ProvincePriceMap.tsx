@@ -306,6 +306,22 @@ const Tooltip: React.FC<{ province: { id: string; name: string; certified_avg: n
 
 const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
   console.log('🔍 ProvincePriceMap component rendered with data:', data);
+  
+  // Debug Eastern Cape data specifically
+  if (data && data.length > 0) {
+    const easternCapeData = data.find(province => province.province === 'Eastern Cape');
+    if (easternCapeData) {
+      console.log('🔍 Eastern Cape data received by map component:', {
+        province: easternCapeData.province,
+        producersCount: easternCapeData.producers.length,
+        producers: easternCapeData.producers.map(p => ({
+          name: p.name,
+          price: p.price,
+          certified: p.certified
+        }))
+      });
+    }
+  }
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -385,10 +401,18 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
           merinoPrices: prices.merino,
           certifiedCount: prices.certified.length,
           merinoCount: prices.merino.length,
+          certifiedSum: prices.certified.reduce((sum, price) => sum + price, 0),
+          merinoSum: prices.merino.reduce((sum, price) => sum + price, 0),
           certifiedAvg,
           merinoAvg,
           result
         });
+        
+        // Calculate expected average manually
+        if (prices.certified.length > 0) {
+          const manualCertifiedAvg = prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length;
+          console.log('🔍 Manual certified average calculation:', manualCertifiedAvg);
+        }
       }
       
       console.log('🔍 Calculated averages for', provinceName, ':', result);
