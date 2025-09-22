@@ -13,6 +13,9 @@ The OVK Wool Market Report Platform includes an advanced AI-powered market insig
 - **80-Word Optimization**: Content automatically optimized for small card display format
 - **Real-time Enhancement**: One-click content enhancement with immediate results
 - **OVK Brand Enhancement**: Always highlights OVK's positive market position and contributions
+- **Content Preservation**: AI preserves user's original content as foundation while enhancing it professionally
+- **Data Validation**: Built-in validation to prevent "zero bales offered" and invalid data references
+- **Database Integration**: Market insights are properly saved to database with full CRUD operations
 
 ### 🛡️ Fallback System
 - **Robust Local Enhancement**: Works without API key using local enhancement algorithms
@@ -112,6 +115,21 @@ The AI composer automatically:
 - Enforces 80-word limit with ellipsis if exceeded
 - Maintains professional tone and structure
 - Incorporates key market data points
+
+### AI Enhancement Approach
+
+The AI composer follows a specific enhancement methodology:
+
+1. **Foundation First**: User's original content serves as the primary foundation
+2. **Professional Enhancement**: AI improves wording, structure, grammar, and flow
+3. **Market Context**: Adds professional market insights and industry terminology
+4. **Data Integration**: Incorporates valid auction data only when meaningful (> 0 values)
+5. **Brand Positioning**: Subtly integrates OVK's positive market position
+6. **Content Transformation**: Transforms user ideas into professional market commentary
+
+**Example Enhancement Process**:
+- **User Input**: "Market was good this week, prices went up"
+- **AI Enhancement**: "Market delivered strong performance this week with prices showing upward momentum. The positive trend reflects continued buyer confidence and OVK's effective market positioning."
 
 ## Troubleshooting
 

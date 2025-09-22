@@ -679,6 +679,16 @@ export class SupabaseAuctionDataService {
         .single()
       
       if (error) throw error
+      
+      // Update auction record to set has_market_insights flag and market_insights_id
+      await supabaseClient
+        .from('auctions')
+        .update({
+          has_market_insights: true,
+          market_insights_id: data.id
+        })
+        .eq('id', insight.auction_id)
+      
       return { success: true, data }
     } catch (error) {
       console.error('Create market insight error:', error)
@@ -699,6 +709,51 @@ export class SupabaseAuctionDataService {
       return { success: true, data: data && data.length > 0 ? data[0] : null }
     } catch (error) {
       console.error('Get market insight error:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  static async updateMarketInsight(auctionId: string, insight: MarketInsightInsert) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('market_insights')
+        .update({
+          market_insights_text: insight.market_insights_text,
+          updated_at: new Date().toISOString()
+        })
+        .eq('auction_id', auctionId)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      console.error('Update market insight error:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  static async deleteMarketInsightByAuction(auctionId: string) {
+    try {
+      const { error } = await supabaseClient
+        .from('market_insights')
+        .delete()
+        .eq('auction_id', auctionId)
+
+      if (error) throw error
+      
+      // Update auction record to clear has_market_insights flag and market_insights_id
+      await supabaseClient
+        .from('auctions')
+        .update({
+          has_market_insights: false,
+          market_insights_id: null
+        })
+        .eq('id', auctionId)
+      
+      return { success: true }
+    } catch (error) {
+      console.error('Delete market insight error:', error)
       return { success: false, error: error.message }
     }
   }
@@ -2010,6 +2065,28 @@ export class SupabaseAuctionDataService {
       } else {
         // If no micron prices, delete existing ones
         await this.deleteMicronPricesByAuction(auctionId);
+      }
+
+      // Update market insights
+      if (formData.insights && formData.insights.trim().length > 0) {
+        const insightData: MarketInsightInsert = {
+          auction_id: auctionId,
+          market_insights_text: formData.insights,
+          created_by: userId
+        };
+
+        // Check if market insight already exists
+        const existingInsight = await this.getMarketInsightByAuction(auctionId);
+        if (existingInsight.success && existingInsight.data) {
+          // Update existing insight
+          await this.updateMarketInsight(auctionId, insightData);
+        } else {
+          // Create new insight
+          await this.createMarketInsight(insightData);
+        }
+      } else {
+        // If no insights, delete existing ones
+        await this.deleteMarketInsightByAuction(auctionId);
       }
 
       // Update buyer performance

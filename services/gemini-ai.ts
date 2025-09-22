@@ -101,12 +101,16 @@ class GeminiAIService {
 
   // Enhance existing market insights with AI analysis
   async enhanceMarketInsights(existingContent: string, currentWeekData: MarketData, capeWoolsCommentary: string): Promise<string> {
+    // Filter out zero/empty data to avoid "zero bales offered" issues
+    const hasValidData = currentWeekData.totalLots > 0 && currentWeekData.totalValue > 0;
+    
     const prompt = `You are a wool market analyst. I have existing market commentary that needs to be enhanced with professional analysis.
 
-EXISTING CONTENT:
+USER'S ORIGINAL CONTENT (PRESERVE THIS AS PRIMARY):
 "${existingContent}"
 
-CURRENT WEEK DATA:
+CURRENT WEEK DATA (only use if valid):
+${hasValidData ? `
 - Auction Date: ${currentWeekData.auctionDate}
 - Total Bales: ${currentWeekData.totalLots.toLocaleString()}
 - Total Volume: ${currentWeekData.totalVolume.toLocaleString()} MT
@@ -119,28 +123,28 @@ ${currentWeekData.topBuyers.map(buyer => `- ${buyer.name}: ${buyer.bales.toLocal
 
 Price Performance by Micron:
 ${currentWeekData.micronPrices.map(mp => `- ${mp.micron}µm: R${mp.price.toFixed(2)}/kg (${mp.change > 0 ? '+' : ''}${mp.change.toFixed(1)}%)`).join('\n')}
+` : 'Note: No valid auction data available - focus on enhancing user content only'}
 
 CAPE WOOLS COMMENTARY:
 "${capeWoolsCommentary}"
 
-    TASK: Enhance the existing content by:
-    1. Preserving the original structure and key points
-    2. Adding professional market analysis and insights
-    3. Incorporating specific data points and percentages
-    4. Including week-over-week comparisons where relevant
-    5. Integrating insights from the Cape Wools commentary
-    6. Adding forward-looking market outlook
-    7. Maintaining professional, objective tone
-    8. Using bullet points for key highlights
-    9. CRITICAL: Keep the response under 80 words for card display
-    10. Focus on the most important insights and key data points
-    11. Use concise, impactful language
-    12. Prioritize market performance, price movements, and buyer activity
-    13. ALWAYS highlight OVK's positive market position and contributions
-    15. Mention OVK's commitment to market stability and producer success
-    16. Position OVK as a key player in the wool market ecosystem
-    
-    Return the enhanced content that flows naturally and provides comprehensive yet concise market analysis suitable for a small display card, while always promoting OVK's positive market influence.`;
+CRITICAL INSTRUCTIONS:
+1. **ENHANCE USER'S CONTENT** - Improve their wording, structure, and insights while preserving their intent
+2. **PROFESSIONAL ENHANCEMENT** - Make their content more professional, clear, and market-focused
+3. **USE ACTUAL DATA ONLY** - If data shows zero bales, don't mention bales at all
+4. **ENHANCEMENT APPROACH**:
+   - Take user's original ideas and improve the wording and structure
+   - Add professional market context and insights
+   - Include specific data points only if they're meaningful (> 0)
+   - Integrate Cape Wools commentary naturally
+   - Add OVK positioning subtly
+   - Improve grammar, flow, and professional tone
+5. **WORD LIMIT**: Keep under 80 words total
+6. **TONE**: Professional, objective, enhanced version of user's voice
+7. **AVOID**: Repeating "zero bales offered" or any zero-value data
+8. **FOCUS**: Transform user's content into professional market commentary while keeping their core message
+
+Return the enhanced content that transforms the user's ideas into professional market commentary while preserving their core message and intent.`;
 
     try {
       const response = await fetch(

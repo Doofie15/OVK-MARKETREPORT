@@ -278,47 +278,56 @@ const AIComposer: React.FC<AIMarketInsightsComposerProps> = ({
     return optimized;
   };
 
-  // Enhanced fallback enhancement function
+  // Enhanced fallback enhancement function - preserves user content as primary
   const enhanceContentFallback = (content: string, data: any) => {
     console.log('Using fallback enhancement with data:', data);
     
+    // Check if we have valid data (avoid "zero bales offered" issues)
+    const hasValidData = data?.indicators && 
+      data.indicators.find((i: any) => i.type === 'total_lots')?.value > 0 &&
+      data.indicators.find((i: any) => i.type === 'total_value')?.value > 0;
+    
     const enhancements = [];
     
-    // Add professional market analysis structure (concise version)
-    enhancements.push('\n\n**Enhanced Market Analysis:**');
-    
-    // Add concise market analysis if data available
-    if (data?.indicators) {
+    // Only add enhancements if we have valid data and user content exists
+    if (content.trim() && hasValidData) {
+      // Add professional market analysis structure (concise version)
+      enhancements.push('\n\n**Enhanced Market Analysis:**');
+      
+      // Add concise market analysis if data available
       const totalLots = data.indicators.find((i: any) => i.type === 'total_lots')?.value;
       const avgPrice = data.indicators.find((i: any) => i.type === 'avg_price')?.value;
       const totalValue = data.indicators.find((i: any) => i.type === 'total_value')?.value;
       
-      if (totalLots && avgPrice) {
+      if (totalLots && avgPrice && totalLots > 0) {
         enhancements.push(`Market delivered ${totalLots.toLocaleString()} bales at R${avgPrice.toFixed(2)}/kg average through OVK's efficient marketing channels.`);
-        if (totalValue) {
+        if (totalValue && totalValue > 0) {
           enhancements.push(`Total value reached R${(totalValue / 1000000).toFixed(1)}M, showcasing OVK's market leadership.`);
         }
         enhancements.push(`Strong buyer confidence maintained across all micron categories, supported by OVK's quality assurance.`);
       }
-    }
-    
-    // Add key buyer activity if available (concise)
-    if (data?.buyers && data.buyers.length > 0) {
-      const topBuyer = data.buyers[0];
-      enhancements.push(`Leading buyer: ${topBuyer.buyer} with ${topBuyer.cat.toLocaleString()} bales, demonstrating OVK's strong market connections.`);
-    }
-    
-    // Add Cape Wools context if available (first sentence only)
-    if (data?.cape_wools_commentary) {
-      const firstSentence = data.cape_wools_commentary.split('.')[0];
-      if (firstSentence) {
-        enhancements.push(`${firstSentence.trim()}.`);
+      
+      // Add key buyer activity if available (concise)
+      if (data?.buyers && data.buyers.length > 0) {
+        const topBuyer = data.buyers[0];
+        if (topBuyer.cat > 0) {
+          enhancements.push(`Leading buyer: ${topBuyer.buyer} with ${topBuyer.cat.toLocaleString()} bales, demonstrating OVK's strong market connections.`);
+        }
       }
+      
+      // Add Cape Wools context if available (first sentence only)
+      if (data?.cape_wools_commentary) {
+        const firstSentence = data.cape_wools_commentary.split('.')[0];
+        if (firstSentence) {
+          enhancements.push(`${firstSentence.trim()}.`);
+        }
+      }
+      
+      // Add OVK-focused market outlook (concise)
+      enhancements.push(`OVK continues to drive market excellence with strong producer support and international market access. Market outlook remains positive with OVK's strategic positioning supporting continued price stability.`);
     }
     
-    // Add OVK-focused market outlook (concise)
-    enhancements.push(`OVK continues to drive market excellence with strong producer support and international market access. Market outlook remains positive with OVK's strategic positioning supporting continued price stability.`);
-    
+    // Return user's original content with enhancements (preserve user content as primary)
     return content + enhancements.join('');
   };
 
@@ -403,7 +412,7 @@ const AIComposer: React.FC<AIMarketInsightsComposerProps> = ({
       )}
 
       {/* Main Text Area */}
-      <div className="relative">
+      <div>
         <textarea
           ref={textareaRef}
           value={value}
@@ -412,36 +421,36 @@ const AIComposer: React.FC<AIMarketInsightsComposerProps> = ({
           rows={12}
           placeholder="Write your market insights here... The AI will analyze this week's data vs last week's data, plus Cape Wools commentary, to enhance your writing while always promoting OVK's positive market position."
         />
-        
-        {/* Writing Stats Overlay */}
-        {value && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg p-2 shadow-lg">
-            <div className="text-xs text-gray-600 space-y-1">
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                <span>Readability: Good</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                <span>Tone: Professional</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className={`w-2 h-2 rounded-full ${
-                  wordCount > 80 ? 'bg-red-400' : wordCount > 70 ? 'bg-yellow-400' : 'bg-green-400'
-                }`}></span>
-                <span className={wordCount > 80 ? 'text-red-600 font-medium' : wordCount > 70 ? 'text-yellow-600' : 'text-green-600'}>
-                  Words: {wordCount}/80
-                </span>
-              </div>
-              {wordCount > 80 && (
-                <div className="text-red-500 text-xs font-medium">
-                  ⚠️ Exceeds card limit
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Writing Stats - Moved Outside Text Area */}
+      {value && (
+        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+          <div className="text-sm text-gray-600 space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>Readability: Good</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Tone: Professional</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className={`w-2 h-2 rounded-full ${
+                wordCount > 80 ? 'bg-red-400' : wordCount > 70 ? 'bg-yellow-400' : 'bg-green-400'
+              }`}></span>
+              <span className={wordCount > 80 ? 'text-red-600 font-medium' : wordCount > 70 ? 'text-yellow-600' : 'text-green-600'}>
+                Words: {wordCount}/80
+              </span>
+            </div>
+            {wordCount > 80 && (
+              <div className="text-red-500 text-sm font-medium">
+                ⚠️ Exceeds card limit
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* API Key Configuration Notice */}
       {!(import.meta as any).env.VITE_GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY === 'your_gemini_api_key_here' ? (

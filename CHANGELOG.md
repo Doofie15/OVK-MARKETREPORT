@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Action Dropdown Menus**: Three-dot horizontal menus with contextual actions (Publish, View, Edit, Delete)
 - **Status Indicators**: Color-coded status badges for visual identification
 - **Enhanced Overview Cards**: Comprehensive statistics display for auctions and seasons
+- **Market Insights Database Integration**: Full CRUD operations for market insights with proper database relationships
+- **AI Content Preservation**: AI now preserves user's original content as foundation while enhancing it professionally
+- **AI Data Validation**: Built-in validation to prevent "zero bales offered" and invalid data references
+- **Enhanced UI Design**: Cleaner interface with separated feedback display outside text input area
 - Enhanced form layout with 95% width utilization for improved usability
 - Comprehensive changelog documentation
 - Updated GitHub issue templates with form-related considerations
@@ -67,6 +71,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Catalogue Number Input**: Fixed bug where typing "15" resulted in "00" and backspace not working
 - **Currency Display**: Added thousands separators for better number readability
 - **AI API Configuration**: Proper environment variable handling and fallback mechanisms
+- **Commodity Validation Error**: Fixed completion check to use commodity_type_id instead of deprecated commodity field
+- **Market Insights Database Saving**: Fixed issue where market insights weren't being saved to database during auction updates
+- **AI Content Generation**: Fixed AI generating "zero bales offered" content when data was invalid
+- **Variable Initialization Error**: Fixed "Cannot access 'missingFields' before initialization" error in ReviewSaveTab
+- **UI Debug Information**: Removed debug information display from review interface for cleaner appearance
 - Form width constraints for better space utilization
 - Mobile responsiveness maintained with enhanced layout
 

@@ -38,6 +38,11 @@ A comprehensive React-based web application for tracking and analyzing wool mark
 - ✅ **Responsive Component System**: Smart layout switching between desktop and mobile views with automatic breakpoint detection
 - ✅ **Mobile-Optimized Charts**: Touch-friendly chart components with mobile-specific interactions and sizing
 - ✅ **Professional Styling**: Refined visual design with consistent spacing and alignment
+- ✅ **Fixed Commodity Validation**: Resolved completion check to use commodity_type_id instead of deprecated commodity field
+- ✅ **Market Insights Database Integration**: Fixed market insights saving to database with proper CRUD operations
+- ✅ **Enhanced AI Content Preservation**: AI now preserves user's original content as foundation while enhancing it professionally
+- ✅ **Improved AI Data Validation**: AI validates auction data before using it to avoid "zero bales offered" issues
+- ✅ **Cleaner UI Design**: Removed debug information from review interface for professional appearance
 
 ## 📋 Project Overview
 
@@ -399,18 +404,32 @@ The platform features an advanced AI-powered market insights composer that lever
 - **Real-time Enhancement**: One-click content enhancement with immediate results
 - **OVK Brand Enhancement**: Always highlights OVK's positive market position and contributions
 - **Fallback System**: Robust local enhancement when AI API is unavailable
+- **Content Preservation**: AI preserves user's original content as foundation while enhancing it professionally
+- **Data Validation**: AI validates auction data before using it to avoid invalid references
+- **Database Integration**: Market insights are properly saved to database with full CRUD operations
 
 ### How It Works
-1. **Data Input**: Enter auction data, buyer information, and Cape Wools commentary
-2. **AI Analysis**: Gemini AI processes data and generates professional insights
-3. **Content Optimization**: Automatic formatting and word limit enforcement (80 words)
-4. **Visual Feedback**: Real-time word count with color-coded limits
-5. **Professional Output**: Ready-to-use market commentary for reports
+1. **User Input**: User writes their market insights and commentary
+2. **AI Enhancement**: Gemini AI takes user's content as foundation and enhances it professionally
+3. **Data Integration**: AI incorporates valid auction data and Cape Wools commentary
+4. **Content Optimization**: Automatic formatting and word limit enforcement (80 words)
+5. **Visual Feedback**: Real-time word count with color-coded limits and separate feedback display
+6. **Database Storage**: Enhanced content is saved to database with proper relationships
+7. **Professional Output**: Ready-to-use market commentary for reports
+
+### AI Enhancement Approach
+- **Foundation First**: User's original content serves as the primary foundation
+- **Professional Enhancement**: AI improves wording, structure, grammar, and flow
+- **Market Context**: Adds professional market insights and industry terminology
+- **Data Integration**: Incorporates valid auction data only when meaningful (> 0 values)
+- **Brand Positioning**: Subtly integrates OVK's positive market position
+- **Content Transformation**: Transforms user ideas into professional market commentary
 
 ### Configuration
 - **API Key**: Set `VITE_GEMINI_API_KEY` in your `.env.local` file
 - **Fallback Mode**: Works without API key using local enhancement algorithms
 - **Word Limits**: Automatic enforcement of 80-word limit for card display
+- **Data Validation**: Built-in validation to prevent "zero bales offered" issues
 
 ## 📝 Cape Wools Data Capture
 

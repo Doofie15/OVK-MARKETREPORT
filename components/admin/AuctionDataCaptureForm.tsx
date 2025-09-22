@@ -524,7 +524,6 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
   const [formData, setFormData] = useState<Omit<AuctionReport, 'top_sales'>>(
     editingReport || {
       auction: {
-        commodity: 'wool' as const,
         season_label: '',
         week_start: '',
         week_end: '',
@@ -872,6 +871,8 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     });
   };
 
+
+
   const showSuccessModal = (title: string, message: string) => {
     setSuccessModal({
       isOpen: true,
@@ -894,19 +895,35 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
         const { SupabaseAuctionDataService } = await import('../../data/supabase-service');
         const { supabase } = await import('../../lib/supabase');
         
-        // Use the admin user ID directly to avoid foreign key issues
-        const userId = 'd5b02abc-4695-499d-bf04-0f553fdcf7c8';
+        // Get the current authenticated user
+        const userResult = await SupabaseAuctionDataService.getCurrentUser();
+        if (!userResult.success || !userResult.data) {
+          alert('You must be logged in to add new buyers. Please refresh the page and log in again.');
+          return;
+        }
         
         const result = await SupabaseAuctionDataService.createBuyer({
           buyer_name: name,
-          created_by: userId
+          created_by: userResult.data.id
         });
         
         if (result.success) {
           // Refresh the buyers list by triggering a state update
           setBuyersRefreshTrigger(prev => prev + 1);
+          
+          // Find the buyer row that has [+Add New] selected and update it with the new buyer name
+          const updatedBuyers = formData.buyers.map(buyer => {
+            if (buyer.buyer === '[+Add New]') {
+              return { ...buyer, buyer: name };
+            }
+            return buyer;
+          });
+          
+          // Update the form data with the newly selected buyer
+          updateFormData({ buyers: updatedBuyers });
+          
           closeModal();
-          showSuccessModal('Success!', `Buyer "${name}" has been added successfully to the database.`);
+          showSuccessModal('Success!', `Buyer "${name}" has been added successfully and selected in the dropdown.`);
         } else {
           alert(`Failed to add buyer: ${result.error}`);
         }
@@ -919,19 +936,35 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
         const { SupabaseAuctionDataService } = await import('../../data/supabase-service');
         const { supabase } = await import('../../lib/supabase');
         
-        // Use the admin user ID directly to avoid foreign key issues
-        const userId = 'd5b02abc-4695-499d-bf04-0f553fdcf7c8';
+        // Get the current authenticated user
+        const userResult = await SupabaseAuctionDataService.getCurrentUser();
+        if (!userResult.success || !userResult.data) {
+          alert('You must be logged in to add new brokers. Please refresh the page and log in again.');
+          return;
+        }
         
         const result = await SupabaseAuctionDataService.createBroker({
           name: name,
-          created_by: userId
+          created_by: userResult.data.id
         });
         
         if (result.success) {
           // Refresh the brokers list by triggering a state update
           setBrokersRefreshTrigger(prev => prev + 1);
+          
+          // Find the broker row that has [+Add New] selected and update it with the new broker name
+          const updatedBrokers = formData.brokers.map(broker => {
+            if (broker.name === '[+Add New]') {
+              return { ...broker, name: name };
+            }
+            return broker;
+          });
+          
+          // Update the form data with the newly selected broker
+          updateFormData({ brokers: updatedBrokers });
+          
           closeModal();
-          showSuccessModal('Success!', `Broker "${name}" has been added successfully to the database.`);
+          showSuccessModal('Success!', `Broker "${name}" has been added successfully and selected in the dropdown.`);
         } else {
           alert(`Failed to add broker: ${result.error}`);
         }
@@ -2560,11 +2593,17 @@ const MarketSummaryTab: React.FC<{
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Certified Sustainable Wool (Bales)</h3>
             <div className="space-y-4">
-              {/* Bales Data */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              {/* Table-style layout matching the report */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Column Headers */}
+                <div className="text-center font-medium text-gray-700 py-2">Total</div>
+                <div className="text-center font-medium text-gray-700 py-2">% Share (All Wool)</div>
+                <div className="text-center font-medium text-gray-700 py-2">% Share (Merino Wool)</div>
+                
+                {/* Offered Row */}
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                    <span>Offered Bales</span>
+                    <span>Offered</span>
                     <PreviousValueTag previousValue={previousData?.certified_share?.offered_bales} formatType="whole" />
                   </label>
                   <input
@@ -2572,7 +2611,7 @@ const MarketSummaryTab: React.FC<{
                     value={formData.certified_share?.offered_bales || ''}
                     onChange={(e) => handleCertifiedShareChange('offered_bales', e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., 4148"
+                    placeholder="e.g., 6021"
                   />
                   <PercentageChangeTag 
                     currentValue={formData.certified_share?.offered_bales}
@@ -2581,9 +2620,48 @@ const MarketSummaryTab: React.FC<{
                   />
                 </div>
                 
-                <div>
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                    <span>Sold Bales</span>
+                    <span>All Wool % Offered</span>
+                    <PreviousValueTag previousValue={previousData?.certified_share?.all_wool_pct_offered} />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.certified_share?.all_wool_pct_offered || ''}
+                    onChange={(e) => handleCertifiedShareChange('all_wool_pct_offered', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 56.3"
+                  />
+                  <PercentageChangeTag 
+                    currentValue={formData.certified_share?.all_wool_pct_offered}
+                    previousValue={previousData?.certified_share?.all_wool_pct_offered}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Merino % Offered</span>
+                    <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_offered} />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.certified_share?.merino_pct_offered || ''}
+                    onChange={(e) => handleCertifiedShareChange('merino_pct_offered', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 63.3"
+                  />
+                  <PercentageChangeTag 
+                    currentValue={formData.certified_share?.merino_pct_offered}
+                    previousValue={previousData?.certified_share?.merino_pct_offered}
+                  />
+                </div>
+                
+                {/* Sold Row */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Sold</span>
                     <PreviousValueTag previousValue={previousData?.certified_share?.sold_bales} formatType="whole" />
                   </label>
                   <input
@@ -2591,7 +2669,7 @@ const MarketSummaryTab: React.FC<{
                     value={formData.certified_share?.sold_bales || ''}
                     onChange={(e) => handleCertifiedShareChange('sold_bales', e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., 4076"
+                    placeholder="e.g., 5806"
                   />
                   <PercentageChangeTag 
                     currentValue={formData.certified_share?.sold_bales}
@@ -2599,93 +2677,43 @@ const MarketSummaryTab: React.FC<{
                     formatType="whole"
                   />
                 </div>
-              </div>
-
-              {/* All Wool Percentage Shares */}
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-600 mb-3">% Share (All Wool)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                      <span>All Wool % Offered</span>
-                      <PreviousValueTag previousValue={previousData?.certified_share?.all_wool_pct_offered} />
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.certified_share?.all_wool_pct_offered || ''}
-                      onChange={(e) => handleCertifiedShareChange('all_wool_pct_offered', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 60.5"
-                    />
-                    <PercentageChangeTag 
-                      currentValue={formData.certified_share?.all_wool_pct_offered}
-                      previousValue={previousData?.certified_share?.all_wool_pct_offered}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                      <span>All Wool % Sold</span>
-                      <PreviousValueTag previousValue={previousData?.certified_share?.all_wool_pct_sold} />
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.certified_share?.all_wool_pct_sold || ''}
-                      onChange={(e) => handleCertifiedShareChange('all_wool_pct_sold', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 63.4"
-                    />
-                    <PercentageChangeTag 
-                      currentValue={formData.certified_share?.all_wool_pct_sold}
-                      previousValue={previousData?.certified_share?.all_wool_pct_sold}
-                    />
-                  </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>All Wool % Sold</span>
+                    <PreviousValueTag previousValue={previousData?.certified_share?.all_wool_pct_sold} />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.certified_share?.all_wool_pct_sold || ''}
+                    onChange={(e) => handleCertifiedShareChange('all_wool_pct_sold', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 58.7"
+                  />
+                  <PercentageChangeTag 
+                    currentValue={formData.certified_share?.all_wool_pct_sold}
+                    previousValue={previousData?.certified_share?.all_wool_pct_sold}
+                  />
                 </div>
-              </div>
-
-              {/* Merino Wool Percentage Shares */}
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-600 mb-3">% Share (Merino Wool)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                      <span>Merino % Offered</span>
-                      <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_offered} />
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.certified_share?.merino_pct_offered || ''}
-                      onChange={(e) => handleCertifiedShareChange('merino_pct_offered', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 67.8"
-                    />
-                    <PercentageChangeTag 
-                      currentValue={formData.certified_share?.merino_pct_offered}
-                      previousValue={previousData?.certified_share?.merino_pct_offered}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-                      <span>Merino % Sold</span>
-                      <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_sold} />
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.certified_share?.merino_pct_sold || ''}
-                      onChange={(e) => handleCertifiedShareChange('merino_pct_sold', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 65.0"
-                    />
-                    <PercentageChangeTag 
-                      currentValue={formData.certified_share?.merino_pct_sold}
-                      previousValue={previousData?.certified_share?.merino_pct_sold}
-                    />
-                  </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    <span>Merino % Sold</span>
+                    <PreviousValueTag previousValue={previousData?.certified_share?.merino_pct_sold} />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.certified_share?.merino_pct_sold || ''}
+                    onChange={(e) => handleCertifiedShareChange('merino_pct_sold', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 61.6"
+                  />
+                  <PercentageChangeTag 
+                    currentValue={formData.certified_share?.merino_pct_sold}
+                    previousValue={previousData?.certified_share?.merino_pct_sold}
+                  />
                 </div>
               </div>
 
@@ -3210,15 +3238,6 @@ const BuyersBrokersTab: React.FC<{
   brokersRefreshTrigger: number;
 }> = ({ formData, updateFormData, errors, customEntries, onOpenModal, buyersRefreshTrigger, brokersRefreshTrigger }) => {
   
-  // Debug logging for buyers and brokers data
-  useEffect(() => {
-    console.log('👥 BuyersBrokersTab data:', {
-      buyersCount: formData.buyers?.length || 0,
-      brokersCount: formData.brokers?.length || 0,
-      buyers: formData.buyers,
-      brokers: formData.brokers
-    });
-  }, [formData.buyers, formData.brokers]);
   
   const [databaseBuyers, setDatabaseBuyers] = useState<Array<{ id: string; buyer_name: string }>>([]);
   const [loadingBuyers, setLoadingBuyers] = useState(true);
@@ -3291,11 +3310,11 @@ const BuyersBrokersTab: React.FC<{
     loadBrokers();
   }, [brokersRefreshTrigger]);
   
-  // Get selected buyer names to filter them out
-  const selectedBuyerNames = formData.buyers.map(b => b.buyer).filter(Boolean);
+  // Get selected buyer names to filter them out (exclude '[+Add New]' as it's not a real selection)
+  const selectedBuyerNames = formData.buyers.map(b => b.buyer).filter(buyer => buyer && buyer !== '[+Add New]');
   
-  // Get selected broker names to filter them out
-  const selectedBrokerNames = formData.brokers.map(b => b.name).filter(Boolean);
+  // Get selected broker names to filter them out (exclude '[+Add New]' as it's not a real selection)
+  const selectedBrokerNames = formData.brokers.map(b => b.name).filter(name => name && name !== '[+Add New]');
   
   // Combine database buyers with custom entries, excluding already selected ones
   const availableBuyers = databaseBuyers
@@ -3333,7 +3352,7 @@ const BuyersBrokersTab: React.FC<{
 
   const addBuyer = () => {
     const newBuyer = {
-      buyer: availableBuyers[0] || '',
+      buyer: '[+Add New]', // Always start with [+Add New] option
       share_pct: 0,
       cat: 0,
       bales_ytd: 0
@@ -3343,7 +3362,7 @@ const BuyersBrokersTab: React.FC<{
 
   const addBroker = () => {
     const newBroker = {
-      name: availableBrokers[0] || '',
+      name: '[+Add New]', // Always start with [+Add New] option
       catalogue_offering: 0,
       withdrawn_before_sale: 0,
       wool_offered: 0,
@@ -4626,83 +4645,150 @@ const ReviewSaveTab: React.FC<{
 }> = ({ formData, onSave, onSaveDraft, onCancel, isSaving, errors }) => {
   const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
   const [showDraftConfirmation, setShowDraftConfirmation] = useState(false);
+  const [hasBeenSavedAsDraft, setHasBeenSavedAsDraft] = useState(false);
 
-  // Enhanced completion calculation with detailed field validation
+  // Comprehensive data completeness checker for all form tabs
   const calculateCompletion = () => {
-    // Helper function to check if an indicator exists and has a value
-    const hasIndicatorValue = (type: string) => {
-      const indicator = formData.indicators.find(i => i.type === type);
-      return indicator && indicator.value !== undefined && indicator.value !== null && indicator.value > 0;
+    const tabCompleteness = {
+      'Auction Details': {
+        icon: '📅',
+        completed: 0,
+        total: 4,
+        fields: [
+          { name: 'Auction Date', completed: !!formData.auction.auction_date },
+          { name: 'Catalogue Name', completed: !!formData.auction.catalogue_name },
+          { name: 'Season', completed: !!formData.auction.season_id },
+          { name: 'Commodity', completed: !!formData.auction.commodity_type_id }
+        ]
+      },
+      'Market Summary': {
+        icon: '📊',
+        completed: 0,
+        total: 6,
+        fields: [
+          { name: 'Offered Bales', completed: !!(formData.supply_stats?.offered_bales > 0) },
+          { name: 'Sold Bales', completed: !!(formData.supply_stats?.sold_bales > 0) },
+          { name: 'Clearance Rate', completed: !!(formData.supply_stats?.clearance_rate_pct > 0) },
+          { name: 'Highest Price', completed: !!(formData.highest_price?.price_cents_clean > 0) },
+          { name: 'Certified Share', completed: !!(formData.certified_share?.all_wool_pct_sold > 0) },
+          { name: 'Greasy Stats', completed: !!(formData.greasy_stats?.turnover_rand > 0) }
+        ]
+      },
+      'Key Indicators': {
+        icon: '📈',
+        completed: 0,
+        total: 4,
+        fields: [
+          { name: 'SA Merino Indicator', completed: !!(formData.market_indices?.merino_indicator_sa_cents_clean > 0) },
+          { name: 'SA Certified Indicator', completed: !!(formData.market_indices?.certified_indicator_sa_cents_clean > 0) },
+          { name: 'US Merino Indicator', completed: !!(formData.market_indices?.merino_indicator_us_cents_clean > 0) },
+          { name: 'Euro Merino Indicator', completed: !!(formData.market_indices?.merino_indicator_euro_cents_clean > 0) }
+        ]
+      },
+      'Exchange Rates': {
+        icon: '💱',
+        completed: 0,
+        total: 5,
+        fields: [
+          { name: 'ZAR/USD', completed: !!(formData.currency_fx?.ZAR_USD > 0) },
+          { name: 'ZAR/EUR', completed: !!(formData.currency_fx?.ZAR_EUR > 0) },
+          { name: 'ZAR/JPY', completed: !!(formData.currency_fx?.ZAR_JPY > 0) },
+          { name: 'ZAR/GBP', completed: !!(formData.currency_fx?.ZAR_GBP > 0) },
+          { name: 'USD/AUD', completed: !!(formData.currency_fx?.USD_AUD > 0) }
+        ]
+      },
+      'Micron Prices': {
+        icon: '💰',
+        completed: 0,
+        total: 1,
+        fields: [
+          { name: 'Price Data', completed: !!(formData.micron_price_comparison?.rows && formData.micron_price_comparison.rows.length > 0) }
+        ]
+      },
+      'Buyers & Brokers': {
+        icon: '👥',
+        completed: 0,
+        total: 2,
+        fields: [
+          { name: 'Buyers', completed: formData.buyers.length > 0 },
+          { name: 'Brokers', completed: formData.brokers.length > 0 }
+        ]
+      },
+      'Provincial Data': {
+        icon: '🗺️',
+        completed: 0,
+        total: 1,
+        fields: [
+          { name: 'Producer Data', completed: formData.provincial_producers.length > 0 }
+        ]
+      },
+      'Company Data': {
+        icon: '🏢',
+        completed: 0,
+        total: 1,
+        fields: [
+          { name: 'Producer Data', completed: formData.provincial_producers.length > 0 }
+        ]
+      },
+      'Market Insights': {
+        icon: '💡',
+        completed: 0,
+        total: 1,
+        fields: [
+          { name: 'Insights Text', completed: !!(formData.insights && formData.insights.length > 50) }
+        ]
+      }
     };
 
-    // Helper function to check if greasy stats have values
-    const hasGreasyStatsValue = (field: keyof typeof formData.greasy_stats) => {
-      const value = formData.greasy_stats?.[field];
-      return value !== undefined && value !== null && value > 0;
-    };
+    // Calculate completion for each tab
+    Object.keys(tabCompleteness).forEach(tabName => {
+      const tab = tabCompleteness[tabName as keyof typeof tabCompleteness];
+      tab.completed = tab.fields.filter(field => field.completed).length;
+    });
 
-    const fieldChecks = {
-      // Essential Auction Details (30%) - Required for public report
-      auctionDate: formData.auction.auction_date ? 1 : 0,
-      catalogueName: formData.auction.catalogue_name ? 1 : 0,
-      
-      // Core Market Data (40%) - Essential for public report
-      totalLots: hasIndicatorValue('total_lots') || hasGreasyStatsValue('bales') ? 1 : 0,
-      totalVolume: hasIndicatorValue('total_volume') || hasGreasyStatsValue('mass_kg') ? 1 : 0,
-      totalValue: hasIndicatorValue('total_value') || hasGreasyStatsValue('turnover_rand') ? 1 : 0,
-      clearanceRate: formData.supply_stats?.clearance_rate_pct ? 1 : 0,
-      
-      // Market Indices (20%) - Essential for public report
-      merinoIndicator: formData.market_indices?.merino_indicator_sa_cents_clean ? 1 : 0,
-      certifiedIndicator: formData.market_indices?.certified_indicator_sa_cents_clean ? 1 : 0,
-      
-      // Currency Exchange (10%) - Essential for public report
-      zarUsd: getNumericValue(formData.currency_fx?.ZAR_USD) ? 1 : 0,
-    };
-    
-    const totalFields = Object.keys(fieldChecks).length;
-    const completedFields = Object.values(fieldChecks).reduce((a, b) => a + b, 0);
-    
+    // Calculate overall completion
+    const totalCompleted = Object.values(tabCompleteness).reduce((sum, tab) => sum + tab.completed, 0);
+    const totalFields = Object.values(tabCompleteness).reduce((sum, tab) => sum + tab.total, 0);
+
     return {
-      percentage: Math.round((completedFields / totalFields) * 100),
-      details: fieldChecks
+      completed: totalCompleted,
+      total: totalFields,
+      percentage: Math.round((totalCompleted / totalFields) * 100),
+      tabCompleteness
     };
   };
 
   const completionData = calculateCompletion();
-
+  
   // Get missing required fields
   const getMissingFields = () => {
     const missing = [];
-    const details = completionData.details;
+    const tabCompleteness = completionData.tabCompleteness;
     
-    // Helper function to check if an indicator exists and has a value
-    const hasIndicatorValue = (type: string) => {
-      const indicator = formData.indicators.find(i => i.type === type);
-      return indicator && indicator.value !== undefined && indicator.value !== null && indicator.value > 0;
-    };
-
-    // Helper function to check if greasy stats have values
-    const hasGreasyStatsValue = (field: keyof typeof formData.greasy_stats) => {
-      const value = formData.greasy_stats?.[field];
-      return value !== undefined && value !== null && value > 0;
-    };
-    
-    if (!details.auctionDate) missing.push('Auction Date');
-    if (!details.catalogueName) missing.push('Catalogue Name');
-    if (!hasIndicatorValue('total_lots') && !hasGreasyStatsValue('bales')) missing.push('Total Lots (Bales)');
-    if (!hasIndicatorValue('total_volume') && !hasGreasyStatsValue('mass_kg')) missing.push('Total Volume (Mass)');
-    if (!hasIndicatorValue('total_value') && !hasGreasyStatsValue('turnover_rand')) missing.push('Total Value (Turnover)');
-    if (!details.clearanceRate) missing.push('Clearance Rate');
-    if (!details.merinoIndicator) missing.push('Merino Indicator');
-    if (!details.certifiedIndicator) missing.push('Certified Indicator');
-    if (!details.zarUsd) missing.push('ZAR/USD Exchange Rate');
+    // Check each tab for missing required fields
+    Object.entries(tabCompleteness).forEach(([tabName, tab]) => {
+      tab.fields.forEach(field => {
+        if (!field.completed) {
+          missing.push(`${tabName}: ${field.name}`);
+        }
+      });
+    });
     
     return missing;
   };
 
   const missingFields = getMissingFields();
-  const canPublish = missingFields.length === 0 && completionData.percentage >= 85;
+  const canPublish = missingFields.length === 0 && hasBeenSavedAsDraft;
+  
+  // Debug logging to see what's being checked
+  console.log('🔍 Data Completeness Debug:', {
+    tabCompleteness: completionData.tabCompleteness,
+    totalCompleted: completionData.completed,
+    totalFields: completionData.total,
+    percentage: completionData.percentage,
+    hasBeenSavedAsDraft,
+    canPublish: missingFields.length === 0 && hasBeenSavedAsDraft
+  });
 
   const handlePublishClick = () => {
     if (canPublish) {
@@ -4721,6 +4807,7 @@ const ReviewSaveTab: React.FC<{
 
   const confirmDraft = () => {
     setShowDraftConfirmation(false);
+    setHasBeenSavedAsDraft(true);
     onSaveDraft(); // This will save as draft
   };
 
@@ -4795,25 +4882,6 @@ const ReviewSaveTab: React.FC<{
             </div>
           )}
 
-          {/* Debug Information - Remove this after testing */}
-          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-xs font-medium text-gray-700 mb-2">Debug - Current Data Values:</p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-              <div>Total Lots (Indicators): {formData.indicators.find(i => i.type === 'total_lots')?.value || 'Not found'}</div>
-              <div>Total Lots (Greasy): {formData.greasy_stats?.bales || 'Not found'}</div>
-              <div>Total Volume (Indicators): {formData.indicators.find(i => i.type === 'total_volume')?.value || 'Not found'}</div>
-              <div>Total Volume (Greasy): {formData.greasy_stats?.mass_kg || 'Not found'}</div>
-              <div>Total Value (Indicators): {formData.indicators.find(i => i.type === 'total_value')?.value || 'Not found'}</div>
-              <div>Total Value (Greasy): {formData.greasy_stats?.turnover_rand || 'Not found'}</div>
-              <div>Clearance Rate: {formData.supply_stats?.clearance_rate_pct || 'Not found'}%</div>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              All Indicators: {formData.indicators.map(i => `${i.type}: ${i.value}`).join(', ')}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Greasy Stats: {JSON.stringify(formData.greasy_stats)}
-            </p>
-          </div>
         </div>
       </div>
 
@@ -5080,11 +5148,16 @@ const ReviewSaveTab: React.FC<{
                 </span>
                 Highest Price Achievement
               </h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              
+              {/* Overall Auction Highest Price */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="text-center mb-2">
+                  <div className="text-sm font-medium text-gray-700">Overall Auction</div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-yellow-600">
-                      {formData.highest_price.price_cents_clean}¢
+                      R{(formData.highest_price.price_cents_clean / 100).toFixed(2)}
                     </div>
                     <div className="text-sm text-gray-600">per kg clean</div>
                   </div>
@@ -5102,6 +5175,47 @@ const ReviewSaveTab: React.FC<{
                   </div>
                 </div>
               </div>
+
+              {/* Top 10 Producer Performance Highest Price */}
+              {formData.provincial_producers && formData.provincial_producers.length > 0 && (() => {
+                // Get all producers from all provinces
+                const allProducers = formData.provincial_producers.flatMap(province => province.producers);
+                
+                if (allProducers.length === 0) return null;
+                
+                // Find the highest price producer
+                const highestPriceProducer = allProducers.reduce((highest, current) => 
+                  current.price > highest.price ? current : highest
+                );
+                
+                return (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="text-center mb-2">
+                      <div className="text-sm font-medium text-gray-700">OVK Top Performer</div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-blue-600">
+                          R{highestPriceProducer.price.toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600">per kg greasy</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-700">
+                          {highestPriceProducer.micron}μ
+                        </div>
+                        <div className="text-sm text-gray-600">micron</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-700">
+                          {highestPriceProducer.no_bales}
+                        </div>
+                        <div className="text-sm text-gray-600">bales</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -5158,19 +5272,35 @@ const ReviewSaveTab: React.FC<{
                 </span>
                 Micron Price Analysis
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {formData.micron_prices.filter(p => p.price_clean_zar_per_kg > 0).slice(0, 6).map((price, index) => (
-                  <div key={price.bucket_micron} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="font-semibold text-gray-900 mb-2">{price.bucket_micron}</div>
-                    <div className="space-y-1 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+                {formData.micron_prices
+                  .filter(p => p.price_clean_zar_per_kg > 0)
+                  .filter(p => ['17', '17.5', '18', '18.5', '19', '19.5', '20', '20.5', '21', '21.5', '22'].includes(p.bucket_micron))
+                  .sort((a, b) => parseFloat(a.bucket_micron) - parseFloat(b.bucket_micron))
+                  .map((price, index) => (
+                  <div key={price.bucket_micron} className="p-2 bg-gray-50 rounded border">
+                    <div className="font-semibold text-gray-900 mb-1 text-center text-xs">{price.bucket_micron}</div>
+                    <div className="space-y-1 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Category:</span>
-                        <span className="font-medium">{price.category}</span>
+                        <span className="text-gray-500">Category:</span>
+                        <span className="font-medium text-xs">{price.category}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Price:</span>
-                        <span className="font-medium text-green-600">R{price.price_clean_zar_per_kg.toFixed(2)}/kg</span>
+                        <span className="text-gray-500">Non-Certified:</span>
+                        <span className="font-medium text-blue-600 text-xs">R{price.price_clean_zar_per_kg.toFixed(2)}</span>
                       </div>
+                      {price.certified_price_clean_zar_per_kg && price.certified_price_clean_zar_per_kg > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Certified:</span>
+                          <span className="font-medium text-green-600 text-xs">R{price.certified_price_clean_zar_per_kg.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {price.all_merino_price_clean_zar_per_kg && price.all_merino_price_clean_zar_per_kg > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">All Merino:</span>
+                          <span className="font-medium text-purple-600 text-xs">R{price.all_merino_price_clean_zar_per_kg.toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -5188,21 +5318,47 @@ const ReviewSaveTab: React.FC<{
                 Provincial Performance
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {formData.provincial_producers.slice(0, 6).map((province, index) => (
-                  <div key={province.province} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="font-semibold text-gray-900 mb-2">{province.province}</div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Producers:</span>
-                        <span className="font-medium">{province.producers.length}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Total Bales:</span>
-                        <span className="font-medium">{province.producers.reduce((sum, p) => sum + (p.no_bales || 0), 0)}</span>
+                {formData.provincial_producers.slice(0, 6).map((province, index) => {
+                  // Calculate averages for this province
+                  const certifiedProducers = province.producers.filter(p => p.certified === 'RWS' && p.price > 0);
+                  const nonCertifiedProducers = province.producers.filter(p => p.certified !== 'RWS' && p.price > 0);
+                  
+                  const avgCertifiedPrice = certifiedProducers.length > 0 
+                    ? certifiedProducers.reduce((sum, p) => sum + p.price, 0) / certifiedProducers.length 
+                    : 0;
+                  
+                  const avgNonCertifiedPrice = nonCertifiedProducers.length > 0 
+                    ? nonCertifiedProducers.reduce((sum, p) => sum + p.price, 0) / nonCertifiedProducers.length 
+                    : 0;
+
+                  return (
+                    <div key={province.province} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="font-semibold text-gray-900 mb-2">{province.province}</div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Producers:</span>
+                          <span className="font-medium">{province.producers.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Bales:</span>
+                          <span className="font-medium">{province.producers.reduce((sum, p) => sum + (p.no_bales || 0), 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Avg Certified:</span>
+                          <span className="font-medium text-green-600">
+                            {avgCertifiedPrice > 0 ? `R${avgCertifiedPrice.toFixed(2)}` : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Avg Non-Certified:</span>
+                          <span className="font-medium text-blue-600">
+                            {avgNonCertifiedPrice > 0 ? `R${avgNonCertifiedPrice.toFixed(2)}` : 'N/A'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -5244,24 +5400,27 @@ const ReviewSaveTab: React.FC<{
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Data Completeness</h3>
             <div className="space-y-3">
-              {[
-                { label: 'Buyers', value: formData.buyers.length, icon: '👥' },
-                { label: 'Brokers', value: formData.brokers.length, icon: '🤝' },
-                { label: 'Provinces', value: formData.provincial_producers.length, icon: '🗺️' },
-                { label: 'Micron Prices', value: `${formData.micron_prices.filter(p => p.price_clean_zar_per_kg > 0).length}/${formData.micron_prices.length}`, icon: '💰' },
-                { label: 'Market Insights', value: formData.insights.length > 0 ? 'Yes' : 'No', icon: '💡' },
-                { label: 'Market Indices', value: formData.market_indices ? 'Complete' : 'Missing', icon: '📊' },
-                { label: 'Currency Exchange', value: formData.currency_fx ? 'Complete' : 'Missing', icon: '💱' },
-                { label: 'Supply Statistics', value: formData.supply_stats ? 'Complete' : 'Missing', icon: '📈' }
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <span className="text-lg mr-2">{item.icon}</span>
-                    <span className="text-sm text-gray-600">{item.label}</span>
+              {Object.entries(completionData.tabCompleteness).map(([tabName, tab]) => (
+                <div key={tabName} className="p-3 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <span className="text-lg mr-2">{tab.icon}</span>
+                      <span className="text-sm font-medium text-gray-700">{tabName}</span>
+                    </div>
+                    <span className={`text-sm font-medium ${tab.completed === tab.total ? 'text-green-600' : 'text-orange-600'}`}>
+                      {tab.completed}/{tab.total}
+                    </span>
                   </div>
-                  <span className={`text-sm font-medium ${item.value === 'Missing' || item.value === 'No' ? 'text-red-600' : 'text-green-600'}`}>
-                    {item.value}
-                  </span>
+                  <div className="space-y-1">
+                    {tab.fields.map((field, index) => (
+                      <div key={index} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">{field.name}</span>
+                        <span className={field.completed ? 'text-green-600' : 'text-red-600'}>
+                          {field.completed ? '✓' : '✗'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -5320,15 +5479,15 @@ const ReviewSaveTab: React.FC<{
                   Cannot publish: {missingFields.length} required field(s) missing
                 </p>
                 <p className="text-xs text-red-600">
-                  Complete all required fields to publish the report.
+                  Complete all required fields and save as draft to publish the report.
                 </p>
               </div>
             )}
             
-            {completionData.percentage < 85 && completionData.percentage >= 70 && (
+            {!canPublish && missingFields.length === 0 && !hasBeenSavedAsDraft && (
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-700">
-                  ⚠️ Report is {completionData.percentage}% complete. Consider adding more data for better insights.
+                  ⚠️ All data is complete, but you must save as draft first before publishing.
                 </p>
               </div>
             )}
@@ -5336,7 +5495,7 @@ const ReviewSaveTab: React.FC<{
             {canPublish && (
               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-xs text-green-700">
-                  ✅ Report is ready for publication! All required fields are complete.
+                  ✅ Report is ready for publication! All required fields are complete and draft has been saved.
                 </p>
               </div>
             )}
