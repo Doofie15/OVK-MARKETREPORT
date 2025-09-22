@@ -787,6 +787,20 @@ export class SupabaseAuctionDataService {
         .order('position')
       
       if (error) throw error
+      
+      // Debug Eastern Cape data specifically
+      const easternCapeData = data?.filter((performer: any) => 
+        performer.provinces?.name === 'Eastern Cape'
+      );
+      if (easternCapeData && easternCapeData.length > 0) {
+        console.log('🔍 Eastern Cape raw data from database:', easternCapeData.map((p: any) => ({
+          name: p.producer_name,
+          price: p.price,
+          certification: p.certifications,
+          certificationCode: p.certifications?.code
+        })));
+      }
+      
       return { success: true, data }
     } catch (error) {
       console.error('Get top performers error:', error)
@@ -1980,9 +1994,20 @@ export class SupabaseAuctionDataService {
         }
       }
       
+      // Debug Eastern Cape specifically
+      if (provinceName === 'Eastern Cape') {
+        console.log('🔍 Eastern Cape performer data:', {
+          name: performer.producer_name,
+          price: performer.price,
+          certifications: (performer as any).certifications,
+          certificationCode: (performer as any).certifications?.code,
+          isRWS: (performer as any).certifications?.code === 'RWS'
+        });
+      }
+      
       acc[provinceName].producers.push({
-        position: performer.position ? parseInt(performer.position.toString()) : 0,
-        name: performer.name,
+        position: performer.rank ? parseInt(performer.rank.toString()) : 0,
+        name: performer.producer_name,
         district: performer.district,
         producer_number: performer.producer_number,
         no_bales: performer.no_bales ? parseInt(performer.no_bales.toString()) : 0,

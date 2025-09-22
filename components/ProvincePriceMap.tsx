@@ -341,6 +341,16 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
       console.log('🔍 Top 10 performers for', province.province, ':', topPerformers.map(p => ({ name: p.name, price: p.price, certified: p.certified })));
       
       topPerformers.forEach(producer => {
+        // Debug Eastern Cape specifically
+        if (province.province === 'Eastern Cape') {
+          console.log('🔍 Eastern Cape producer:', {
+            name: producer.name,
+            price: producer.price,
+            certified: producer.certified,
+            isRWS: producer.certified === 'RWS'
+          });
+        }
+        
         // Certified: Only producers with RWS certification
         if (producer.certified === 'RWS') {
           provinceMap[province.province].certified.push(producer.price);
@@ -367,6 +377,20 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
         certified_avg: certifiedAvg,
         merino_avg: merinoAvg
       };
+      
+      // Debug Eastern Cape specifically
+      if (provinceName === 'Eastern Cape') {
+        console.log('🔍 Eastern Cape calculation details:', {
+          certifiedPrices: prices.certified,
+          merinoPrices: prices.merino,
+          certifiedCount: prices.certified.length,
+          merinoCount: prices.merino.length,
+          certifiedAvg,
+          merinoAvg,
+          result
+        });
+      }
+      
       console.log('🔍 Calculated averages for', provinceName, ':', result);
       return result;
     });
