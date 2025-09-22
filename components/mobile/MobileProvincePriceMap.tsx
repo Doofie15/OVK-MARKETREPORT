@@ -197,7 +197,7 @@ const MobileSouthAfricaMap = ({
                 {provinceData.name.split(' ')[0]}
               </text>
               
-              {/* Price Label */}
+              {/* Price Label - Always show, even if 0 */}
               <text
                 x={centerX}
                 y={centerY + 8}
@@ -215,7 +215,7 @@ const MobileSouthAfricaMap = ({
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
               >
-                {provinceData ? `R${provinceData.merino_avg.toFixed(0)}` : ''}
+                R{provinceData ? provinceData.merino_avg.toFixed(0) : '0'}
               </text>
             </g>
           );
@@ -297,28 +297,36 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
   const calculateProvincialAverages = (provincialData: ProvincialProducerData[]) => {
     const provinceMap: Record<string, { certified: number[]; merino: number[] }> = {};
     
+    // Initialize all South African provinces with empty arrays
+    const southAfricanProvinces = [
+      'Eastern Cape', 'Free State', 'Western Cape', 'Northern Cape', 
+      'KwaZulu-Natal', 'Mpumalanga', 'Gauteng', 'Limpopo', 'North West'
+    ];
+    
+    southAfricanProvinces.forEach(province => {
+      provinceMap[province] = { certified: [], merino: [] };
+    });
+    
     provincialData.forEach(province => {
       // Skip Lesotho for map display (it's not a South African province)
       if (province.province === 'Lesotho') {
         return;
       }
       
-      if (!provinceMap[province.province]) {
-        provinceMap[province.province] = { certified: [], merino: [] };
-      }
-      
       // Take top 10 performers (already sorted by position)
       const topPerformers = province.producers.slice(0, 10);
       
       topPerformers.forEach(producer => {
+        // Certified: Only producers with RWS certification
         if (producer.certified === 'RWS') {
           provinceMap[province.province].certified.push(producer.price);
         }
+        // Merino: ALL producers (both certified and non-certified)
         provinceMap[province.province].merino.push(producer.price);
       });
     });
     
-    // Convert to map data format
+    // Convert to map data format - always show all provinces, even with 0 values
     const mapData = Object.entries(provinceMap).map(([provinceName, prices]) => {
       const certifiedAvg = prices.certified.length > 0 
         ? prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length 

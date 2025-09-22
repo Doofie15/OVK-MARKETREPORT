@@ -222,51 +222,47 @@ const SouthAfricaMap = ({
                  {provinceName}
                </text>
                
-               {/* Certified Wool price label - Green (only show if data available) */}
-               {provinceData && (
-                 <text
-                   x={centerX}
-                   y={centerY + 6}
-                   className="pointer-events-none"
-                   textAnchor="middle"
-                   dominantBaseline="middle"
-                   fill={isHovered ? '#ffffff' : '#ffffff'}
-                   style={{
-                     textShadow: isHovered
-                       ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
-                       : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
-                     fontSize: isSmallProvince ? '6px' : '7px',
-                     fontWeight: '600',
-                     letterSpacing: '0.025em',
-                     fontFamily: 'system-ui, -apple-system, sans-serif',
-                   }}
-                 >
-                   <tspan fill="#10b981">Certified:</tspan> R{provinceData.certified_avg.toFixed(0)}/kg
-                 </text>
-               )}
+               {/* Certified Wool price label - Green (always show, even if 0) */}
+               <text
+                 x={centerX}
+                 y={centerY + 6}
+                 className="pointer-events-none"
+                 textAnchor="middle"
+                 dominantBaseline="middle"
+                 fill={isHovered ? '#ffffff' : '#ffffff'}
+                 style={{
+                   textShadow: isHovered
+                     ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
+                     : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
+                   fontSize: isSmallProvince ? '6px' : '7px',
+                   fontWeight: '600',
+                   letterSpacing: '0.025em',
+                   fontFamily: 'system-ui, -apple-system, sans-serif',
+                 }}
+               >
+                 <tspan fill="#10b981">Certified:</tspan> R{provinceData ? provinceData.certified_avg.toFixed(0) : '0'}/kg
+               </text>
                
-               {/* All Merino Wool price label - Blue (only show if data available) */}
-               {provinceData && (
-                 <text
-                   x={centerX}
-                   y={centerY + 14}
-                   className="pointer-events-none"
-                   textAnchor="middle"
-                   dominantBaseline="middle"
-                   fill={isHovered ? '#ffffff' : '#ffffff'}
-                   style={{
-                     textShadow: isHovered
-                       ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
-                       : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
-                     fontSize: isSmallProvince ? '6px' : '7px',
-                     fontWeight: '600',
-                     letterSpacing: '0.025em',
-                     fontFamily: 'system-ui, -apple-system, sans-serif',
-                   }}
-                 >
-                   <tspan fill="#3b82f6">Merino:</tspan> R{provinceData.merino_avg.toFixed(0)}/kg
-                 </text>
-               )}
+               {/* All Merino Wool price label - Blue (always show, even if 0) */}
+               <text
+                 x={centerX}
+                 y={centerY + 14}
+                 className="pointer-events-none"
+                 textAnchor="middle"
+                 dominantBaseline="middle"
+                 fill={isHovered ? '#ffffff' : '#ffffff'}
+                 style={{
+                   textShadow: isHovered
+                     ? '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.3)'
+                     : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.2)',
+                   fontSize: isSmallProvince ? '6px' : '7px',
+                   fontWeight: '600',
+                   letterSpacing: '0.025em',
+                   fontFamily: 'system-ui, -apple-system, sans-serif',
+                 }}
+               >
+                 <tspan fill="#3b82f6">Merino:</tspan> R{provinceData ? provinceData.merino_avg.toFixed(0) : '0'}/kg
+               </text>
             </g>
           );
         })}
@@ -321,6 +317,16 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
     console.log('🔍 Input provincial data:', provincialData);
     const provinceMap: Record<string, { certified: number[]; merino: number[] }> = {};
     
+    // Initialize all South African provinces with empty arrays
+    const southAfricanProvinces = [
+      'Eastern Cape', 'Free State', 'Western Cape', 'Northern Cape', 
+      'KwaZulu-Natal', 'Mpumalanga', 'Gauteng', 'Limpopo', 'North West'
+    ];
+    
+    southAfricanProvinces.forEach(province => {
+      provinceMap[province] = { certified: [], merino: [] };
+    });
+    
     provincialData.forEach(province => {
       console.log('🔍 Processing province:', province.province, 'with', province.producers.length, 'producers');
       
@@ -330,25 +336,23 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
         return;
       }
       
-      if (!provinceMap[province.province]) {
-        provinceMap[province.province] = { certified: [], merino: [] };
-      }
-      
       // Take top 10 performers (already sorted by position)
       const topPerformers = province.producers.slice(0, 10);
       console.log('🔍 Top 10 performers for', province.province, ':', topPerformers.map(p => ({ name: p.name, price: p.price, certified: p.certified })));
       
       topPerformers.forEach(producer => {
+        // Certified: Only producers with RWS certification
         if (producer.certified === 'RWS') {
           provinceMap[province.province].certified.push(producer.price);
         }
+        // Merino: ALL producers (both certified and non-certified)
         provinceMap[province.province].merino.push(producer.price);
       });
     });
     
     console.log('🔍 Province map after processing:', provinceMap);
     
-    // Convert to map data format
+    // Convert to map data format - always show all provinces, even with 0 values
     const mapData = Object.entries(provinceMap).map(([provinceName, prices]) => {
       const certifiedAvg = prices.certified.length > 0 
         ? prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length 
