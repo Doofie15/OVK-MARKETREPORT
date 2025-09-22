@@ -794,7 +794,7 @@ export class SupabaseAuctionDataService {
       );
       if (easternCapeData && easternCapeData.length > 0) {
         console.log('🔍 Eastern Cape raw data from database:', easternCapeData.map((p: any) => ({
-          name: p.producer_name,
+          name: p.name,
           price: p.price,
           certification: p.certifications,
           certificationCode: p.certifications?.code
@@ -1997,7 +1997,7 @@ export class SupabaseAuctionDataService {
       // Debug Eastern Cape specifically
       if (provinceName === 'Eastern Cape') {
         console.log('🔍 Eastern Cape performer data:', {
-          name: performer.producer_name,
+          name: performer.name,
           price: performer.price,
           certifications: (performer as any).certifications,
           certificationCode: (performer as any).certifications?.code,
@@ -2006,8 +2006,8 @@ export class SupabaseAuctionDataService {
       }
       
       acc[provinceName].producers.push({
-        position: performer.rank ? parseInt(performer.rank.toString()) : 0,
-        name: performer.producer_name,
+        position: performer.position ? parseInt(performer.position.toString()) : 0,
+        name: performer.name,
         district: performer.district,
         producer_number: performer.producer_number,
         no_bales: performer.no_bales ? parseInt(performer.no_bales.toString()) : 0,
