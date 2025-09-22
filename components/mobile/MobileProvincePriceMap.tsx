@@ -15,7 +15,7 @@ const MobileSouthAfricaMap = ({
   onMouseLeave,
   hoveredId,
 }: {
-  data: ProvinceAveragePrice[];
+  data: { id: string; name: string; certified_avg: number; non_certified_avg: number; has_non_certified: boolean }[];
   onTouch: (id: string) => void;
   selectedId: string | null;
   getColor: (price: number) => string;
@@ -138,10 +138,7 @@ const MobileSouthAfricaMap = ({
 
       <g>
         {zaGeoJSON.features
-          .filter((feature) => {
-            console.log('🔍 Mobile processing feature:', feature.properties.name);
-            return feature.properties.name !== 'Lesotho'; // Exclude Lesotho
-          })
+          .filter((feature) => feature.properties.name !== 'Lesotho') // Exclude Lesotho
           .map((feature) => {
           const geoId = feature.properties.id;
           const componentId = provinceIdMap[geoId];
@@ -160,7 +157,7 @@ const MobileSouthAfricaMap = ({
             <g key={geoId}>
               <path
                 d={pathData}
-                fill={provinceData ? getColor(isHovered ? provinceData.merino_avg + 5 : provinceData.merino_avg) : '#1e40af'}
+                fill={provinceData ? getColor(isHovered ? (provinceData.certified_avg > 0 ? provinceData.certified_avg : provinceData.non_certified_avg) + 5 : (provinceData.certified_avg > 0 ? provinceData.certified_avg : provinceData.non_certified_avg)) : '#1e40af'}
                 stroke="#ffffff"
                 strokeWidth={isSelected ? '3' : '1.5'}
                 onTouchStart={() => onTouch(componentId)}
@@ -197,7 +194,7 @@ const MobileSouthAfricaMap = ({
                 {provinceData.name.split(' ')[0]}
               </text>
               
-              {/* Price Label - Always show, even if 0 */}
+              {/* Price Label - Show certified average, or non-certified if no certified */}
               <text
                 x={centerX}
                 y={centerY + 8}
@@ -215,7 +212,7 @@ const MobileSouthAfricaMap = ({
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
               >
-                R{provinceData ? provinceData.merino_avg.toFixed(1) : '0.0'}
+                R{provinceData ? (provinceData.certified_avg > 0 ? provinceData.certified_avg.toFixed(1) : provinceData.non_certified_avg.toFixed(1)) : '0.0'}
               </text>
             </g>
           );
@@ -226,7 +223,7 @@ const MobileSouthAfricaMap = ({
   );
 };
 
-const MobileTooltip: React.FC<{ province: ProvinceAveragePrice; x: number; y: number; containerRect: DOMRect }> = ({ province, x, y, containerRect }) => {
+const MobileTooltip: React.FC<{ province: { id: string; name: string; certified_avg: number; non_certified_avg: number; has_non_certified: boolean }; x: number; y: number; containerRect: DOMRect }> = ({ province, x, y, containerRect }) => {
   // Calculate tooltip position relative to the container
   const tooltipWidth = 140;
   const tooltipHeight = 60;
@@ -269,15 +266,17 @@ const MobileTooltip: React.FC<{ province: ProvinceAveragePrice; x: number; y: nu
         <div className="flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
           <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-            Certified: R{province.certified_avg.toFixed(0)}/kg
+            Certified: R{province.certified_avg.toFixed(1)}/kg
           </p>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
-          <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-            Merino: R{province.merino_avg.toFixed(0)}/kg
-          </p>
-        </div>
+        {province.has_non_certified && (
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+            <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
+              Merino: R{province.non_certified_avg.toFixed(1)}/kg
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -288,14 +287,14 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
-    province: { id: string; name: string; certified_avg: number; merino_avg: number };
+    province: { id: string; name: string; certified_avg: number; non_certified_avg: number; has_non_certified: boolean };
     containerRect: DOMRect;
   } | null>(null);
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
 
   // Calculate averages from provincial producer data
   const calculateProvincialAverages = (provincialData: ProvincialProducerData[]) => {
-    const provinceMap: Record<string, { certified: number[]; merino: number[] }> = {};
+    const provinceMap: Record<string, { certified: number[]; nonCertified: number[] }> = {};
     
     // Initialize all South African provinces with empty arrays
     const southAfricanProvinces = [
@@ -304,7 +303,7 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
     ];
     
     southAfricanProvinces.forEach(province => {
-      provinceMap[province] = { certified: [], merino: [] };
+      provinceMap[province] = { certified: [], nonCertified: [] };
     });
     
     provincialData.forEach(province => {
@@ -320,9 +319,10 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
         // Certified: Only producers with RWS certification
         if (producer.certified === 'RWS') {
           provinceMap[province.province].certified.push(producer.price);
+        } else {
+          // Non-certified: Only producers without RWS certification
+          provinceMap[province.province].nonCertified.push(producer.price);
         }
-        // Merino: ALL producers (both certified and non-certified)
-        provinceMap[province.province].merino.push(producer.price);
       });
     });
     
@@ -331,15 +331,16 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
       const certifiedAvg = prices.certified.length > 0 
         ? prices.certified.reduce((sum, price) => sum + price, 0) / prices.certified.length 
         : 0;
-      const merinoAvg = prices.merino.length > 0 
-        ? prices.merino.reduce((sum, price) => sum + price, 0) / prices.merino.length 
+      const nonCertifiedAvg = prices.nonCertified.length > 0 
+        ? prices.nonCertified.reduce((sum, price) => sum + price, 0) / prices.nonCertified.length 
         : 0;
       
       return {
         id: getProvinceId(provinceName),
         name: provinceName,
         certified_avg: certifiedAvg,
-        merino_avg: merinoAvg
+        non_certified_avg: nonCertifiedAvg,
+        has_non_certified: prices.nonCertified.length > 0
       };
     });
     
@@ -362,15 +363,15 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
   };
 
   const sampleData = [
-    { id: 'ZA-EC', name: 'Eastern Cape', certified_avg: 183.0, merino_avg: 200.0 },
-    { id: 'ZA-WC', name: 'Western Cape', certified_avg: 179.0, merino_avg: 197.0 },
-    { id: 'ZA-NC', name: 'Northern Cape', certified_avg: 175.0, merino_avg: 193.0 },
-    { id: 'ZA-KZN', name: 'KwaZulu-Natal', certified_avg: 168.0, merino_avg: 185.0 },
-    { id: 'ZA-FS', name: 'Free State', certified_avg: 166.0, merino_avg: 183.0 },
-    { id: 'ZA-NW', name: 'North West', certified_avg: 162.0, merino_avg: 178.0 },
-    { id: 'ZA-GP', name: 'Gauteng', certified_avg: 160.0, merino_avg: 176.0 },
-    { id: 'ZA-MP', name: 'Mpumalanga', certified_avg: 159.0, merino_avg: 175.0 },
-    { id: 'ZA-LP', name: 'Limpopo', certified_avg: 155.0, merino_avg: 171.0 },
+    { id: 'ZA-EC', name: 'Eastern Cape', certified_avg: 183.0, non_certified_avg: 0, has_non_certified: false },
+    { id: 'ZA-WC', name: 'Western Cape', certified_avg: 179.0, non_certified_avg: 197.0, has_non_certified: true },
+    { id: 'ZA-NC', name: 'Northern Cape', certified_avg: 175.0, non_certified_avg: 193.0, has_non_certified: true },
+    { id: 'ZA-KZN', name: 'KwaZulu-Natal', certified_avg: 168.0, non_certified_avg: 185.0, has_non_certified: true },
+    { id: 'ZA-FS', name: 'Free State', certified_avg: 166.0, non_certified_avg: 183.0, has_non_certified: true },
+    { id: 'ZA-NW', name: 'North West', certified_avg: 162.0, non_certified_avg: 178.0, has_non_certified: true },
+    { id: 'ZA-GP', name: 'Gauteng', certified_avg: 160.0, non_certified_avg: 176.0, has_non_certified: true },
+    { id: 'ZA-MP', name: 'Mpumalanga', certified_avg: 159.0, non_certified_avg: 175.0, has_non_certified: true },
+    { id: 'ZA-LP', name: 'Limpopo', certified_avg: 155.0, non_certified_avg: 171.0, has_non_certified: true },
   ];
 
   const mapData = data && data.length > 0 ? calculateProvincialAverages(data) : sampleData;
@@ -378,8 +379,16 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
   const getColor = useCallback((price: number) => {
     if (!mapData || mapData.length === 0) return '#e5e7eb';
     
-    const maxPrice = Math.max(...mapData.map(p => p.merino_avg));
-    const minPrice = Math.min(...mapData.map(p => p.merino_avg));
+    // Get all prices (certified and non-certified) for color scaling
+    const allPrices = mapData.flatMap(p => [
+      p.certified_avg > 0 ? p.certified_avg : 0,
+      p.non_certified_avg > 0 ? p.non_certified_avg : 0
+    ]).filter(p => p > 0);
+    
+    if (allPrices.length === 0) return '#e5e7eb';
+    
+    const maxPrice = Math.max(...allPrices);
+    const minPrice = Math.min(...allPrices);
     const range = maxPrice - minPrice;
     
     if (range === 0) return '#e5e7eb';
@@ -464,20 +473,22 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
                 </p>
               </div>
               <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-                R{selectedProvinceData.certified_avg.toFixed(0)}/kg
+                R{selectedProvinceData.certified_avg.toFixed(1)}/kg
               </p>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+            {selectedProvinceData.has_non_certified && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                  <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
+                    Merino:
+                  </p>
+                </div>
                 <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-                  Merino:
+                  R{selectedProvinceData.non_certified_avg.toFixed(1)}/kg
                 </p>
               </div>
-              <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-                R{selectedProvinceData.merino_avg.toFixed(0)}/kg
-              </p>
-            </div>
+            )}
           </div>
         </div>
       )}
