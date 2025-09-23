@@ -232,6 +232,153 @@ export class PublicDataService {
       return false;
     }
   }
+
+  /**
+   * PROGRESSIVE LOADING: Get latest report first, then load others in background
+   */
+  static async getPublishedReportsProgressive(): Promise<{
+    success: boolean;
+    latestReport?: AuctionReport;
+    allReportsPromise?: Promise<{ success: boolean; data?: AuctionReport[]; error?: string }>;
+    error?: string;
+  }> {
+    try {
+      console.log('🚀 Starting progressive loading - latest report first...');
+
+      // Check cache first for complete data
+      const cacheKey = 'published_reports';
+      const cachedReports = DataCache.get<AuctionReport[]>(cacheKey);
+      if (cachedReports && cachedReports.length > 0) {
+        console.log('⚡ Returning cached reports (all data available)');
+        return {
+          success: true,
+          latestReport: cachedReports[0], // Already sorted newest first
+          allReportsPromise: Promise.resolve({ success: true, data: cachedReports })
+        };
+      }
+
+      // Get all published auctions
+      const auctionsResult = await SupabaseAuctionDataService.getAuctions();
+      
+      if (!auctionsResult.success) {
+        return { success: false, error: auctionsResult.error };
+      }
+
+      const publishedAuctions = (auctionsResult.data as any[])
+        .filter((auction: any) => auction.status === 'published')
+        .sort((a: any, b: any) => {
+          // Sort by auction date (newest first)
+          const dateA = new Date(a.auction_date || a.updated_at);
+          const dateB = new Date(b.auction_date || b.updated_at);
+          return dateB.getTime() - dateA.getTime();
+        });
+
+      if (publishedAuctions.length === 0) {
+        console.log('📭 No published auctions found');
+        return { success: true, latestReport: undefined };
+      }
+
+      console.log(`📊 Found ${publishedAuctions.length} published auctions`);
+
+      // STEP 1: Load ONLY the latest report immediately
+      const latestAuction = publishedAuctions[0];
+      console.log('⚡ Loading latest report first:', latestAuction.id);
+      
+      const latestReportResult = await SupabaseAuctionDataService.getCompleteAuctionReport(latestAuction.id);
+      
+      if (!latestReportResult.success || !latestReportResult.data) {
+        return { success: false, error: `Failed to load latest report: ${latestReportResult.error}` };
+      }
+
+      const latestReport: AuctionReport = {
+        ...latestReportResult.data,
+        status: 'published' as const,
+        published_at: latestAuction.published_at || latestAuction.updated_at
+      };
+
+      // STEP 2: Start loading remaining reports in background (don't await)
+      const allReportsPromise = this.loadRemainingReportsInBackground(publishedAuctions, latestReport);
+
+      console.log('✅ Latest report loaded, background loading started');
+      
+      return {
+        success: true,
+        latestReport,
+        allReportsPromise
+      };
+
+    } catch (error) {
+      console.error('❌ Error in progressive loading:', error);
+      return { success: false, error: (error as any).message };
+    }
+  }
+
+  /**
+   * Load remaining reports in background after latest is shown
+   */
+  private static async loadRemainingReportsInBackground(
+    publishedAuctions: any[],
+    latestReport: AuctionReport
+  ): Promise<{ success: boolean; data?: AuctionReport[]; error?: string }> {
+    try {
+      console.log('🔄 Loading remaining reports in background...');
+
+      // Skip the first auction (already loaded)
+      const remainingAuctions = publishedAuctions.slice(1);
+      
+      if (remainingAuctions.length === 0) {
+        console.log('✅ Only one report available, caching single report');
+        const allReports = [latestReport];
+        DataCache.set('published_reports', allReports, 5);
+        return { success: true, data: allReports };
+      }
+
+      // Load remaining reports in parallel
+      const reportPromises = remainingAuctions.map(async (auction: any) => {
+        try {
+          const reportResult = await SupabaseAuctionDataService.getCompleteAuctionReport(auction.id);
+          
+          if (reportResult.success && reportResult.data) {
+            return {
+              ...reportResult.data,
+              status: 'published' as const,
+              published_at: auction.published_at || auction.updated_at
+            };
+          }
+          return null;
+        } catch (error) {
+          console.warn(`⚠️ Failed to load background report ${auction.id}:`, error);
+          return null;
+        }
+      });
+
+      const reportResults = await Promise.allSettled(reportPromises);
+      
+      const additionalReports: AuctionReport[] = reportResults
+        .filter((result: any) => result.status === 'fulfilled' && result.value !== null)
+        .map((result: any) => result.value);
+
+      // Combine latest + additional reports
+      const allReports = [latestReport, ...additionalReports];
+
+      // Sort by published date (newest first)
+      allReports.sort((a, b) => {
+        const dateA = new Date(a.published_at || a.auction.auction_date);
+        const dateB = new Date(b.published_at || b.auction.auction_date);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      // Cache complete results
+      DataCache.set('published_reports', allReports, 5);
+
+      console.log(`✅ Background loading complete: ${allReports.length} total reports cached`);
+      return { success: true, data: allReports };
+
+    } catch (error) {
+      console.error('❌ Error in background loading:', error);
+      return { success: false, error: (error as any).message };
+    }
+  }
 }
 
 export default PublicDataService;

@@ -53,36 +53,57 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load published reports from database
+  // PROGRESSIVE LOADING: Load latest report first, then others in background
   const loadPublishedReports = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🔄 Loading published reports from database...');
-      const result = await PublicDataService.getPublishedReports();
+      console.log('🚀 Starting progressive loading...');
+      const result = await PublicDataService.getPublishedReportsProgressive();
       
-      if (result.success && result.data) {
-        setReports(result.data);
+      if (result.success && result.latestReport) {
+        // STEP 1: Show latest report immediately (fast first render)
+        console.log('⚡ Showing latest report immediately');
+        setReports([result.latestReport]);
+        setSelectedWeekId(result.latestReport.auction.week_id);
+        setLoading(false); // Stop loading spinner - user can see content!
         
-        // Set the latest report as selected by default
-        if (result.data.length > 0) {
-          setSelectedWeekId(result.data[0].auction.week_id);
+        // STEP 2: Load remaining reports in background
+        if (result.allReportsPromise) {
+          console.log('🔄 Loading remaining reports in background...');
+          
+          result.allReportsPromise.then((allReportsResult) => {
+            if (allReportsResult.success && allReportsResult.data) {
+              console.log(`✅ Background loading complete: ${allReportsResult.data.length} total reports`);
+              setReports(allReportsResult.data);
+              
+              // Keep the same selected report if it's still valid
+              const currentSelection = allReportsResult.data.find(r => r.auction.week_id === selectedWeekId);
+              if (!currentSelection && allReportsResult.data.length > 0) {
+                setSelectedWeekId(allReportsResult.data[0].auction.week_id);
+              }
+            } else {
+              console.warn('⚠️ Background loading failed, keeping latest report only');
+            }
+          }).catch((error) => {
+            console.error('❌ Background loading error:', error);
+            // Keep showing the latest report even if background loading fails
+          });
         }
         
-        console.log(`✅ Loaded ${result.data.length} published reports`);
       } else {
         console.warn('⚠️ No published reports found, falling back to mock data');
         setReports(MOCK_REPORTS);
         setSelectedWeekId(MOCK_REPORTS[0]?.auction.week_id || '');
         setError('No published reports available. Showing sample data.');
+        setLoading(false);
       }
     } catch (error) {
       console.error('❌ Error loading published reports:', error);
       setError('Failed to load auction data. Showing sample data.');
       setReports(MOCK_REPORTS);
       setSelectedWeekId(MOCK_REPORTS[0]?.auction.week_id || '');
-    } finally {
       setLoading(false);
     }
   };
