@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import type { Season } from '../../types';
+import type { Season, AuctionReport } from '../../types';
 
 interface SeasonListProps {
   seasons: Season[];
+  reports: AuctionReport[];
   onCreateSeason: () => void;
   onEditSeason: (season: Season) => void;
   onDeleteSeason: (seasonId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-const SeasonList: React.FC<SeasonListProps> = ({ seasons, onCreateSeason, onEditSeason, onDeleteSeason }) => {
+const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeason, onEditSeason, onDeleteSeason }) => {
   const [filteredSeasons, setFilteredSeasons] = useState<Season[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
@@ -106,14 +107,32 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, onCreateSeason, onEdit
 
   // Calculate statistics for a season
   const getSeasonStats = (season: Season) => {
-    const seasonAuctions: any[] = []; // Auctions will be loaded separately
+    // Filter reports for this season
+    const seasonReports = reports.filter(report => 
+      report.auction.season_id === season.id || 
+      report.auction.season_label === season.season_year
+    );
     
-    return {
-      auctionCount: seasonAuctions.length,
-      totalBales: seasonAuctions.reduce((sum, auction) => sum + (auction.total_bales_sold || 0), 0),
-      totalVolume: seasonAuctions.reduce((sum, auction) => sum + (auction.total_volume_kg || 0), 0),
-      totalTurnover: seasonAuctions.reduce((sum, auction) => sum + (auction.total_turnover || 0), 0)
-    };
+    // Calculate totals from the auction data
+    const totals = seasonReports.reduce((acc, report) => {
+      const auction = report.auction;
+      const supplyStats = auction.supply_statistics;
+      const greasyStats = auction.greasy_statistics;
+      
+      return {
+        auctionCount: acc.auctionCount + 1,
+        totalBales: acc.totalBales + (supplyStats?.bales_sold || 0),
+        totalVolume: acc.totalVolume + (greasyStats?.mass || 0),
+        totalTurnover: acc.totalTurnover + (greasyStats?.turnover || 0)
+      };
+    }, {
+      auctionCount: 0,
+      totalBales: 0,
+      totalVolume: 0,
+      totalTurnover: 0
+    });
+    
+    return totals;
   };
 
 

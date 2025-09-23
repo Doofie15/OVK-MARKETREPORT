@@ -340,6 +340,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
           element={
             <SeasonList 
               seasons={seasons}
+              reports={reports}
               onEditSeason={handleEditSeason}
               onDeleteSeason={handleDeleteSeason}
               onCreateSeason={() => navigate('/admin/seasons/create')}
