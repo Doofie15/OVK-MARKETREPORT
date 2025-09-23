@@ -362,19 +362,8 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
     return provinceMap[provinceName] || 'ZA-EC';
   };
 
-  const sampleData = [
-    { id: 'ZA-EC', name: 'Eastern Cape', certified_avg: 183.0, non_certified_avg: 0, has_non_certified: false },
-    { id: 'ZA-WC', name: 'Western Cape', certified_avg: 179.0, non_certified_avg: 197.0, has_non_certified: true },
-    { id: 'ZA-NC', name: 'Northern Cape', certified_avg: 175.0, non_certified_avg: 193.0, has_non_certified: true },
-    { id: 'ZA-KZN', name: 'KwaZulu-Natal', certified_avg: 168.0, non_certified_avg: 185.0, has_non_certified: true },
-    { id: 'ZA-FS', name: 'Free State', certified_avg: 166.0, non_certified_avg: 183.0, has_non_certified: true },
-    { id: 'ZA-NW', name: 'North West', certified_avg: 162.0, non_certified_avg: 178.0, has_non_certified: true },
-    { id: 'ZA-GP', name: 'Gauteng', certified_avg: 160.0, non_certified_avg: 176.0, has_non_certified: true },
-    { id: 'ZA-MP', name: 'Mpumalanga', certified_avg: 159.0, non_certified_avg: 175.0, has_non_certified: true },
-    { id: 'ZA-LP', name: 'Limpopo', certified_avg: 155.0, non_certified_avg: 171.0, has_non_certified: true },
-  ];
-
-  const mapData = data && data.length > 0 ? calculateProvincialAverages(data) : sampleData;
+  // Use real data only - no fallback to sample data
+  const mapData = data && data.length > 0 ? calculateProvincialAverages(data) : [];
 
   const getColor = useCallback((price: number) => {
     if (!mapData || mapData.length === 0) return '#e5e7eb';

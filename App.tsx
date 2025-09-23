@@ -6,6 +6,8 @@ import PublicLayout from './components/PublicLayout';
 import AdminAppSupabase from './components/admin/AdminAppSupabase';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import OVKLoadingSpinner from './components/OVKLoadingSpinner';
+import ErrorBoundary from './components/ErrorBoundary';
+import MobileDebugger from './components/MobileDebugger';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicDataService from './services/public-data-service';
@@ -258,37 +260,76 @@ const App: React.FC = () => {
   };
 
   return (
-    <AuthProvider>
-      <PWAInstallPrompt />
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route 
-            path="/" 
-            element={<HomeRoute />}
-          />
-          
-          {/* Auction-specific routes */}
-          <Route 
-            path="/:auctionId" 
-            element={<AuctionRoute />}
-          />
-          
-          {/* Admin routes - Protected */}
-          <Route 
-            path="/admin/*" 
-            element={
-              <ProtectedRoute>
-                <AdminAppSupabase />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Redirect any other routes to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <PWAInstallPrompt />
+        <MobileDebugger enabled={window.location.search.includes('debug=true')} />
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route 
+              path="/" 
+              element={
+                <ErrorBoundary fallback={
+                  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div className="text-center p-6">
+                      <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Error</h2>
+                      <p className="text-gray-600 mb-4">Unable to load the home page.</p>
+                      <button 
+                        onClick={() => window.location.reload()}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                      >
+                        Reload
+                      </button>
+                    </div>
+                  </div>
+                }>
+                  <HomeRoute />
+                </ErrorBoundary>
+              }
+            />
+            
+            {/* Auction-specific routes */}
+            <Route 
+              path="/:auctionId" 
+              element={
+                <ErrorBoundary fallback={
+                  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div className="text-center p-6">
+                      <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Error</h2>
+                      <p className="text-gray-600 mb-4">Unable to load this auction report.</p>
+                      <button 
+                        onClick={() => window.location.href = '/'}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                      >
+                        Go Home
+                      </button>
+                    </div>
+                  </div>
+                }>
+                  <AuctionRoute />
+                </ErrorBoundary>
+              }
+            />
+            
+            {/* Admin routes - Protected */}
+            <Route 
+              path="/admin/*" 
+              element={
+                <ErrorBoundary>
+                  <ProtectedRoute>
+                    <AdminAppSupabase />
+                  </ProtectedRoute>
+                </ErrorBoundary>
+              } 
+            />
+            
+            {/* Redirect any other routes to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

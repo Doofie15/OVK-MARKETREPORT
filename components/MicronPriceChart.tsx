@@ -219,7 +219,7 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
   ];
 
   return (
-    <div className="chart-container h-full flex flex-col">
+    <div className="chart-container h-full flex flex-col" style={{ margin: '0 0.5rem' }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">

@@ -20,8 +20,12 @@ import {
   MobileMarketTrends, 
   MobileBuyerShareChart,
   MobileTopPerformers,
-  MobileProvincePriceMapCard
+  MobileProvincePriceMapCard,
+  EnhancedMobileLayout,
+  MobileTopSalesTable,
+  MobileMarketOverview
 } from './mobile';
+import SafeMobileLayout from './SafeMobileLayout';
 import type { AuctionReport, TopSale } from '../types';
 
 interface PublicLayoutProps {
@@ -83,7 +87,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-secondary)' }}>
       <PublicHeader />
-      <main className="w-[95%] max-w-none mx-auto px-2 sm:px-4 py-4">
+      <main className="w-full max-w-none mx-auto px-0 sm:px-4 py-2 sm:py-4">
         <div className="space-y-4">
           {/* Error Banner */}
           {error && (
@@ -104,7 +108,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
             onWeekChange={onWeekChange}
           />
           {activeReport ? (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-0 sm:space-y-4 mobile-spacing-fix">
               {/* Prominent Auction Title */}
               <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-4 sm:p-6 text-white shadow-lg">
                 <div className="flex items-center justify-between">
@@ -146,33 +150,55 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                   <InsightsCard insights={activeReport.insights} />
                 </div>
                 <div className="xl:col-span-2">
-                  <MarketOverview 
-                    currencies={activeReport.currencies}
-                    rwsPremium={rwsPremium}
-                    currentAuctionDate={activeReport.auction.auction_date}
-                    currentCatalogue={activeReport.auction.catalogue_name}
-                  />
+                  <EnhancedMobileLayout
+                    mobileComponent={
+                      <MobileMarketOverview
+                        currencies={activeReport.currencies}
+                        rwsPremium={rwsPremium}
+                        currentAuctionDate={activeReport.auction.auction_date}
+                        currentCatalogue={activeReport.auction.catalogue_name}
+                      />
+                    }
+                  >
+                    <MarketOverview 
+                      currencies={activeReport.currencies}
+                      rwsPremium={rwsPremium}
+                      currentAuctionDate={activeReport.auction.auction_date}
+                      currentCatalogue={activeReport.auction.catalogue_name}
+                    />
+                  </EnhancedMobileLayout>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 items-stretch">
-                <div className="xl:col-span-2">
-                  <MicronPriceChart 
-                    data={activeReport.micron_prices} 
-                    previousData={previousReport?.micron_prices}
-                    catalogueName={activeReport.auction.catalogue_name}
-                    currentAuction={activeReport.auction}
-                    previousAuction={previousReport?.auction}
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <MobileLayout
-                    mobileComponent={<MobileBuyerShareChart data={activeReport.buyers.slice(0, 6)} />}
-                  >
+              <SafeMobileLayout
+                mobileComponent={
+                  <>
+                    <MicronPriceChart 
+                      data={activeReport.micron_prices} 
+                      previousData={previousReport?.micron_prices}
+                      catalogueName={activeReport.auction.catalogue_name}
+                      currentAuction={activeReport.auction}
+                      previousAuction={previousReport?.auction}
+                    />
+                    <MobileBuyerShareChart data={activeReport.buyers.slice(0, 6)} />
+                  </>
+                }
+              >
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 items-stretch">
+                  <div className="xl:col-span-2">
+                    <MicronPriceChart 
+                      data={activeReport.micron_prices} 
+                      previousData={previousReport?.micron_prices}
+                      catalogueName={activeReport.auction.catalogue_name}
+                      currentAuction={activeReport.auction}
+                      previousAuction={previousReport?.auction}
+                    />
+                  </div>
+                  <div className="flex flex-col">
                     <BuyerShareChart data={activeReport.buyers.slice(0, 6)} />
-                  </MobileLayout>
+                  </div>
                 </div>
-              </div>
+              </SafeMobileLayout>
 
               <AuctionComparison 
                 currentData={activeReport.micron_prices}
@@ -194,23 +220,30 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                 </MobileLayout>
               </div>
               
-              <TopSalesTable data={topSalesForActiveReport.slice(0, 10)} />
+              <EnhancedMobileLayout
+                mobileComponent={
+                  <MobileTopSalesTable data={topSalesForActiveReport.slice(0, 10)} />
+                }
+              >
+                <TopSalesTable data={topSalesForActiveReport.slice(0, 10)} />
+              </EnhancedMobileLayout>
               
-              <MobileLayout
+              <EnhancedMobileLayout
                 mobileComponent={
                   <MobileTopPerformers 
                     topSales={topSalesForActiveReport}
                     provincialProducers={activeReport.provincial_producers}
                   />
                 }
+                enableDebug={window.location.search.includes('debug=true')}
               >
                 <TopPerformers 
                   topSales={topSalesForActiveReport}
                   provincialProducers={activeReport.provincial_producers}
                 />
-              </MobileLayout>
+              </EnhancedMobileLayout>
               
-              <MobileLayout
+              <EnhancedMobileLayout
                 mobileComponent={
                   <MobileProvincePriceMapCard 
                     data={activeReport.provincial_producers}
@@ -220,7 +253,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                 <ProvincePriceMapCard 
                   data={activeReport.provincial_producers}
                 />
-              </MobileLayout>
+              </EnhancedMobileLayout>
             </div>
           ) : (
             <div className="text-center py-20">

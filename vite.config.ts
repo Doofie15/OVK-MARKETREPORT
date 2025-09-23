@@ -14,6 +14,22 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      server: {
+        host: '0.0.0.0', // Allow external connections
+        port: 5173,
+        strictPort: true,
+        cors: true,
+        // Allow mobile testing
+        fs: {
+          strict: false
+        }
+      },
+      preview: {
+        host: '0.0.0.0',
+        port: 4173,
+        strictPort: true,
+        cors: true
       }
     };
 });

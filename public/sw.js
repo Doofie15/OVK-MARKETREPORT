@@ -1,9 +1,12 @@
-const CACHE_NAME = 'ovk-wool-market-v1';
+const CACHE_NAME = 'ovk-wool-market-v2.0';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/index.html',
+  '/index.css',
+  '/manifest.json',
+  '/assets/logos/ovk-logo-embedded.svg',
+  // Add commonly used files
+  '/favicon.ico'
 ];
 
 // Install event - cache resources
@@ -19,13 +22,44 @@ self.addEventListener('install', (event) => {
 
 // Fetch event - serve from cache when offline
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+  
+  // Skip external requests (APIs, CDNs, etc.)
+  if (!event.request.url.startsWith(self.location.origin)) return;
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      }
-    )
+        // Return cached version if available
+        if (response) {
+          return response;
+        }
+        
+        // Fetch from network and cache the response
+        return fetch(event.request).then((response) => {
+          // Check if response is valid
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          
+          // Clone the response for caching
+          const responseToCache = response.clone();
+          
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          
+          return response;
+        }).catch(() => {
+          // If network fails, try to serve a cached fallback for navigation requests
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
+          return new Response('Network error', { status: 408 });
+        });
+      })
   );
 });
 

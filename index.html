@@ -4,8 +4,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/logos/ovk-logo-embedded.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <title>OVK Wool Market Report</title>
+    
+    <!-- Mobile Optimization -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
     
     <!-- PWA Meta Tags -->
     <meta name="description" content="Real-time wool market intelligence and auction reports from OVK. Track prices, trends, and market data for informed trading decisions." />
@@ -65,8 +71,47 @@
 <link rel="stylesheet" href="/index.css">
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback content for when JavaScript fails -->
+      <noscript>
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f8fafc; font-family: system-ui, -apple-system, sans-serif;">
+          <div style="text-align: center; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px;">
+            <h2 style="color: #1e293b; margin-bottom: 1rem;">JavaScript Required</h2>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">This application requires JavaScript to function properly. Please enable JavaScript in your browser settings.</p>
+            <button onclick="window.location.reload()" style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Reload Page</button>
+          </div>
+        </div>
+      </noscript>
+      
+      <!-- Loading indicator -->
+      <div id="initial-loader" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f8fafc;">
+        <div style="text-align: center;">
+          <div style="width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+          <p style="color: #64748b; font-family: system-ui, -apple-system, sans-serif;">Loading OVK Wool Market Report...</p>
+        </div>
+      </div>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
     <script type="module" src="/index.tsx"></script>
+    
+    <!-- Remove loading indicator once React loads -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          const loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.display = 'none';
+          }
+        }, 100);
+      });
+    </script>
     
     <!-- PWA Service Worker Registration -->
     <script>

@@ -79,12 +79,13 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
   }));
 
   return (
-    <MobileCard
-      title="BROKERS"
-      subtitle="Offered vs sold"
-      icon={icon}
-      compact
-    >
+    <div style={{ margin: '0 0.5rem' }}>
+      <MobileCard
+        title="BROKERS"
+        subtitle="Offered vs sold"
+        icon={icon}
+        compact
+      >
       <MobileDataTable
         columns={columns}
         data={tableData}
@@ -120,7 +121,8 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
           </div>
         )}
       </div>
-    </MobileCard>
+      </MobileCard>
+    </div>
   );
 };
 

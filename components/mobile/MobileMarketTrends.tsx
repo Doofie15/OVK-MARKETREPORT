@@ -79,7 +79,8 @@ const MobileMarketTrends: React.FC<MobileMarketTrendsProps> = ({ data }) => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div style={{ margin: '0 0.5rem' }}>
+      <div className="space-y-4">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
           {icon}
@@ -101,6 +102,7 @@ const MobileMarketTrends: React.FC<MobileMarketTrendsProps> = ({ data }) => {
             compact={true}
           />
         ))}
+      </div>
       </div>
     </div>
   );

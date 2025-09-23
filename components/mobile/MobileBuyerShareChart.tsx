@@ -67,19 +67,21 @@ const MobileBuyerShareChart: React.FC<MobileBuyerShareChartProps> = ({ data }) =
   }));
 
   return (
-    <MobileCard
-      title="TOP BUYERS & MARKET SHARE"
-      subtitle="Current auction performance by volume share"
-      icon={icon}
-      compact
-    >
+    <div style={{ margin: '0 0.5rem' }}>
+      <MobileCard
+        title="TOP BUYERS & MARKET SHARE"
+        subtitle="Current auction performance by volume share"
+        icon={icon}
+        compact
+      >
       <MobileDataTable
         columns={columns}
         data={tableData}
         compact
         striped
       />
-    </MobileCard>
+      </MobileCard>
+    </div>
   );
 };
 
