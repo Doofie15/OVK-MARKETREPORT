@@ -116,14 +116,14 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeaso
     // Calculate totals from the auction data
     const totals = seasonReports.reduce((acc, report) => {
       const auction = report.auction;
-      const supplyStats = auction.supply_statistics;
-      const greasyStats = auction.greasy_statistics;
+      const supplyStats = auction.supply_stats;
+      const greasyStats = auction.greasy_stats;
       
       return {
         auctionCount: acc.auctionCount + 1,
-        totalBales: acc.totalBales + (supplyStats?.bales_sold || 0),
-        totalVolume: acc.totalVolume + (greasyStats?.mass || 0),
-        totalTurnover: acc.totalTurnover + (greasyStats?.turnover || 0)
+        totalBales: acc.totalBales + (supplyStats?.sold_bales || 0),
+        totalVolume: acc.totalVolume + (greasyStats?.mass_kg || 0),
+        totalTurnover: acc.totalTurnover + (greasyStats?.turnover_rand || 0)
       };
     }, {
       auctionCount: 0,
