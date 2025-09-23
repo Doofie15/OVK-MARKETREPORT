@@ -903,36 +903,85 @@
 }
 
 /* Dark Theme Colors */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark Theme Backgrounds */
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --bg-card: #1e293b;
-    --bg-hover: #334155;
-    
-    /* Dark Theme Text Colors */
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
-    --text-accent: #38bdf8;
-    
-    /* Dark Theme Borders */
-    --border-primary: #334155;
-    --border-secondary: #475569;
-    
-    /* Dark Theme Shadows */
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.6), 0 12px 24px -4px rgba(0, 0, 0, 0.5);
-    
-    /* Adjust Chart Colors for Dark Mode */
-    --chart-gradient-start: rgba(59, 130, 246, 0.8);
-    --chart-gradient-end: rgba(59, 130, 246, 0.1);
-  }
+html.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-card: #1e293b;
+  --bg-hover: #334155;
+  
+  /* Text Colors */
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-accent: #38bdf8;
+  
+  /* OVK Brand Colors (slightly adjusted for dark mode) */
+  --ovk-primary: #3b82f6;
+  --ovk-secondary: #60a5fa;
+  --ovk-accent: #93c5fd;
+  --ovk-green: #34d399;
+  
+  /* Accent Colors */
+  --accent-primary: var(--ovk-primary);
+  --accent-secondary: var(--ovk-secondary);
+  --accent-success: var(--ovk-green);
+  --accent-warning: #fbbf24;
+  --accent-error: #f87171;
+  
+  /* Chart Colors - Adjusted for dark mode */
+  --chart-primary: var(--ovk-primary);
+  --chart-secondary: var(--ovk-secondary);
+  --chart-tertiary: var(--ovk-accent);
+  --chart-quaternary: var(--ovk-green);
+  --chart-gradient-start: rgba(59, 130, 246, 0.8);
+  --chart-gradient-end: rgba(59, 130, 246, 0.1);
+  
+  /* Borders */
+  --border-primary: #374151;
+  --border-secondary: #4b5563;
+  
+  /* Shadows - Adjusted for dark mode */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.6), 0 12px 24px -4px rgba(0, 0, 0, 0.5);
 }
+
+/* Dark Mode Overrides for Tailwind Classes */
+html.dark .bg-white { background-color: var(--bg-card) !important; }
+html.dark .bg-gray-50 { background-color: var(--bg-secondary) !important; }
+html.dark .bg-gray-100 { background-color: var(--bg-hover) !important; }
+html.dark .bg-slate-50 { background-color: var(--bg-secondary) !important; }
+html.dark .bg-slate-100 { background-color: var(--bg-hover) !important; }
+html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.1) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(251, 191, 36, 0.1) !important; }
+
+/* Text color overrides */
+html.dark .text-gray-900 { color: var(--text-primary) !important; }
+html.dark .text-gray-800 { color: var(--text-primary) !important; }
+html.dark .text-gray-700 { color: var(--text-secondary) !important; }
+html.dark .text-gray-600 { color: var(--text-secondary) !important; }
+html.dark .text-gray-500 { color: var(--text-muted) !important; }
+html.dark .text-gray-400 { color: var(--text-muted) !important; }
+html.dark .text-slate-900 { color: var(--text-primary) !important; }
+html.dark .text-slate-800 { color: var(--text-primary) !important; }
+html.dark .text-slate-700 { color: var(--text-secondary) !important; }
+html.dark .text-slate-600 { color: var(--text-secondary) !important; }
+html.dark .text-yellow-800 { color: #fcd34d !important; }
+
+/* Border color overrides */
+html.dark .border-gray-200 { border-color: var(--border-primary) !important; }
+html.dark .border-gray-300 { border-color: var(--border-secondary) !important; }
+html.dark .border-slate-200 { border-color: var(--border-primary) !important; }
+html.dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.3) !important; }
+html.dark .border-yellow-200 { border-color: rgba(251, 191, 36, 0.3) !important; }
+
+/* Hover states */
+html.dark .hover\:bg-gray-100:hover { background-color: var(--bg-hover) !important; }
+html.dark .hover\:bg-gray-50:hover { background-color: var(--bg-hover) !important; }
+html.dark .hover\:bg-blue-50:hover { background-color: rgba(59, 130, 246, 0.2) !important; }
 
 * {
   margin: 0;
@@ -1735,157 +1784,6 @@ body {
     padding: 0 0.375rem !important;
     gap: 0.5rem !important;
   }
-}
-
-/* Light Mode Utility Classes - Explicit overrides for Tailwind */
-@media (prefers-color-scheme: light) {
-  /* Background utilities - ensure they stay light */
-  .bg-white { background-color: #ffffff; }
-  .bg-gray-50 { background-color: #f9fafb; }
-  .bg-gray-100 { background-color: #f3f4f6; }
-  .bg-gray-200 { background-color: #e5e7eb; }
-  .bg-blue-50 { background-color: #eff6ff; }
-  .bg-blue-100 { background-color: #dbeafe; }
-  .bg-green-50 { background-color: #f0fdf4; }
-  .bg-red-50 { background-color: #fef2f2; }
-  
-  /* Text utilities - ensure they stay dark for light backgrounds */
-  .text-gray-900 { color: #111827; }
-  .text-gray-800 { color: #1f2937; }
-  .text-gray-700 { color: #374151; }
-  .text-gray-600 { color: #4b5563; }
-  .text-gray-500 { color: #6b7280; }
-  .text-gray-400 { color: #9ca3af; }
-  .text-blue-600 { color: #2563eb; }
-  .text-blue-500 { color: #3b82f6; }
-  .text-green-600 { color: #059669; }
-  .text-red-600 { color: #dc2626; }
-  
-  /* Border utilities */
-  .border-gray-200 { border-color: #e5e7eb; }
-  .border-gray-300 { border-color: #d1d5db; }
-  .border-blue-200 { border-color: #c3ddfd; }
-  
-  /* Form inputs in light mode */
-  input, select, textarea {
-    background-color: #ffffff;
-    color: #111827;
-    border-color: #d1d5db;
-  }
-  
-  input::placeholder, textarea::placeholder {
-    color: #6b7280;
-  }
-  
-  /* Hover states in light mode */
-  .hover\:bg-gray-100:hover {
-    background-color: #f3f4f6;
-  }
-  
-  .hover\:bg-gray-50:hover {
-    background-color: #f9fafb;
-  }
-  
-  /* Focus states in light mode */
-  .focus\:border-blue-500:focus {
-    border-color: #3b82f6;
-  }
-  
-  /* Shadow adjustments for light mode */
-  .shadow-sm { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.04); }
-  .shadow { box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.08); }
-  .shadow-md { box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.08); }
-  .shadow-lg { box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.14), 0 4px 12px -2px rgba(0, 0, 0, 0.1); }
-  .shadow-xl { box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.16), 0 12px 24px -4px rgba(0, 0, 0, 0.12); }
-}
-
-/* Dark Mode Utility Classes */
-@media (prefers-color-scheme: dark) {
-  /* Background utilities */
-  .bg-white { background-color: var(--bg-card); }
-  .bg-gray-50 { background-color: var(--bg-tertiary); }
-  .bg-gray-100 { background-color: var(--bg-secondary); }
-  .bg-gray-200 { background-color: var(--bg-tertiary); }
-  .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1); }
-  .bg-blue-100 { background-color: rgba(59, 130, 246, 0.2); }
-  .bg-green-50 { background-color: rgba(16, 185, 129, 0.1); }
-  .bg-red-50 { background-color: rgba(239, 68, 68, 0.1); }
-  
-  /* Text utilities */
-  .text-gray-900 { color: var(--text-primary); }
-  .text-gray-800 { color: var(--text-primary); }
-  .text-gray-700 { color: var(--text-secondary); }
-  .text-gray-600 { color: var(--text-secondary); }
-  .text-gray-500 { color: var(--text-muted); }
-  .text-gray-400 { color: var(--text-muted); }
-  .text-blue-600 { color: var(--ovk-accent); }
-  .text-blue-500 { color: var(--ovk-accent); }
-  .text-green-600 { color: #10b981; }
-  .text-red-600 { color: #ef4444; }
-  
-  /* Border utilities */
-  .border-gray-200 { border-color: var(--border-primary); }
-  .border-gray-300 { border-color: var(--border-secondary); }
-  .border-blue-200 { border-color: rgba(59, 130, 246, 0.3); }
-  
-  /* Gradient adjustments */
-  .from-blue-50 { --tw-gradient-from: rgba(59, 130, 246, 0.1); }
-  .to-purple-50 { --tw-gradient-to: rgba(147, 51, 234, 0.1); }
-  .from-blue-500 { --tw-gradient-from: var(--ovk-secondary); }
-  .to-purple-600 { --tw-gradient-to: #7c3aed; }
-  
-  /* Special component adjustments */
-  .mobile-card {
-    background-color: var(--bg-card);
-    border-color: var(--border-primary);
-  }
-  
-  /* Chart specific dark mode */
-  .apexcharts-canvas {
-    filter: brightness(0.9);
-  }
-  
-  /* Form inputs */
-  input, select, textarea {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-color: var(--border-primary);
-  }
-  
-  input::placeholder, textarea::placeholder {
-    color: var(--text-muted);
-  }
-  
-  /* Hover states in dark mode */
-  .hover\:bg-gray-100:hover {
-    background-color: var(--bg-hover);
-  }
-  
-  .hover\:bg-gray-50:hover {
-    background-color: var(--bg-hover);
-  }
-  
-  /* Focus states in dark mode */
-  .focus\:border-blue-500:focus {
-    border-color: var(--ovk-accent);
-  }
-  
-  /* Shadow adjustments for dark mode */
-  .shadow-sm { box-shadow: var(--shadow-sm); }
-  .shadow { box-shadow: var(--shadow-md); }
-  .shadow-md { box-shadow: var(--shadow-md); }
-  .shadow-lg { box-shadow: var(--shadow-lg); }
-  .shadow-xl { box-shadow: var(--shadow-xl); }
-}
-
-/* Ensure smooth transitions between light and dark modes */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Disable transitions on page load to prevent flash */
-.no-transitions * {
-  transition: none !important;
 }
 
 /* Print Styles */

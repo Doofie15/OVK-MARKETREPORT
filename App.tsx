@@ -11,6 +11,8 @@ import MobileDebugger from './components/MobileDebugger';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicDataService from './services/public-data-service';
+import DarkModeProvider from './components/DarkModeProvider';
+import DarkModeDebugger from './components/DarkModeDebugger';
 
 // Helper function to convert season and catalogue to URL format (e.g., "202501")
 const seasonCatalogueToUrl = (seasonLabel: string, catalogueName: string): string => {
@@ -261,10 +263,12 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-          <SimplePWAManager />
-          <MobileDebugger enabled={window.location.search.includes('debug=true')} />
-          <Router>
+      <DarkModeProvider>
+        <AuthProvider>
+            <SimplePWAManager />
+            <DarkModeDebugger />
+            <MobileDebugger enabled={window.location.search.includes('debug=true')} />
+            <Router>
           <Routes>
             {/* Public routes */}
             <Route 
@@ -328,7 +332,8 @@ const App: React.FC = () => {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </DarkModeProvider>
     </ErrorBoundary>
   );
 };

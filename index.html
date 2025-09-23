@@ -58,15 +58,6 @@
         }
       }
     </script>
-    <script>
-      // Prevent flash of unstyled content in dark mode
-      document.documentElement.classList.add('no-transitions');
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          document.documentElement.classList.remove('no-transitions');
-        }, 100);
-      });
-    </script>
   <script type="importmap">
 {
   "imports": {
@@ -93,10 +84,10 @@
       </noscript>
       
       <!-- Loading indicator -->
-      <div id="initial-loader" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg-secondary, #f8fafc);">
+      <div id="initial-loader" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f8fafc;">
         <div style="text-align: center;">
-          <div style="width: 40px; height: 40px; border: 3px solid var(--border-primary, #e2e8f0); border-top: 3px solid var(--ovk-secondary, #3b82f6); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-          <p style="color: var(--text-muted, #64748b); font-family: system-ui, -apple-system, sans-serif;">Loading OVK Wool Market Report...</p>
+          <div style="width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+          <p style="color: #64748b; font-family: system-ui, -apple-system, sans-serif;">Loading OVK Wool Market Report...</p>
         </div>
       </div>
     </div>

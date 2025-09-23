@@ -136,14 +136,18 @@ const SimplePWAManager: React.FC = () => {
       {/* Install Banner */}
       <div 
         ref={bannerRef}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-2xl rounded-t-2xl animate-slide-up"
+        className="fixed bottom-0 left-0 right-0 z-50 shadow-2xl rounded-t-2xl animate-slide-up"
+        style={{ 
+          backgroundColor: 'var(--bg-card)',
+          borderTop: '1px solid var(--border-primary)'
+        }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Swipe indicator */}
         <div className="flex justify-center pt-2">
-          <div className="w-12 h-1 bg-gray-300 rounded-full" />
+          <div className="w-12 h-1 rounded-full" style={{ backgroundColor: 'var(--text-muted)' }} />
         </div>
         
         <div className="p-6">
@@ -154,19 +158,33 @@ const SimplePWAManager: React.FC = () => {
               className="w-16 h-16 rounded-xl shadow-md"
             />
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-900">Install OVK Wool Market</h3>
-              <p className="text-sm text-gray-600">Add to your home screen for quick access</p>
+              <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                Install OVK Wool Market
+              </h3>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Add to your home screen for quick access
+              </p>
             </div>
           </div>
           
           <button
             onClick={handleInstallClick}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+            className="w-full font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+            style={{
+              backgroundColor: 'var(--ovk-primary)',
+              color: 'white'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--ovk-secondary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--ovk-primary)';
+            }}
           >
             Install App
           </button>
           
-          <p className="text-xs text-gray-500 text-center mt-3">
+          <p className="text-xs text-center mt-3" style={{ color: 'var(--text-muted)' }}>
             Tap anywhere outside or swipe up to dismiss
           </p>
         </div>

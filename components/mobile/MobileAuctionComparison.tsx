@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MicronPrice } from '../../types';
+import MobileCard from './MobileCard';
 
 interface MobileAuctionComparisonProps {
   currentData: MicronPrice[];
@@ -62,19 +63,19 @@ const MobileAuctionComparison: React.FC<MobileAuctionComparisonProps> = ({ curre
   }
 
   const renderChangeIndicator = (change: number) => {
-    if (change === 0) return <span className="text-gray-400">-</span>;
+    if (change === 0) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
     
     return (
-      <span className={`inline-flex items-center gap-0.5 ${
+      <span className={`inline-flex items-center gap-0.5 font-medium ${
         change > 0 ? 'text-green-600' : 'text-red-600'
       }`}>
         {change > 0 && (
-          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
           </svg>
         )}
         {change < 0 && (
-          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         )}
@@ -84,109 +85,162 @@ const MobileAuctionComparison: React.FC<MobileAuctionComparisonProps> = ({ curre
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ margin: '0 0.5rem' }}>
-      {/* Header */}
-      <div className="px-0 py-2 bg-gradient-to-r from-green-50 to-green-100 border-b border-gray-200 w-full">
-        <div className="px-2">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
-                Auction Comparison
-              </h2>
-              <p className="text-2xs" style={{ color: 'var(--text-muted)' }}>
-                {previousData && previousData.length > 0 
-                  ? 'Price changes vs previous auction' 
-                  : 'Current auction micron price data'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <MobileCard
+      title="Auction Comparison"
+      subtitle={previousData && previousData.length > 0 
+        ? 'Price changes vs previous auction' 
+        : 'Current auction micron price data'}
+      icon={
+        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      }
+      compact={true}
+    >
       
-      <div className="overflow-x-auto p-1">
-        <table className="w-full text-2xs border-collapse">
+      <div className="overflow-x-auto">
+        <table className="w-full adaptive-text-xs border-collapse" style={{ fontSize: 'clamp(0.65rem, 1.8vw, 0.75rem)' }}>
           <thead>
-            <tr className="bg-gray-50">
-              <th className="px-1 py-1 text-left font-semibold border-r border-gray-200" style={{ color: 'var(--text-primary)' }}>Micron</th>
-              <th className="px-1 py-1 text-left font-semibold border-r border-gray-200" style={{ color: 'var(--text-primary)' }}>Cat</th>
-              <th className="px-1 py-1 text-center font-semibold border-l-2 border-blue-200 bg-blue-100" style={{ color: 'var(--text-primary)' }} colSpan={previousData && previousData.length > 0 ? 3 : 1}>
+            <tr style={{ backgroundColor: 'var(--bg-secondary)' }}>
+              <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-primary)', borderRight: '1px solid var(--border-primary)' }}>Micron</th>
+              <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-primary)', borderRight: '1px solid var(--border-primary)' }}>Cat</th>
+              <th className="px-2 py-2 text-center font-semibold" style={{ 
+                color: 'var(--text-primary)', 
+                borderLeft: '2px solid var(--ovk-primary)', 
+                backgroundColor: 'rgba(59, 130, 246, 0.1)' 
+              }} colSpan={previousData && previousData.length > 0 ? 3 : 1}>
                 Certified
               </th>
-              <th className="px-1 py-1 text-center font-semibold border-l-2 border-green-200 bg-green-100" style={{ color: 'var(--text-primary)' }} colSpan={previousData && previousData.length > 0 ? 3 : 1}>
+              <th className="px-2 py-2 text-center font-semibold" style={{ 
+                color: 'var(--text-primary)', 
+                borderLeft: '2px solid var(--ovk-green)', 
+                backgroundColor: 'rgba(16, 185, 129, 0.1)' 
+              }} colSpan={previousData && previousData.length > 0 ? 3 : 1}>
                 All Merino
               </th>
             </tr>
-            <tr className="bg-gray-50">
-              <th className="border-r border-gray-200"></th>
-              <th className="border-r border-gray-200"></th>
+            <tr style={{ backgroundColor: 'var(--bg-secondary)' }}>
+              <th style={{ borderRight: '1px solid var(--border-primary)' }}></th>
+              <th style={{ borderRight: '1px solid var(--border-primary)' }}></th>
               {previousData && previousData.length > 0 ? (
                 <>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Chg</th>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Prev</th>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Curr</th>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Chg</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    borderLeft: '2px solid var(--ovk-primary)', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)' 
+                  }}>Prev</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)' 
+                  }}>Curr</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)' 
+                  }}>Chg</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    borderLeft: '2px solid var(--ovk-green)', 
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)' 
+                  }}>Prev</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)' 
+                  }}>Curr</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)' 
+                  }}>Chg</th>
                 </>
               ) : (
                 <>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>Price</th>
-                  <th className="px-1 py-0.5 text-right font-medium text-2xs border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>Price</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    borderLeft: '2px solid var(--ovk-primary)', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)' 
+                  }}>Price</th>
+                  <th className="px-1 py-1 text-right font-medium" style={{ 
+                    color: 'var(--text-secondary)', 
+                    borderLeft: '2px solid var(--ovk-green)', 
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)' 
+                  }}>Price</th>
                 </>
               )}
             </tr>
           </thead>
           <tbody>
             {comparisonData.map((item, index) => (
-              <tr key={item.micron} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}>
-                <td className="px-1 py-0.5 border-r border-gray-200">
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+              <tr key={item.micron} style={{ 
+                backgroundColor: index % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-secondary)' 
+              }}>
+                <td className="px-2 py-2" style={{ borderRight: '1px solid var(--border-primary)' }}>
+                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {item.micron}µ
                   </span>
                 </td>
-                <td className="px-1 py-0.5 border-r border-gray-200">
-                  <span className={`inline-block px-1 py-0 rounded-sm text-2xs font-medium ${
-                    item.category === 'Fine' ? 'bg-blue-100 text-blue-700' :
-                    item.category === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-orange-100 text-orange-700'
-                  }`}>
+                <td className="px-2 py-2" style={{ borderRight: '1px solid var(--border-primary)' }}>
+                  <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                    item.category === 'Fine' ? 'text-blue-700' :
+                    item.category === 'Medium' ? 'text-yellow-700' :
+                    'text-orange-700'
+                  }`} style={{
+                    backgroundColor: item.category === 'Fine' ? 'rgba(59, 130, 246, 0.1)' :
+                                    item.category === 'Medium' ? 'rgba(245, 158, 11, 0.1)' :
+                                    'rgba(249, 115, 22, 0.1)'
+                  }}>
                     {item.categoryAbbr}
                   </span>
                 </td>
                 {/* Certified columns */}
                 {previousData && previousData.length > 0 ? (
                   <>
-                    <td className="px-1 py-0.5 text-right font-medium border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-secondary)' }}>
+                    <td className="px-1 py-2 text-right font-medium" style={{ 
+                      color: 'var(--text-secondary)', 
+                      borderLeft: '2px solid var(--ovk-primary)', 
+                      backgroundColor: 'rgba(59, 130, 246, 0.03)' 
+                    }}>
                       R{item.certified.previous.toFixed(2)}
                     </td>
-                    <td className="px-1 py-0.5 text-right font-semibold border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-primary)' }}>
+                    <td className="px-1 py-2 text-right font-semibold" style={{ 
+                      color: 'var(--text-primary)', 
+                      backgroundColor: 'rgba(59, 130, 246, 0.03)' 
+                    }}>
                       R{item.certified.current.toFixed(2)}
                     </td>
-                    <td className="px-1 py-0.5 text-right font-semibold border-l-2 border-blue-200 bg-blue-25">
+                    <td className="px-1 py-2 text-right font-semibold" style={{ backgroundColor: 'rgba(59, 130, 246, 0.03)' }}>
                       {renderChangeIndicator(item.certified.change)}
                     </td>
                     {/* All Merino columns */}
-                    <td className="px-1 py-0.5 text-right font-medium border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-secondary)' }}>
+                    <td className="px-1 py-2 text-right font-medium" style={{ 
+                      color: 'var(--text-secondary)', 
+                      borderLeft: '2px solid var(--ovk-green)', 
+                      backgroundColor: 'rgba(16, 185, 129, 0.03)' 
+                    }}>
                       R{item.allMerino.previous.toFixed(2)}
                     </td>
-                    <td className="px-1 py-0.5 text-right font-semibold border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-primary)' }}>
+                    <td className="px-1 py-2 text-right font-semibold" style={{ 
+                      color: 'var(--text-primary)', 
+                      backgroundColor: 'rgba(16, 185, 129, 0.03)' 
+                    }}>
                       R{item.allMerino.current.toFixed(2)}
                     </td>
-                    <td className="px-1 py-0.5 text-right font-semibold border-l-2 border-green-200 bg-green-25">
+                    <td className="px-1 py-2 text-right font-semibold" style={{ backgroundColor: 'rgba(16, 185, 129, 0.03)' }}>
                       {renderChangeIndicator(item.allMerino.change)}
                     </td>
                   </>
                 ) : (
                   <>
-                    <td className="px-1 py-0.5 text-right font-semibold border-l-2 border-blue-200 bg-blue-25" style={{ color: 'var(--text-primary)' }}>
+                    <td className="px-1 py-2 text-right font-semibold" style={{ 
+                      color: 'var(--text-primary)', 
+                      borderLeft: '2px solid var(--ovk-primary)', 
+                      backgroundColor: 'rgba(59, 130, 246, 0.03)' 
+                    }}>
                       R{item.certified.current.toFixed(2)}
                     </td>
-                    <td className="px-1 py-0.5 text-right font-semibold border-l-2 border-green-200 bg-green-25" style={{ color: 'var(--text-primary)' }}>
+                    <td className="px-1 py-2 text-right font-semibold" style={{ 
+                      color: 'var(--text-primary)', 
+                      borderLeft: '2px solid var(--ovk-green)', 
+                      backgroundColor: 'rgba(16, 185, 129, 0.03)' 
+                    }}>
                       R{item.allMerino.current.toFixed(2)}
                     </td>
                   </>
@@ -198,23 +252,23 @@ const MobileAuctionComparison: React.FC<MobileAuctionComparisonProps> = ({ curre
       </div>
       
       {/* Legend */}
-      <div className="px-2 pb-2 pt-1">
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-2xs text-gray-500">
-          <div className="flex items-center gap-1">
-            <span className="inline-block px-1 py-0 rounded-sm bg-blue-100 text-blue-700 font-medium">F</span>
+      <div className="mt-3 pt-2" style={{ borderTop: '1px solid var(--border-primary)' }}>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block px-1.5 py-0.5 rounded text-xs font-medium text-blue-700" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>F</span>
             <span>Fine</span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="inline-block px-1 py-0 rounded-sm bg-yellow-100 text-yellow-700 font-medium">M</span>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block px-1.5 py-0.5 rounded text-xs font-medium text-yellow-700" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>M</span>
             <span>Medium</span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="inline-block px-1 py-0 rounded-sm bg-orange-100 text-orange-700 font-medium">S</span>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block px-1.5 py-0.5 rounded text-xs font-medium text-orange-700" style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)' }}>S</span>
             <span>Strong</span>
           </div>
         </div>
       </div>
-    </div>
+    </MobileCard>
   );
 };
 
