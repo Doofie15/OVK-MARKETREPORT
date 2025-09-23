@@ -1,9 +1,9 @@
 import React from 'react';
 import MobileProvincePriceMap from './MobileProvincePriceMap';
-import type { ProvinceAveragePrice } from '../../types';
+import type { ProvincialProducerData } from '../../types';
 
 interface MobileProvincePriceMapCardProps {
-  data: ProvinceAveragePrice[];
+  data: ProvincialProducerData[];
 }
 
 const MobileProvincePriceMapCard: React.FC<MobileProvincePriceMapCardProps> = ({ data }) => {
@@ -17,13 +17,22 @@ const MobileProvincePriceMapCard: React.FC<MobileProvincePriceMapCardProps> = ({
           </svg>
         </div>
         <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-          PROVINCIAL PRICE MAP
+          PROVINCIAL TOP 10 PRICES
         </h2>
       </div>
       
       {/* Map Content */}
       <div className="p-2" style={{ minHeight: '250px', height: 'auto' }}>
         <MobileProvincePriceMap data={data} />
+        
+        <div className="mt-3 p-2 bg-gray-50 rounded-md border border-gray-100">
+          <p className="text-xs text-gray-600 flex items-start">
+            <span className="text-blue-500 mr-1.5">*</span>
+            <span>
+              This is the average prices per province in the top 10 for this auction. Certified and non-certified respectively.
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );

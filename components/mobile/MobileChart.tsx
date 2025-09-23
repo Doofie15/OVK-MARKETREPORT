@@ -20,7 +20,7 @@ const MobileChart: React.FC<MobileChartProps> = ({
   data,
   type,
   colors = ['#1e40af', '#10b981'],
-  height = 280,
+  height = 320,
   currency,
   showLegend = true,
   compact = false
@@ -54,13 +54,13 @@ const MobileChart: React.FC<MobileChartProps> = ({
       strokeDashArray: 2,
       xaxis: { lines: { show: true }},
       yaxis: { lines: { show: true }},
-      padding: { top: 0, right: 10, bottom: 0, left: 10 }
+      padding: { top: -5, right: 5, bottom: 0, left: 5 }
     },
     xaxis: {
       labels: {
         style: { 
           colors: '#64748b', 
-          fontSize: '12px', 
+          fontSize: '10px', 
           fontWeight: 400 
         }
       },
@@ -75,7 +75,7 @@ const MobileChart: React.FC<MobileChartProps> = ({
       labels: {
         style: { 
           colors: '#64748b', 
-          fontSize: '12px', 
+          fontSize: '10px', 
           fontWeight: 400 
         },
         formatter: (value) => value.toFixed(0)
@@ -89,31 +89,35 @@ const MobileChart: React.FC<MobileChartProps> = ({
     legend: showLegend ? {
       position: 'top',
       horizontalAlign: 'center',
-      fontSize: '12px',
+      fontSize: '10px',
       fontWeight: 500,
       labels: { colors: '#475569' },
-      markers: { size: 4 }
+      markers: { size: 3 },
+      itemMargin: {
+        horizontal: 8,
+        vertical: 0
+      }
     } : { show: false },
     dataLabels: { enabled: false }
   };
 
   return (
     <div className="chart-container">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-              {title}
-            </h3>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              {subtitle || '2-year comparison'}
+      <div className="flex items-center gap-1.5 mb-2">
+        <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+          </svg>
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="text-xs truncate" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+              {subtitle}
             </p>
-          </div>
+          )}
         </div>
       </div>
       

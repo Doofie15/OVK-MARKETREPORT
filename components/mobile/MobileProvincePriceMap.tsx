@@ -100,26 +100,42 @@ const MobileSouthAfricaMap = ({
     let centerX = (bounds.minX + bounds.maxX) / 2;
     let centerY = (bounds.minY + bounds.maxY) / 2;
 
-    // Adjust positioning for specific provinces on mobile
+    // Adjust positioning for specific provinces on mobile for better readability
     const provinceWidth = bounds.maxX - bounds.minX;
     const provinceHeight = bounds.maxY - bounds.minY;
 
     if (geoId === 'ZAKZN') {
+      // KwaZulu-Natal - move label up slightly
       centerY = bounds.minY + (provinceHeight * 0.4);
     } else if (geoId === 'ZAEC') {
+      // Eastern Cape - position in the wider part
       centerX = bounds.minX + (provinceWidth * 0.4);
-      centerY = bounds.minY + (provinceHeight * 0.7);
+      centerY = bounds.minY + (provinceHeight * 0.65);
     } else if (geoId === 'ZAWC') {
+      // Western Cape - position in lower part to avoid overlap
+      centerX = bounds.minX + (provinceWidth * 0.45);
       centerY = bounds.minY + (provinceHeight * 0.7);
     } else if (geoId === 'ZANC') {
-      centerY = bounds.minY + (provinceHeight * 0.6);
+      // Northern Cape - center in the large area
+      centerX = bounds.minX + (provinceWidth * 0.5);
+      centerY = bounds.minY + (provinceHeight * 0.55);
     } else if (geoId === 'ZAGP') {
-      centerY = bounds.minY + (provinceHeight * 0.6);
+      // Gauteng - small province, center carefully
+      centerY = bounds.minY + (provinceHeight * 0.5);
     } else if (geoId === 'ZAMP') {
-      centerY = bounds.minY + (provinceHeight * 0.6);
+      // Mpumalanga - adjust for shape
+      centerY = bounds.minY + (provinceHeight * 0.55);
     } else if (geoId === 'ZAFS') {
-      centerX = bounds.minX + (provinceWidth * 0.3);
-      centerY = bounds.minY + (provinceHeight * 0.6);
+      // Free State - position in center-left
+      centerX = bounds.minX + (provinceWidth * 0.35);
+      centerY = bounds.minY + (provinceHeight * 0.55);
+    } else if (geoId === 'ZALP') {
+      // Limpopo - position in center
+      centerY = bounds.minY + (provinceHeight * 0.5);
+    } else if (geoId === 'ZANW') {
+      // North West - adjust for shape
+      centerX = bounds.minX + (provinceWidth * 0.45);
+      centerY = bounds.minY + (provinceHeight * 0.55);
     }
 
     return { centerX, centerY };
@@ -157,7 +173,13 @@ const MobileSouthAfricaMap = ({
             <g key={geoId}>
               <path
                 d={pathData}
-                fill={provinceData ? getColor(isHovered ? (provinceData.certified_avg > 0 ? provinceData.certified_avg : provinceData.non_certified_avg) + 5 : (provinceData.certified_avg > 0 ? provinceData.certified_avg : provinceData.non_certified_avg)) : '#1e40af'}
+                fill={
+                  provinceData && (provinceData.certified_avg > 0 || provinceData.non_certified_avg > 0)
+                    ? getColor(isHovered 
+                        ? (provinceData.certified_avg > 0 ? provinceData.certified_avg : provinceData.non_certified_avg) + 5 
+                        : (provinceData.certified_avg > 0 ? provinceData.certified_avg : provinceData.non_certified_avg))
+                    : '#e5e7eb' // Light gray for provinces with no data
+                }
                 stroke="#ffffff"
                 strokeWidth={isSelected ? '3' : '1.5'}
                 onTouchStart={() => onTouch(componentId)}
@@ -180,40 +202,57 @@ const MobileSouthAfricaMap = ({
                 className="pointer-events-none"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={isSelected || isHovered ? '#ffffff' : '#374151'}
+                fill={isSelected || isHovered ? '#ffffff' : '#1f2937'}
+                stroke={isSelected || isHovered ? 'none' : '#ffffff'}
+                strokeWidth={isSelected || isHovered ? '0' : '2'}
+                paintOrder="stroke"
                 style={{
-                  textShadow: isSelected || isHovered
-                    ? '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.3)'
-                    : '0 1px 2px rgba(255,255,255,0.8)',
-                  fontSize: '8px',
-                  fontWeight: '600',
-                  letterSpacing: '0.025em',
+                  fontSize: '9px',
+                  fontWeight: '700',
+                  letterSpacing: '0.01em',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
+                  filter: isSelected || isHovered
+                    ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                    : 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))',
                 }}
               >
-                {provinceData.name.split(' ')[0]}
+                {provinceName === 'Western Cape' ? 'Western Cape' : 
+                 provinceName === 'Eastern Cape' ? 'Eastern Cape' : 
+                 provinceName === 'Northern Cape' ? 'Northern Cape' : 
+                 provinceName === 'KwaZulu-Natal' ? 'KwaZulu-Natal' :
+                 provinceName === 'Free State' ? 'Free State' :
+                 provinceName === 'North West' ? 'North West' :
+                 provinceName === 'Mpumalanga' ? 'Mpumalanga' :
+                 provinceName === 'Gauteng' ? 'Gauteng' :
+                 provinceName === 'Limpopo' ? 'Limpopo' :
+                 provinceName}
               </text>
               
-              {/* Price Label - Show certified average, or non-certified if no certified */}
-              <text
-                x={centerX}
-                y={centerY + 8}
-                className="pointer-events-none"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill={isSelected || isHovered ? '#ffffff' : '#6b7280'}
-                style={{
-                  textShadow: isSelected || isHovered
-                    ? '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.3)'
-                    : '0 1px 2px rgba(255,255,255,0.8)',
-                  fontSize: '6px',
-                  fontWeight: '500',
-                  letterSpacing: '0.025em',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                }}
-              >
-                R{provinceData ? (provinceData.certified_avg > 0 ? provinceData.certified_avg.toFixed(1) : provinceData.non_certified_avg.toFixed(1)) : '0.0'}
-              </text>
+              {/* Price Label - Only show if province has data */}
+              {provinceData && (provinceData.certified_avg > 0 || provinceData.non_certified_avg > 0) && (
+                <text
+                  x={centerX}
+                  y={centerY + 10}
+                  className="pointer-events-none"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={isSelected || isHovered ? '#ffffff' : '#4b5563'}
+                  stroke={isSelected || isHovered ? 'none' : '#ffffff'}
+                  strokeWidth={isSelected || isHovered ? '0' : '2'}
+                  paintOrder="stroke"
+                  style={{
+                    fontSize: '7px',
+                    fontWeight: '600',
+                    letterSpacing: '0.01em',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    filter: isSelected || isHovered
+                      ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                      : 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))',
+                  }}
+                >
+                  R{provinceData.certified_avg > 0 ? provinceData.certified_avg.toFixed(1) : provinceData.non_certified_avg.toFixed(1)}
+                </text>
+              )}
             </g>
           );
         })}
@@ -262,22 +301,28 @@ const MobileTooltip: React.FC<{ province: { id: string; name: string; certified_
         ></div>
         <p className="font-bold text-sm text-gray-800">{province.name}</p>
       </div>
-      <div className="space-y-1">
-        <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
-          <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-            Certified: R{province.certified_avg.toFixed(1)}/kg
-          </p>
+      {(province.certified_avg > 0 || province.non_certified_avg > 0) ? (
+        <div className="space-y-1">
+          {province.certified_avg > 0 && (
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+              <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
+                Certified: R{province.certified_avg.toFixed(1)}/kg
+              </p>
+            </div>
+          )}
+          {province.has_non_certified && province.non_certified_avg > 0 && (
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+              <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
+                Merino: R{province.non_certified_avg.toFixed(1)}/kg
+              </p>
+            </div>
+          )}
         </div>
-        {province.has_non_certified && (
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
-            <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-              Merino: R{province.non_certified_avg.toFixed(1)}/kg
-            </p>
-          </div>
-        )}
-      </div>
+      ) : (
+        <p className="text-xs text-gray-500 italic">No data available</p>
+      )}
     </div>
   );
 };
@@ -453,32 +498,38 @@ const MobileProvincePriceMap: React.FC<MobileProvincePriceMapProps> = ({ data })
             ></div>
             <h4 className="font-bold text-sm text-gray-800">{selectedProvinceData.name}</h4>
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
-                <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-                  Certified:
-                </p>
-              </div>
-              <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
-                R{selectedProvinceData.certified_avg.toFixed(1)}/kg
-              </p>
-            </div>
-            {selectedProvinceData.has_non_certified && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
-                  <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-                    Merino:
+          {(selectedProvinceData.certified_avg > 0 || selectedProvinceData.non_certified_avg > 0) ? (
+            <div className="space-y-1">
+              {selectedProvinceData.certified_avg > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+                    <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
+                      Certified:
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
+                    R{selectedProvinceData.certified_avg.toFixed(1)}/kg
                   </p>
                 </div>
-                <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
-                  R{selectedProvinceData.non_certified_avg.toFixed(1)}/kg
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+              {selectedProvinceData.has_non_certified && selectedProvinceData.non_certified_avg > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                    <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
+                      Merino:
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold" style={{ color: '#3b82f6' }}>
+                    R{selectedProvinceData.non_certified_avg.toFixed(1)}/kg
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 italic text-center">No data available for this province</p>
+          )}
         </div>
       )}
 

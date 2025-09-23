@@ -184,7 +184,20 @@ const MobileMarketOverview: React.FC<MobileMarketOverviewProps> = ({
                       <div className="font-bold adaptive-text-xs" style={{ color: 'var(--text-primary)' }}>
                         R{currency.value.toFixed(2)}
                       </div>
-                      <div className="adaptive-text-xs text-gray-500">
+                      <div className={`adaptive-text-xs font-semibold flex items-center gap-0.5 justify-end ${
+                        currency.change > 0 ? 'text-green-600' : 
+                        currency.change < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {currency.change > 0 && (
+                          <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        {currency.change < 0 && (
+                          <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
                         {Math.abs(currency.change).toFixed(1)}%
                       </div>
                     </div>

@@ -291,14 +291,14 @@
   width: 100%;
   min-height: auto;
   overflow-x: hidden;
-  padding: 0.5rem;
+  padding: 0;
   margin: 0;
 }
 
 .enhanced-mobile-layout.samsung-s25-optimized {
   /* Samsung S25 specific optimizations */
   background: var(--bg-secondary);
-  padding: 0.375rem;
+  padding: 0;
 }
 
 .enhanced-mobile-layout.chrome-optimized {
@@ -309,12 +309,12 @@
 
 .enhanced-mobile-layout.landscape-mode {
   /* Landscape mode optimizations */
-  padding: 0.25rem 0.5rem;
+  padding: 0;
 }
 
 .enhanced-mobile-layout.portrait-mode {
   /* Portrait mode optimizations */
-  padding: 0.5rem;
+  padding: 0;
 }
 
 /* Enhanced Mobile Top Performers */
@@ -480,10 +480,15 @@
     margin: 0 !important;
   }
   
-  /* Ensure full width utilization with consistent padding */
+  /* Ensure full width utilization */
   .enhanced-mobile-layout {
-    padding: 0.5rem;
+    padding: 0;
     width: 100%;
+  }
+  
+  /* Apply consistent padding to inner content */
+  .enhanced-mobile-layout > div:not(.mobile-container) {
+    padding: 0 0.75rem;
   }
   
   /* Remove any conflicting margins from mobile layout children */
@@ -632,6 +637,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem; /* 12px consistent spacing */
+    width: 100%;
+    padding: 0 0.75rem;
+    box-sizing: border-box;
   }
   
   /* Override any conflicting margins on direct children */
@@ -664,11 +672,18 @@
 @media (max-width: 430px) {
   .mobile-spacing-fix {
     gap: 0.625rem; /* 10px for smaller screens */
+    padding: 0 0.5rem; /* Smaller padding on small screens */
   }
   
   /* Tighter spacing for very small screens */
   .enhanced-samsung-s25 .mobile-spacing-fix {
     gap: 0.5rem; /* 8px for S25 */
+  }
+  
+  /* Ensure all components have same width */
+  .mobile-spacing-fix > * {
+    width: 100%;
+    max-width: 100%;
   }
 }
 
@@ -676,6 +691,7 @@
 @media (max-width: 380px) {
   .mobile-spacing-fix {
     gap: 0.375rem; /* 6px for very small screens */
+    padding: 0 0.375rem; /* Even smaller padding */
   }
 }
 
@@ -707,7 +723,42 @@
   .safe-mobile-wrapper,
   .enhanced-mobile-layout {
     margin: 0;
-    padding: 0.5rem;
+    padding: 0;
+    width: 100%;
+  }
+  
+  /* Consistent mobile container system */
+  .mobile-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0.75rem;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  
+  /* All mobile cards should have consistent width */
+  .mobile-layout .card,
+  .safe-mobile-wrapper .card,
+  .enhanced-mobile-layout .card,
+  .mobile-spacing-fix .card,
+  .mobile-layout > div,
+  .safe-mobile-wrapper > div,
+  .enhanced-mobile-layout > div {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure all direct children of mobile containers have full width */
+  .mobile-spacing-fix > *,
+  .mobile-layout > *,
+  .safe-mobile-wrapper > *,
+  .enhanced-mobile-layout > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
   }
   
   /* Remove any default spacing from space-y classes on mobile */
@@ -751,6 +802,16 @@
   main .space-y-3.mobile-spacing-fix,
   main .space-y-0.mobile-spacing-fix {
     gap: 0.75rem;
+  }
+  
+  /* Ensure all mobile components align to same width */
+  .mobile-spacing-fix .bg-gradient-to-r,
+  .mobile-spacing-fix .bg-blue-600,
+  .mobile-spacing-fix .card,
+  .mobile-spacing-fix > div {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 }
 
@@ -882,8 +943,22 @@ body {
   border-radius: 16px;
   border: 1px solid var(--border-primary);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
+  transition: all 0.3s ease;
   padding: 20px;
+}
+
+.card.compact {
+  padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .card.compact {
+    padding: 10px;
+  }
+  
+  .card.compact .chart-container {
+    margin: -8px -8px 0 -8px; /* Negative margin to expand chart area */
+  }
 }
 
 .card:hover {
@@ -1397,8 +1472,32 @@ body {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+  /* Global mobile container rules */
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  /* Main content area */
+  main {
+    width: 100%;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  /* All sections should have consistent width */
+  main > div,
+  main > section {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
   .container {
-    padding: 0 8px;
+    padding: 0 0.75rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   .grid-responsive {
@@ -1516,11 +1615,16 @@ body {
 /* Extra tight spacing for very small screens */
 @media (max-width: 380px) {
   .enhanced-mobile-layout {
-    padding: 0.25rem;
+    padding: 0;
+  }
+  
+  .enhanced-mobile-layout > div {
+    padding: 0 0.375rem;
   }
   
   .enhanced-mobile-layout .bg-white {
     margin: 0 !important;
+    width: 100% !important;
   }
   
   /* Override PublicLayout spacing for small screens - use gap instead of margins */
@@ -1542,6 +1646,62 @@ body {
   
   main .space-y-3 > * + * {
     margin-top: 0 !important;
+  }
+}
+
+/* Mobile Consistency Override - Final Rules */
+@media (max-width: 768px) {
+  /* Force all mobile components to have consistent width and spacing */
+  .mobile-spacing-fix,
+  .mobile-layout,
+  .safe-mobile-wrapper,
+  .enhanced-mobile-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+    padding: 0 0.75rem !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* All children must be full width */
+  .mobile-spacing-fix > *,
+  .mobile-layout > *,
+  .safe-mobile-wrapper > *,
+  .enhanced-mobile-layout > * {
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Remove any side padding from inner containers */
+  .mobile-spacing-fix .mobile-layout,
+  .mobile-spacing-fix .safe-mobile-wrapper,
+  .mobile-spacing-fix .enhanced-mobile-layout {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+@media (max-width: 430px) {
+  /* Tighter padding on smaller screens */
+  .mobile-spacing-fix,
+  .mobile-layout,
+  .safe-mobile-wrapper,
+  .enhanced-mobile-layout {
+    padding: 0 0.5rem !important;
+    gap: 0.625rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Even tighter on very small screens */
+  .mobile-spacing-fix,
+  .mobile-layout,
+  .safe-mobile-wrapper,
+  .enhanced-mobile-layout {
+    padding: 0 0.375rem !important;
+    gap: 0.5rem !important;
   }
 }
 

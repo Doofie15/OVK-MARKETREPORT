@@ -37,7 +37,7 @@ const MobileCard: React.FC<MobileCardProps> = ({
         transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
       }}
     >
-      <div className={`flex items-center gap-3 mb-4 ${optimizedForS25 ? 's25-spacing' : ''}`}>
+      <div className={`flex items-center gap-2 ${compact ? 'mb-2' : 'mb-4'} ${optimizedForS25 ? 's25-spacing' : ''}`}>
         {icon && (
           <div className={`
             ${optimizedForS25 ? 'w-8 h-8' : 'w-6 h-6'} 

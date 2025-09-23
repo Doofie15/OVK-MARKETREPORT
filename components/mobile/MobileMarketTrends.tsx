@@ -97,7 +97,7 @@ const MobileMarketTrends: React.FC<MobileMarketTrendsProps> = ({ data }) => {
             data={chart.data}
             type="line"
             colors={chart.colors}
-            height={200}
+            height={240}
             currency={chart.currency}
             compact={true}
           />

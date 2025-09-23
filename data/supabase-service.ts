@@ -1701,7 +1701,7 @@ export class SupabaseAuctionDataService {
               // Industry standard wool categories based on micron values
               if (micron <= 18.5) {
                 category = 'Fine';
-              } else if (micron <= 22.0) {
+              } else if (micron <= 20.5) {
                 category = 'Medium';
               } else {
                 category = 'Strong';
@@ -1756,7 +1756,7 @@ export class SupabaseAuctionDataService {
           sold_pct: broker.sold_pct ? parseFloat(broker.sold_pct.toString()) : 0,
           sold_ytd: broker.sold_ytd ? parseInt(broker.sold_ytd.toString()) : 0
         })) : [],
-        currencies: (() => {
+        currencies: await (async () => {
           console.log('🔍 Raw auction exchange rates:', {
             zar_usd: auction.exchange_rates_zar_usd,
             zar_eur: auction.exchange_rates_zar_eur,
@@ -1765,35 +1765,65 @@ export class SupabaseAuctionDataService {
             usd_aud: auction.exchange_rates_usd_aud
           });
           
+          // Get previous auction for comparison
+          const previousAuctionQuery = await supabaseClient
+            .from('auctions')
+            .select('exchange_rates_zar_usd, exchange_rates_zar_eur, exchange_rates_zar_jpy, exchange_rates_zar_gbp, exchange_rates_usd_aud')
+            .lt('auction_date', auction.auction_date)
+            .order('auction_date', { ascending: false })
+            .limit(1)
+            .single();
+          
+          const previousAuction = previousAuctionQuery.data;
+          
+          // Calculate percentage change
+          const calculateChange = (current: number, previous: number | null | undefined) => {
+            if (!previous || previous === 0) return 0;
+            return ((current - previous) / previous) * 100;
+          };
+          
+          const currentUSD = parseFloat(auction.exchange_rates_zar_usd) || 0;
+          const currentAUD = auction.exchange_rates_usd_aud ? (parseFloat(auction.exchange_rates_zar_usd) / parseFloat(auction.exchange_rates_usd_aud)) : 0;
+          const currentEUR = parseFloat(auction.exchange_rates_zar_eur) || 0;
+          const currentJPY = parseFloat(auction.exchange_rates_zar_jpy) || 0;
+          const currentGBP = parseFloat(auction.exchange_rates_zar_gbp) || 0;
+          
+          const previousUSD = previousAuction ? parseFloat(previousAuction.exchange_rates_zar_usd) || 0 : 0;
+          const previousAUD = previousAuction && previousAuction.exchange_rates_usd_aud ? 
+            (parseFloat(previousAuction.exchange_rates_zar_usd) / parseFloat(previousAuction.exchange_rates_usd_aud)) : 0;
+          const previousEUR = previousAuction ? parseFloat(previousAuction.exchange_rates_zar_eur) || 0 : 0;
+          const previousJPY = previousAuction ? parseFloat(previousAuction.exchange_rates_zar_jpy) || 0 : 0;
+          const previousGBP = previousAuction ? parseFloat(previousAuction.exchange_rates_zar_gbp) || 0 : 0;
+          
           const currencies = [
             {
               code: 'USD',
-              value: parseFloat(auction.exchange_rates_zar_usd) || 0,
-              change: 0
+              value: currentUSD,
+              change: calculateChange(currentUSD, previousUSD)
             },
             {
               code: 'AUD',
-              value: auction.exchange_rates_usd_aud ? (parseFloat(auction.exchange_rates_zar_usd) / parseFloat(auction.exchange_rates_usd_aud)) : 0,
-              change: 0
+              value: currentAUD,
+              change: calculateChange(currentAUD, previousAUD)
             },
             {
               code: 'EUR',
-              value: parseFloat(auction.exchange_rates_zar_eur) || 0,
-              change: 0
+              value: currentEUR,
+              change: calculateChange(currentEUR, previousEUR)
             },
             {
               code: 'JPY',
-              value: parseFloat(auction.exchange_rates_zar_jpy) || 0,
-              change: 0
+              value: currentJPY,
+              change: calculateChange(currentJPY, previousJPY)
             },
             {
               code: 'GBP',
-              value: parseFloat(auction.exchange_rates_zar_gbp) || 0,
-              change: 0
+              value: currentGBP,
+              change: calculateChange(currentGBP, previousGBP)
             }
           ];
           
-          console.log('🔍 Processed currencies:', currencies);
+          console.log('🔍 Processed currencies with changes:', currencies);
           return currencies;
         })(),
         provincial_producers: topPerformersResult.success ? this.groupTopPerformersByProvince(topPerformersResult.data) : [],

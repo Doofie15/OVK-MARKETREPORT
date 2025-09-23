@@ -14,8 +14,8 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
   const sortedData = [...data].sort((a, b) => b.catalogue_offering - a.catalogue_offering);
   
   // Calculate totals
-  const totalOffered = sortedData.reduce((sum, broker) => sum + broker.catalogue_offering, 0);
-  const totalSold = sortedData.reduce((sum, broker) => sum + broker.sold_ytd, 0);
+  const totalOffered = sortedData.reduce((sum, broker) => sum + broker.wool_offered, 0);
+  const totalSold = sortedData.reduce((sum, broker) => sum + broker.sold, 0);
   
   const icon = (
     <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,13 +58,15 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
       key: 'rate',
       label: 'Rate',
       align: 'center' as const,
-      render: (value: any, row: BrokerData) => {
-        const rate = row.catalogue_offering > 0 
-          ? (row.sold_ytd / row.catalogue_offering * 100) 
-          : 0;
+      render: (value: any, row: any) => {
+        // Use the pre-calculated sold_pct from the original data
+        const brokerData = sortedData.find(b => b.name === row.broker);
+        const rate = brokerData ? brokerData.sold_pct : 0;
         return (
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            {rate.toFixed(0)}%
+          <span className="text-xs font-semibold" style={{ 
+            color: rate >= 90 ? '#10b981' : rate >= 70 ? '#f59e0b' : '#ef4444' 
+          }}>
+            {rate.toFixed(2)}%
           </span>
         );
       }
@@ -73,9 +75,9 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
 
   const tableData = sortedData.map(broker => ({
     broker: broker.name,
-    offered: broker.catalogue_offering,
-    sold: broker.sold_ytd,
-    rate: 0 // Will be calculated in render
+    offered: broker.wool_offered,
+    sold: broker.sold,
+    rate: broker.sold_pct // Pass the actual rate for the render function
   }));
 
   return (
@@ -117,7 +119,7 @@ const MobileBrokersGrid: React.FC<MobileBrokersGridProps> = ({ data }) => {
         </div>
         {totalOffered > 0 && (
           <div className="text-center mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-            {((totalSold / totalOffered) * 100).toFixed(1)}% clearance
+            {((totalSold / totalOffered) * 100).toFixed(2)}% clearance
           </div>
         )}
       </div>

@@ -436,10 +436,10 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
     <div className="w-full">
        <div className="mb-6">
          <h3 className="text-2xl font-bold text-gray-800 mb-2">
-           South African Wool Production
+           Provincial Top 10 Prices
          </h3>
          <p className="text-gray-600 text-sm">
-           Interactive map showing wool production across South African provinces
+           Interactive map showing average prices from top 10 wool lots across South African provinces
          </p>
        </div>
 
@@ -451,6 +451,14 @@ const ProvincePriceMap: React.FC<ProvincePriceMapProps> = ({ data }) => {
             hoveredId={hoveredId}
             getColor={getColor}
           />
+        </div>
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <p className="text-xs text-gray-600 flex items-start">
+            <span className="text-blue-500 mr-2">*</span>
+            <span>
+              This is the average prices per province in the top 10 for this auction. Certified and non-certified respectively.
+            </span>
+          </p>
         </div>
       </div>
 

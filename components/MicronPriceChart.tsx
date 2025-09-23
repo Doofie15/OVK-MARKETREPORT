@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import type { MicronPrice, Auction } from '../types';
@@ -13,6 +13,17 @@ interface MicronPriceChartProps {
 }
 
 const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData, catalogueName, currentAuction, previousAuction }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Debug logging
   console.log('🔍 MicronPriceChart data:', data);
@@ -64,9 +75,9 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
       width: 2
     },
     markers: {
-      size: 4,
+      size: isMobile ? 3 : 4,
       hover: {
-        size: 6
+        size: isMobile ? 4 : 6
       }
     },
     grid: {
@@ -74,44 +85,51 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
       strokeDashArray: 2,
       xaxis: { lines: { show: true }},
       yaxis: { lines: { show: true }},
-      padding: { top: 0, right: 20, bottom: 0, left: 10 }
+      padding: { 
+        top: isMobile ? -10 : 0, 
+        right: isMobile ? 5 : 20, 
+        bottom: isMobile ? 0 : 0, 
+        left: isMobile ? 5 : 10 
+      }
     },
     xaxis: {
       categories: categories,
       title: {
-        text: 'Micron Grade (µm)',
+        text: isMobile ? '' : 'Micron Grade (µm)',
         style: {
           color: '#475569',
-          fontSize: '14px',
+          fontSize: isMobile ? '10px' : '14px',
           fontWeight: 500
         }
       },
       labels: {
         style: {
           colors: '#64748b',
-          fontSize: '13px',
+          fontSize: isMobile ? '10px' : '13px',
           fontWeight: 400
-        }
+        },
+        rotate: isMobile ? -45 : 0,
+        rotateAlways: isMobile
       },
       axisBorder: { show: false },
       axisTicks: { show: false }
     },
     yaxis: {
       title: {
-        text: 'Price (ZAR/kg clean)',
+        text: isMobile ? '' : 'Price (ZAR/kg clean)',
         style: {
           color: '#475569',
-          fontSize: '14px',
+          fontSize: isMobile ? '10px' : '14px',
           fontWeight: 500
         }
       },
       labels: {
         style: {
           colors: '#64748b',
-          fontSize: '13px',
+          fontSize: isMobile ? '10px' : '13px',
           fontWeight: 400
         },
-        formatter: (value) => `R${value.toFixed(0)}`
+        formatter: (value) => isMobile ? `R${value.toFixed(0)}` : `R${value.toFixed(0)}`
       }
     },
     tooltip: {
@@ -182,10 +200,14 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
     legend: {
       position: 'top',
       horizontalAlign: 'center',
-      fontSize: '14px',
+      fontSize: isMobile ? '11px' : '14px',
       fontWeight: 500,
       labels: { colors: '#475569' },
-      markers: { size: 4 }
+      markers: { size: isMobile ? 3 : 4 },
+      itemMargin: {
+        horizontal: isMobile ? 5 : 10,
+        vertical: 0
+      }
     }
   };
 
@@ -220,29 +242,37 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
 
   return (
     <div className="chart-container h-full flex flex-col" style={{ margin: '0 0.5rem' }}>
-      <div className="flex items-center justify-between mb-3">
+      <div className={`flex items-center justify-between ${isMobile ? 'mb-1' : 'mb-3'}`}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center`}>
+            <svg className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-white`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h2 className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold`} style={{ color: 'var(--text-primary)' }}>
               {catalogueName || 'Global Price Index'}
             </h2>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Price performance across micron grades
-            </p>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Certified vs Non-Certified price comparison
-            </p>
+            {!isMobile && (
+              <>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  Price performance across micron grades
+                </p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  Certified vs Non-Certified price comparison
+                </p>
+              </>
+            )}
+            {isMobile && (
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Price performance across micron grades
+              </p>
+            )}
           </div>
         </div>
-        
       </div>
       
-      <div className="flex-1 min-h-[200px] sm:min-h-[240px] lg:min-h-[280px]">
+      <div className="flex-1" style={{ minHeight: isMobile ? '250px' : '280px' }}>
         <Chart
           options={options}
           series={series}

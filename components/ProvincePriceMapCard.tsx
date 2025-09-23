@@ -17,7 +17,7 @@ const ProvincePriceMapCard: React.FC<ProvincePriceMapCardProps> = ({ data }) => 
           </svg>
         </div>
         <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-          PROVINCIAL PRICE MAP
+          PROVINCIAL TOP 10 PRICES
         </h2>
       </div>
       

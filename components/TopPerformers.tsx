@@ -5,9 +5,10 @@ import ProvincialTopProducers from './ProvincialTopProducers';
 interface TopPerformersProps {
   topSales: TopSale[];
   provincialProducers: ProvincialProducerData[];
+  publishedDate?: Date;
 }
 
-const TopPerformers: React.FC<TopPerformersProps> = ({ topSales, provincialProducers }) => {
+const TopPerformers: React.FC<TopPerformersProps> = ({ topSales, provincialProducers, publishedDate }) => {
   return (
     <div className="card">
       <div className="flex items-center gap-2 mb-4">
@@ -22,7 +23,7 @@ const TopPerformers: React.FC<TopPerformersProps> = ({ topSales, provincialProdu
       </div>
       
       <div className="bg-gray-50 rounded-lg p-3">
-        <ProvincialTopProducers data={provincialProducers} />
+        <ProvincialTopProducers data={provincialProducers} publishedDate={publishedDate} />
       </div>
     </div>
   );
