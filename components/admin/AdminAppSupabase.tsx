@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import AdminLayoutSupabase from './AdminLayoutSupabase';
 import AdminDashboard from './AdminDashboard';
 import AuctionsList from './AuctionsList';
@@ -21,6 +21,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { auctionName } = useParams<{ auctionName: string }>();
   const [reports, setReports] = useState<AuctionReport[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,24 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Handle route parameter changes for editing auctions
+  useEffect(() => {
+    if (auctionName && reports.length > 0) {
+      // Find the auction by catalogue name
+      const foundReport = reports.find(report => {
+        const reportCatalogueName = `${report.auction.catalogue_prefix || 'CW'}${report.auction.catalogue_number || '001'}`;
+        return reportCatalogueName === auctionName;
+      });
+
+      if (foundReport) {
+        console.log('🔍 Found auction for editing from route parameter:', auctionName);
+        handleEditReport(foundReport);
+      } else {
+        console.warn('❌ Auction not found for catalogue name:', auctionName);
+      }
+    }
+  }, [auctionName, reports]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -99,11 +118,41 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
     }
   };
 
-  const handleEditReport = (report: AuctionReport) => {
-    setEditingReport(report);
-    // Create a URL-friendly auction name from catalogue prefix and number
-    const auctionName = `${report.auction.catalogue_prefix || 'CW'}${report.auction.catalogue_number || '001'}`;
-    navigate(`/admin/Auctions/edit/${auctionName}`);
+  const handleEditReport = async (report: AuctionReport) => {
+    try {
+      console.log('🔄 Loading complete auction data for editing:', report.auction.id);
+      
+      // Load the complete auction report with all related data
+      const completeReportResult = await SupabaseService.getCompleteAuctionReport(report.auction.id);
+      
+      if (completeReportResult.success && completeReportResult.data) {
+        console.log('✅ Complete auction data loaded:', {
+          catalogue: `${completeReportResult.data.auction.catalogue_prefix}${completeReportResult.data.auction.catalogue_number}`,
+          buyers_count: completeReportResult.data.buyers?.length || 0,
+          brokers_count: completeReportResult.data.brokers?.length || 0,
+          micron_prices_count: completeReportResult.data.micron_price_comparison?.rows?.length || 0,
+          provincial_count: completeReportResult.data.provincial_producers?.length || 0
+        });
+        
+        setEditingReport(completeReportResult.data);
+        
+        // Create a URL-friendly auction name from catalogue prefix and number
+        const auctionName = `${completeReportResult.data.auction.catalogue_prefix || 'CW'}${completeReportResult.data.auction.catalogue_number || '001'}`;
+        navigate(`/admin/Auctions/edit/${auctionName}`);
+      } else {
+        console.error('❌ Failed to load complete auction data:', completeReportResult.error);
+        // Fallback to basic report data
+        setEditingReport(report);
+        const auctionName = `${report.auction.catalogue_prefix || 'CW'}${report.auction.catalogue_number || '001'}`;
+        navigate(`/admin/Auctions/edit/${auctionName}`);
+      }
+    } catch (error) {
+      console.error('❌ Error loading complete auction data:', error);
+      // Fallback to basic report data
+      setEditingReport(report);
+      const auctionName = `${report.auction.catalogue_prefix || 'CW'}${report.auction.catalogue_number || '001'}`;
+      navigate(`/admin/Auctions/edit/${auctionName}`);
+    }
   };
 
   const handleSaveReport = async (newReportData: Omit<AuctionReport, 'top_sales'>) => {

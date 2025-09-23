@@ -2,6 +2,7 @@ import React from 'react';
 import PublicHeader from './PublicHeader';
 import AuctionSelector from './AuctionSelector';
 import IndicatorsGrid from './IndicatorsGrid';
+import MarketGlossary from './MarketGlossary';
 import MicronPriceChart from './MicronPriceChart';
 import AuctionComparison from './AuctionComparison';
 import MarketOverview from './MarketOverview';
@@ -137,6 +138,8 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                 benchmarks={activeReport.benchmarks}
                 yearly_average_prices={activeReport.yearly_average_prices}
               />
+
+              <MarketGlossary />
               
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4">
                 <div>

@@ -554,7 +554,23 @@ export class SupabaseAuctionDataService {
         });
       }
       
-      // Delete all related data first (CASCADE deletion)
+      // First, clear the market_insights_id reference in the auction table
+      // This is necessary because auctions table has a foreign key to market_insights
+      console.log('🔓 Clearing market insights reference in auction record...');
+      const { error: clearRefError } = await supabaseClient
+        .from('auctions')
+        .update({ 
+          market_insights_id: null,
+          has_market_insights: false 
+        })
+        .eq('id', id);
+      
+      if (clearRefError) {
+        console.error('Error clearing market insights reference:', clearRefError);
+        throw new Error(`Failed to clear market insights reference: ${clearRefError.message}`);
+      }
+
+      // Delete all related data (CASCADE deletion)
       const deletionSteps = [
         { table: 'market_insights', description: 'Market insights' },
         { table: 'top_performers', description: 'Top performers' },
@@ -603,6 +619,15 @@ export class SupabaseAuctionDataService {
         .select()
       
       if (error) throw error
+      
+      // Update auction record to set has_micron_prices flag
+      if (data && data.length > 0) {
+        await supabaseClient
+          .from('auctions')
+          .update({ has_micron_prices: true })
+          .eq('id', data[0].auction_id)
+      }
+      
       return { success: true, data }
     } catch (error) {
       console.error('Create micron prices error:', error)
@@ -767,6 +792,15 @@ export class SupabaseAuctionDataService {
         .select()
       
       if (error) throw error
+      
+      // Update auction record to set has_provincial_data flag
+      if (data && data.length > 0) {
+        await supabaseClient
+          .from('auctions')
+          .update({ has_provincial_data: true })
+          .eq('id', data[0].auction_id)
+      }
+      
       return { success: true, data }
     } catch (error) {
       console.error('Create top performers error:', error)
@@ -883,6 +917,15 @@ export class SupabaseAuctionDataService {
         .select()
       
       if (error) throw error
+      
+      // Update auction record to set has_broker_data flag
+      if (data && data.length > 0) {
+        await supabaseClient
+          .from('auctions')
+          .update({ has_broker_data: true })
+          .eq('id', data[0].auction_id)
+      }
+      
       return { success: true, data }
     } catch (error) {
       console.error('Create broker performance error:', error)
@@ -1060,6 +1103,15 @@ export class SupabaseAuctionDataService {
         .select()
       
       if (error) throw error
+      
+      // Update auction record to set has_buyer_data flag
+      if (data && data.length > 0) {
+        await supabaseClient
+          .from('auctions')
+          .update({ has_buyer_data: true })
+          .eq('id', data[0].auction_id)
+      }
+      
       return { success: true, data }
     } catch (error) {
       console.error('Create buyer performance error:', error)
@@ -1346,9 +1398,28 @@ export class SupabaseAuctionDataService {
   // Complete auction data operations
   static async saveCompleteAuctionReportWithStatus(formData: Omit<AuctionReport, 'top_sales'>, status: 'draft' | 'published') {
     try {
-      // Try to get current user, but don't fail if not available
-      // Always use the verified admin user ID to avoid authentication issues
-      const userId = 'd5b02abc-4695-499d-bf04-0f553fdcf7c8'; // Verified admin user ID
+      // Get current user from Supabase auth
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('❌ No authenticated user found:', authError);
+        return { success: false, error: 'User not authenticated' };
+      }
+      
+      // Verify the user exists in our users table
+      const { data: dbUser, error: userError } = await supabaseClient
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      
+      if (userError || !dbUser) {
+        console.error('❌ User not found in users table:', userError);
+        return { success: false, error: 'User not found in database' };
+      }
+      
+      const userId = dbUser.id;
+      console.log('✅ Using authenticated user ID:', userId);
 
       // Load provinces and certifications data for lookups
       const [provincesResult, certificationsResult] = await Promise.all([
@@ -1456,122 +1527,22 @@ export class SupabaseAuctionDataService {
         auctionId = auctionResult.data.id;
       }
 
-      // Handle related data based on whether we're editing or creating
+      // Handle related data - use updateAuctionReport for both create and update
+      // This ensures proper handling of all related data with update/create logic
+      console.log(`📊 Handling related data for ${isEditing ? 'existing' : 'new'} auction`);
+      
+      // For editing, we use the updateAuctionReport method which handles all related data properly
       if (isEditing) {
-        // Use the existing updateAuctionReport method for editing
         console.log('🔄 Updating related data for existing auction');
         const updateResult = await this.updateAuctionReport(auctionId, formData);
         if (!updateResult.success) throw new Error(updateResult.error);
       } else {
-        // Create related data for new auction
-        console.log('🆕 Creating related data for new auction');
-        
-        // Create micron prices from micron_price_comparison
-        if (formData.micron_price_comparison?.rows && formData.micron_price_comparison.rows.length > 0) {
-        const micronPricesData: MicronPriceInsert[] = formData.micron_price_comparison.rows
-          .filter(row => row.non_cert_clean_zar_per_kg !== null || row.cert_clean_zar_per_kg !== null)
-          .map(row => ({
-            auction_id: auctionId,
-            micron: row.micron,
-            non_cert_clean_zar_per_kg: row.non_cert_clean_zar_per_kg,
-            cert_clean_zar_per_kg: row.cert_clean_zar_per_kg,
-            pct_difference: row.pct_difference,
-            created_by: userId
-          }));
-
-        if (micronPricesData.length > 0) {
-          await this.createMicronPrices(micronPricesData);
-        }
+        // For new auctions, we also use updateAuctionReport which will create the data
+        // since it properly handles both create and update scenarios
+        console.log('🆕 Creating related data for new auction using update logic');
+        const createResult = await this.updateAuctionReport(auctionId, formData);
+        if (!createResult.success) throw new Error(createResult.error);
       }
-
-      // Create market insight
-      if (formData.insights) {
-        const insightData: MarketInsightInsert = {
-          auction_id: auctionId,
-          market_insights_text: formData.insights,
-          created_by: userId
-        }
-
-        await this.createMarketInsight(insightData)
-      }
-
-      // Create top performers
-      if (formData.provincial_producers && formData.provincial_producers.length > 0) {
-        const performersData: TopPerformerInsert[] = []
-
-        for (const province of formData.provincial_producers) {
-          for (const producer of province.producers) {
-            // Find province ID by name if not provided
-            let provinceId = province.province_id
-            if (!provinceId || provinceId === '') {
-              const provinceRecord = provinces.find(p => p.name === province.province)
-              provinceId = provinceRecord?.id || null
-            }
-
-            // Find certification ID by code
-            let certificationId = null
-            if (producer.certified === 'RWS') {
-              const rwsCert = certifications.find(c => c.code === 'RWS')
-              certificationId = rwsCert?.id || null
-            }
-
-            performersData.push({
-              auction_id: auctionId,
-              province_id: provinceId,
-              position: producer.position,
-              name: producer.name,
-              district: producer.district || '',
-              producer_number: producer.producer_number || '',
-              no_bales: producer.no_bales || 0,
-              description: producer.description || '',
-              micron: producer.micron || 0,
-              price: producer.price,
-              certification_id: certificationId,
-              buyer_name: producer.buyer_name,
-              created_by: userId
-            })
-          }
-        }
-
-        if (performersData.length > 0) {
-          await this.createTopPerformers(performersData)
-        }
-      }
-
-      // Create broker performance
-      if (formData.brokers && formData.brokers.length > 0) {
-        const brokerPerformanceData: BrokerPerformanceInsert[] = formData.brokers.map(broker => ({
-          auction_id: auctionId,
-          name: broker.name, // This will be mapped to broker_id in createBrokerPerformance
-          catalogue_offering: broker.catalogue_offering,
-          withdrawn_before_sale: broker.withdrawn_before_sale || 0,
-          wool_offered: broker.wool_offered || broker.catalogue_offering,
-          withdrawn_during_sale: broker.withdrawn_during_sale || 0,
-          passed: broker.passed || 0,
-          not_sold: broker.not_sold || 0,
-          sold: broker.sold || broker.catalogue_offering,
-          sold_pct: broker.sold_pct || 100,
-          sold_ytd: broker.sold_ytd || 0,
-          created_by: userId
-        }))
-
-        await this.createBrokerPerformance(brokerPerformanceData)
-      }
-
-      // Create buyer performance
-      if (formData.buyers && formData.buyers.length > 0) {
-        const buyerPerformanceData: BuyerPerformanceInsert[] = formData.buyers.map(buyer => ({
-          auction_id: auctionId,
-          buyer: buyer.buyer, // This will be mapped to buyer_id in createBuyerPerformance
-          share_pct: buyer.share_pct,
-          cat: buyer.cat,
-          bales_ytd: buyer.bales_ytd || 0,
-          created_by: userId
-        }))
-
-        await this.createBuyerPerformance(buyerPerformanceData)
-      }
-      } // End of else block for creating new auction
 
       return { success: true, data: { id: auctionId } }
     } catch (error) {
@@ -1826,105 +1797,9 @@ export class SupabaseAuctionDataService {
           return currencies;
         })(),
         provincial_producers: topPerformersResult.success ? this.groupTopPerformersByProvince(topPerformersResult.data) : [],
-        indicators: [
-          {
-            type: 'total_lots',
-            unit: 'bales',
-            value: auction.supply_statistics_bales_offered || 0,
-            value_ytd: seasonIndicatorTotalsResult.success ? seasonIndicatorTotalsResult.data.totalBales : 0,
-            pct_change: 0
-          },
-          {
-            type: 'total_volume',
-            unit: 'MT',
-            value: auction.greasy_statistics_mass ? (auction.greasy_statistics_mass / 1000) : 0,
-            value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalVolume / 1000) : 0,
-            pct_change: 0
-          },
-          {
-            type: 'avg_price',
-            unit: 'ZAR/kg',
-            value: auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0,
-            pct_change: 0
-          },
-          {
-            type: 'total_value',
-            unit: 'ZAR M',
-            value: auction.greasy_statistics_turnover ? (auction.greasy_statistics_turnover / 1000000) : 0,
-            value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalValue / 1000000) : 0,
-            pct_change: 0
-          }
-        ],
-        benchmarks: [
-          {
-            label: 'Certified',
-            price: auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0,
-            currency: 'ZAR/kg clean',
-            day_change_pct: 0
-          },
-          {
-            label: 'All-Merino',
-            price: auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0,
-            currency: 'ZAR/kg clean',
-            day_change_pct: 0
-          },
-          {
-            label: 'AWEX',
-            price: auction.exchange_rates_sa_c_kg_clean_awex_emi ? (parseFloat(auction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : 0,
-            currency: 'USD/kg clean',
-            day_change_pct: 0
-          }
-        ],
-        trends: (() => {
-          // For now, create trend data from current auction
-          // TODO: In the future, this should load all auctions from the current season
-          const auctionCatalogue = `${auction.catalogue_prefix}${auction.catalogue_number}`;
-          
-          // Convert prices from cents to Rands for display
-          const certifiedPriceZAR = auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0;
-          const allMerinoPriceZAR = auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0;
-          const awexPriceUSD = auction.exchange_rates_sa_c_kg_clean_awex_emi ? (parseFloat(auction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : 0;
-          
-          // Calculate USD prices using exchange rate
-          const exchangeRate = auction.exchange_rates_zar_usd ? parseFloat(auction.exchange_rates_zar_usd) : 1;
-          const certifiedPriceUSD = certifiedPriceZAR / exchangeRate;
-          const allMerinoPriceUSD = allMerinoPriceZAR / exchangeRate;
-          
-          console.log('🔍 Creating trend data:', {
-            auctionCatalogue,
-            certifiedPriceZAR,
-            allMerinoPriceZAR,
-            awexPriceUSD,
-            exchangeRate
-          });
-          
-          return {
-            rws: [{
-              period: auctionCatalogue, // Use auction catalogue as period
-              auction_catalogue: auctionCatalogue,
-              '2025_zar': certifiedPriceZAR,
-              '2024_zar': undefined, // No previous year data
-              '2025_usd': certifiedPriceUSD,
-              '2024_usd': undefined
-            }],
-            non_rws: [{
-              period: auctionCatalogue, // Use auction catalogue as period
-              auction_catalogue: auctionCatalogue,
-              '2025_zar': allMerinoPriceZAR,
-              '2024_zar': undefined, // No previous year data
-              '2025_usd': allMerinoPriceUSD,
-              '2024_usd': undefined
-            }],
-            awex: [{
-              period: auctionCatalogue, // Use auction catalogue as period
-              auction_catalogue: auctionCatalogue,
-              '2025_zar': undefined, // AWEX is typically in USD
-              '2024_zar': undefined,
-              '2025_usd': awexPriceUSD,
-              '2024_usd': undefined
-            }]
-          };
-        })(),
+        indicators: await this.calculateIndicatorsWithChanges(auction, seasonIndicatorTotalsResult),
+        benchmarks: await this.calculateBenchmarksWithChanges(auction),
+        trends: await this.generateSeasonTrendData(auction.season_id),
         yearly_average_prices: [
           {
             label: 'Certified Wool Avg Price (YTD)',
@@ -1963,6 +1838,343 @@ export class SupabaseAuctionDataService {
     } catch (error) {
       console.error('Get complete auction report error:', error)
       return { success: false, error: error.message }
+    }
+  }
+
+  // Calculate percentage change between two values
+  private static calculatePercentageChange(current: number, previous: number): number {
+    if (previous === 0) return 0;
+    return Number(((current - previous) / previous * 100).toFixed(1));
+  }
+
+  // Get previous auction in the same season
+  static async getPreviousAuction(currentAuction: any) {
+    try {
+      const { data: previousAuctions, error } = await supabaseClient
+        .from('auctions')
+        .select(`
+          id,
+          auction_date,
+          supply_statistics_bales_offered,
+          greasy_statistics_mass,
+          greasy_statistics_turnover,
+          all_merino_sa_c_kg_clean,
+          certified_sa_c_kg_clean,
+          exchange_rates_sa_c_kg_clean_awex_emi,
+          status
+        `)
+        .eq('season_id', currentAuction.season_id)
+        .eq('status', 'published')
+        .lt('auction_date', currentAuction.auction_date)
+        .order('auction_date', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return { success: true, data: previousAuctions?.[0] || null };
+    } catch (error) {
+      console.error('Get previous auction error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Calculate indicators with percentage changes
+  static async calculateIndicatorsWithChanges(auction: any, seasonIndicatorTotalsResult: any) {
+    const previousAuctionResult = await this.getPreviousAuction(auction);
+    const previousAuction = previousAuctionResult.success ? previousAuctionResult.data : null;
+
+    console.log('📊 Calculating indicators with changes:', {
+      currentAuction: `${auction.catalogue_prefix}${auction.catalogue_number}`,
+      previousAuction: previousAuction ? `${previousAuction.catalogue_prefix}${previousAuction.catalogue_number}` : 'None',
+      hasPrevious: !!previousAuction
+    });
+
+    // Current values
+    const currentLots = auction.supply_statistics_bales_offered || 0;
+    const currentVolume = auction.greasy_statistics_mass ? (auction.greasy_statistics_mass / 1000) : 0;
+    const currentValue = auction.greasy_statistics_turnover ? (auction.greasy_statistics_turnover / 1000000) : 0;
+    const currentAvgPrice = auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0;
+
+    // Previous values (if available)
+    const previousLots = previousAuction?.supply_statistics_bales_offered || 0;
+    const previousVolume = previousAuction?.greasy_statistics_mass ? (previousAuction.greasy_statistics_mass / 1000) : 0;
+    const previousValue = previousAuction?.greasy_statistics_turnover ? (previousAuction.greasy_statistics_turnover / 1000000) : 0;
+    const previousAvgPrice = previousAuction?.all_merino_sa_c_kg_clean ? (parseFloat(previousAuction.all_merino_sa_c_kg_clean) / 100) : 0;
+
+    // Calculate percentage changes
+    const lotsChange = previousAuction ? this.calculatePercentageChange(currentLots, previousLots) : 0;
+    const volumeChange = previousAuction ? this.calculatePercentageChange(currentVolume, previousVolume) : 0;
+    const valueChange = previousAuction ? this.calculatePercentageChange(currentValue, previousValue) : 0;
+    const avgPriceChange = previousAuction ? this.calculatePercentageChange(currentAvgPrice, previousAvgPrice) : 0;
+
+    console.log('📈 Calculated changes:', {
+      lots: `${currentLots} vs ${previousLots} = ${lotsChange}%`,
+      volume: `${currentVolume} vs ${previousVolume} = ${volumeChange}%`,
+      value: `${currentValue} vs ${previousValue} = ${valueChange}%`,
+      avgPrice: `${currentAvgPrice} vs ${previousAvgPrice} = ${avgPriceChange}%`
+    });
+
+    return [
+      {
+        type: 'total_lots',
+        unit: 'bales',
+        value: currentLots,
+        value_ytd: seasonIndicatorTotalsResult.success ? seasonIndicatorTotalsResult.data.totalBales : 0,
+        pct_change: lotsChange
+      },
+      {
+        type: 'total_volume',
+        unit: 'MT',
+        value: currentVolume,
+        value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalVolume / 1000) : 0,
+        pct_change: volumeChange
+      },
+      {
+        type: 'avg_price',
+        unit: 'ZAR/kg',
+        value: currentAvgPrice,
+        pct_change: avgPriceChange
+      },
+      {
+        type: 'total_value',
+        unit: 'ZAR M',
+        value: currentValue,
+        value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalValue / 1000000) : 0,
+        pct_change: valueChange
+      }
+    ];
+  }
+
+  // Calculate benchmarks with percentage changes
+  static async calculateBenchmarksWithChanges(auction: any) {
+    const previousAuctionResult = await this.getPreviousAuction(auction);
+    const previousAuction = previousAuctionResult.success ? previousAuctionResult.data : null;
+
+    // Current prices
+    const currentCertified = auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0;
+    const currentAllMerino = auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0;
+    const currentAwex = auction.exchange_rates_sa_c_kg_clean_awex_emi ? (parseFloat(auction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : 0;
+
+    // Previous prices (if available)
+    const previousCertified = previousAuction?.certified_sa_c_kg_clean ? (parseFloat(previousAuction.certified_sa_c_kg_clean) / 100) : 0;
+    const previousAllMerino = previousAuction?.all_merino_sa_c_kg_clean ? (parseFloat(previousAuction.all_merino_sa_c_kg_clean) / 100) : 0;
+    const previousAwex = previousAuction?.exchange_rates_sa_c_kg_clean_awex_emi ? (parseFloat(previousAuction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : 0;
+
+    // Calculate percentage changes
+    const certifiedChange = previousAuction ? this.calculatePercentageChange(currentCertified, previousCertified) : 0;
+    const allMerinoChange = previousAuction ? this.calculatePercentageChange(currentAllMerino, previousAllMerino) : 0;
+    const awexChange = previousAuction ? this.calculatePercentageChange(currentAwex, previousAwex) : 0;
+
+    console.log('📈 Calculated benchmark changes:', {
+      certified: `${currentCertified} vs ${previousCertified} = ${certifiedChange}%`,
+      allMerino: `${currentAllMerino} vs ${previousAllMerino} = ${allMerinoChange}%`,
+      awex: `${currentAwex} vs ${previousAwex} = ${awexChange}%`
+    });
+
+    return [
+      {
+        label: 'Certified',
+        price: currentCertified,
+        currency: 'ZAR/kg clean',
+        day_change_pct: certifiedChange
+      },
+      {
+        label: 'All-Merino',
+        price: currentAllMerino,
+        currency: 'ZAR/kg clean',
+        day_change_pct: allMerinoChange
+      },
+      {
+        label: 'AWEX',
+        price: currentAwex,
+        currency: 'USD/kg clean',
+        day_change_pct: awexChange
+      }
+    ];
+  }
+
+  // Generate comprehensive trend data for the season and previous year
+  static async generateSeasonTrendData(seasonId: string) {
+    try {
+      console.log('📈 Generating season trend data for season:', seasonId);
+      
+      // Get current season info
+      const currentSeasonResult = await this.getSeasonById(seasonId);
+      if (!currentSeasonResult.success) {
+        console.error('Failed to get current season:', currentSeasonResult.error);
+        return { rws: [], non_rws: [], awex: [] };
+      }
+      
+      const currentSeason = currentSeasonResult.data;
+      const currentYear = new Date(currentSeason.start_date).getFullYear();
+      const previousYear = currentYear - 1;
+      
+      console.log('📅 Season years:', { currentYear, previousYear });
+      
+      // Get all auctions for current season (published only)
+      const { data: currentSeasonAuctions, error: currentError } = await supabaseClient
+        .from('auctions')
+        .select(`
+          id,
+          auction_date,
+          catalogue_prefix,
+          catalogue_number,
+          certified_sa_c_kg_clean,
+          all_merino_sa_c_kg_clean,
+          exchange_rates_sa_c_kg_clean_awex_emi,
+          exchange_rates_zar_usd,
+          status
+        `)
+        .eq('season_id', seasonId)
+        .eq('status', 'published')
+        .order('auction_date', { ascending: true });
+      
+      if (currentError) {
+        console.error('Error fetching current season auctions:', currentError);
+        return { rws: [], non_rws: [], awex: [] };
+      }
+      
+      // Get previous year season (if exists)
+      const { data: previousSeasons, error: prevSeasonsError } = await supabaseClient
+        .from('seasons')
+        .select('id, season_year, start_date')
+        .like('season_year', `${previousYear}%`)
+        .limit(1);
+      
+      let previousSeasonAuctions = [];
+      if (!prevSeasonsError && previousSeasons && previousSeasons.length > 0) {
+        const previousSeasonId = previousSeasons[0].id;
+        console.log('📊 Found previous season:', previousSeasons[0].season_year, 'ID:', previousSeasonId);
+        
+        const { data: prevAuctions, error: prevError } = await supabaseClient
+          .from('auctions')
+          .select(`
+            id,
+            auction_date,
+            catalogue_prefix,
+            catalogue_number,
+            certified_sa_c_kg_clean,
+            all_merino_sa_c_kg_clean,
+            exchange_rates_sa_c_kg_clean_awex_emi,
+            exchange_rates_zar_usd,
+            status
+          `)
+          .eq('season_id', previousSeasonId)
+          .eq('status', 'published')
+          .order('auction_date', { ascending: true });
+        
+        if (!prevError && prevAuctions) {
+          previousSeasonAuctions = prevAuctions;
+        }
+      }
+      
+      console.log('📊 Auctions found:', {
+        current: currentSeasonAuctions?.length || 0,
+        previous: previousSeasonAuctions.length
+      });
+      
+      // Create trend data points
+      const createTrendPoints = (currentAuctions, previousAuctions) => {
+        const maxLength = Math.max(currentAuctions.length, previousAuctions.length);
+        const points = [];
+        
+        for (let i = 0; i < maxLength; i++) {
+          const currentAuction = currentAuctions[i];
+          const previousAuction = previousAuctions[i];
+          
+          // Use auction number as period (e.g., "C001", "C002", etc.)
+          const period = currentAuction ? 
+            `${currentAuction.catalogue_prefix}${currentAuction.catalogue_number}` :
+            `Auction ${i + 1}`;
+          
+          points.push({
+            period,
+            auction_catalogue: period,
+            currentAuction,
+            previousAuction
+          });
+        }
+        
+        return points;
+      };
+      
+      const trendPoints = createTrendPoints(currentSeasonAuctions || [], previousSeasonAuctions);
+      
+      // Generate RWS (Certified) trend data
+      const rws = trendPoints.map(point => {
+        const currentPrice = point.currentAuction?.certified_sa_c_kg_clean ? 
+          (parseFloat(point.currentAuction.certified_sa_c_kg_clean) / 100) : null;
+        const previousPrice = point.previousAuction?.certified_sa_c_kg_clean ? 
+          (parseFloat(point.previousAuction.certified_sa_c_kg_clean) / 100) : null;
+        
+        // Calculate USD prices
+        const currentExchangeRate = point.currentAuction?.exchange_rates_zar_usd ? 
+          parseFloat(point.currentAuction.exchange_rates_zar_usd) : 1;
+        const previousExchangeRate = point.previousAuction?.exchange_rates_zar_usd ? 
+          parseFloat(point.previousAuction.exchange_rates_zar_usd) : 1;
+        
+        return {
+          period: point.period,
+          auction_catalogue: point.auction_catalogue,
+          [`${currentYear}_zar`]: currentPrice,
+          [`${previousYear}_zar`]: previousPrice,
+          [`${currentYear}_usd`]: currentPrice ? currentPrice / currentExchangeRate : null,
+          [`${previousYear}_usd`]: previousPrice ? previousPrice / previousExchangeRate : null
+        };
+      });
+      
+      // Generate Non-RWS (All Merino) trend data
+      const non_rws = trendPoints.map(point => {
+        const currentPrice = point.currentAuction?.all_merino_sa_c_kg_clean ? 
+          (parseFloat(point.currentAuction.all_merino_sa_c_kg_clean) / 100) : null;
+        const previousPrice = point.previousAuction?.all_merino_sa_c_kg_clean ? 
+          (parseFloat(point.previousAuction.all_merino_sa_c_kg_clean) / 100) : null;
+        
+        // Calculate USD prices
+        const currentExchangeRate = point.currentAuction?.exchange_rates_zar_usd ? 
+          parseFloat(point.currentAuction.exchange_rates_zar_usd) : 1;
+        const previousExchangeRate = point.previousAuction?.exchange_rates_zar_usd ? 
+          parseFloat(point.previousAuction.exchange_rates_zar_usd) : 1;
+        
+        return {
+          period: point.period,
+          auction_catalogue: point.auction_catalogue,
+          [`${currentYear}_zar`]: currentPrice,
+          [`${previousYear}_zar`]: previousPrice,
+          [`${currentYear}_usd`]: currentPrice ? currentPrice / currentExchangeRate : null,
+          [`${previousYear}_usd`]: previousPrice ? previousPrice / previousExchangeRate : null
+        };
+      });
+      
+      // Generate AWEX trend data
+      const awex = trendPoints.map(point => {
+        const currentPrice = point.currentAuction?.exchange_rates_sa_c_kg_clean_awex_emi ? 
+          (parseFloat(point.currentAuction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : null;
+        const previousPrice = point.previousAuction?.exchange_rates_sa_c_kg_clean_awex_emi ? 
+          (parseFloat(point.previousAuction.exchange_rates_sa_c_kg_clean_awex_emi) / 100) : null;
+        
+        return {
+          period: point.period,
+          auction_catalogue: point.auction_catalogue,
+          [`${currentYear}_zar`]: null, // AWEX is typically in USD
+          [`${previousYear}_zar`]: null,
+          [`${currentYear}_usd`]: currentPrice,
+          [`${previousYear}_usd`]: previousPrice
+        };
+      });
+      
+      console.log('📈 Generated trend data:', {
+        rws_points: rws.length,
+        non_rws_points: non_rws.length,
+        awex_points: awex.length,
+        sample_rws: rws[0],
+        sample_non_rws: non_rws[0],
+        sample_awex: awex[0]
+      });
+      
+      return { rws, non_rws, awex };
+    } catch (error) {
+      console.error('Error generating season trend data:', error);
+      return { rws: [], non_rws: [], awex: [] };
     }
   }
 
@@ -2296,10 +2508,28 @@ export class SupabaseAuctionDataService {
 
   static async updateAuctionReport(auctionId: string, formData: Omit<AuctionReport, 'top_sales'>) {
     try {
-      const user = await this.getCurrentUser()
-      if (!user) throw new Error('User not authenticated')
+      // Get current user from Supabase auth
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
       
-      const userId = user.id
+      let userId = 'd5b02abc-4695-499d-bf04-0f553fdcf7c8'; // Default fallback admin user ID
+      
+      if (!authError && user) {
+        // Verify the user exists in our users table
+        const { data: dbUser, error: userError } = await supabaseClient
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+        
+        if (!userError && dbUser) {
+          userId = dbUser.id;
+          console.log('✅ Using authenticated user ID:', userId);
+        } else {
+          console.log('⚠️ User not found in users table, using fallback admin ID');
+        }
+      } else {
+        console.log('⚠️ No authenticated user, using fallback admin ID');
+      }
 
       // Load provinces and certifications data for lookups
       const [provincesResult, certificationsResult] = await Promise.all([
@@ -2313,13 +2543,13 @@ export class SupabaseAuctionDataService {
       // Extract catalogue prefix and number from combined field
       const catalogueParts = this.extractCatalogueParts(formData.auction.catalogue_name);
 
-      // Update auction data
+      // Update auction data - handle null/undefined values properly
       const auctionData: AuctionUpdate = {
-        season_id: formData.auction.season_id!,
+        season_id: formData.auction.season_id && formData.auction.season_id !== '' ? formData.auction.season_id : null,
         auction_date: formData.auction.auction_date,
         catalogue_prefix: catalogueParts.prefix,
         catalogue_number: catalogueParts.number,
-        commodity_type_id: formData.auction.commodity_type_id!,
+        commodity_type_id: formData.auction.commodity_type_id && formData.auction.commodity_type_id !== '' ? formData.auction.commodity_type_id : null,
         week_start: formData.auction.week_start,
         week_end: formData.auction.week_end,
         status: formData.status || 'draft',

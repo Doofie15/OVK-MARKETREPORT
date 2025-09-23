@@ -870,6 +870,13 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       
       const result = await SupabaseService.saveAuctionReportDraft(dataToSave);
       if (result.success) {
+        // Update form data with the auction ID if it was created
+        if (result.data && result.data.id && !formData.auction.id) {
+          updateFormData({ 
+            auction: { ...formData.auction, id: result.data.id },
+            status: 'draft'
+          });
+        }
         showSuccessModal('Draft Saved!', 'Your auction report has been saved as a draft and stored in the database.');
       } else {
         alert(`Failed to save draft: ${result.error}`);
@@ -877,6 +884,41 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
     } catch (error) {
       console.error('Error saving auction report draft:', error);
       alert('Failed to save draft. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    setIsSaving(true);
+    try {
+      // Set status to published and add published timestamp
+      const publishedData = {
+        ...formData,
+        status: 'published' as const,
+        published_at: new Date().toISOString()
+      };
+      
+      const result = await SupabaseService.saveAuctionReport(publishedData);
+      
+      if (result.success) {
+        // Show success modal for published report
+        showSuccessModal('Report Published Successfully!', 'Your auction report has been finalized and published. It is now live and visible to users.');
+        
+        // Update the form data to reflect published status
+        updateFormData({ 
+          status: 'published',
+          published_at: new Date().toISOString()
+        });
+        
+        // Call the parent save handler
+        onSave(publishedData);
+      } else {
+        alert(`Failed to publish report: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error publishing auction report:', error);
+      alert('Failed to publish report. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -1038,7 +1080,7 @@ const AuctionDataCaptureForm: React.FC<AuctionDataCaptureFormProps> = ({
       case 'market-insights':
         return <MarketInsightsTab formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 'review-save':
-        return <ReviewSaveTab formData={formData} onSave={handleSave} onSaveDraft={handleSaveDraft} onCancel={onCancel} isSaving={isSaving} errors={errors} />;
+        return <ReviewSaveTab formData={formData} onSave={handleSave} onSaveDraft={handleSaveDraft} onPublish={handlePublish} onCancel={onCancel} isSaving={isSaving} errors={errors} />;
       default:
         return null;
     }
@@ -4673,13 +4715,15 @@ const ReviewSaveTab: React.FC<{
   formData: Omit<AuctionReport, 'top_sales'>;
   onSave: () => void;
   onSaveDraft: () => void;
+  onPublish: () => void;
   onCancel: () => void;
   isSaving: boolean;
   errors: Record<string, string>;
-}> = ({ formData, onSave, onSaveDraft, onCancel, isSaving, errors }) => {
+}> = ({ formData, onSave, onSaveDraft, onPublish, onCancel, isSaving, errors }) => {
   const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
   const [showDraftConfirmation, setShowDraftConfirmation] = useState(false);
-  const [hasBeenSavedAsDraft, setHasBeenSavedAsDraft] = useState(false);
+  // If editing an existing report (has an ID), consider it as already saved as draft
+  const [hasBeenSavedAsDraft, setHasBeenSavedAsDraft] = useState(!!formData.auction.id);
 
   // Comprehensive data completeness checker for all form tabs
   const calculateCompletion = () => {
@@ -4834,41 +4878,9 @@ const ReviewSaveTab: React.FC<{
     setShowDraftConfirmation(true);
   };
 
-  const confirmPublish = async () => {
+  const confirmPublish = () => {
     setShowPublishConfirmation(false);
-    setIsSaving(true);
-    
-    try {
-      // Set status to published and add published timestamp
-      const publishedData = {
-        ...formData,
-        status: 'published' as const,
-        published_at: new Date().toISOString()
-      };
-      
-      const result = await SupabaseService.saveAuctionReport(publishedData);
-      
-      if (result.success) {
-        // Show success modal for published report
-        showSuccessModal('Report Published Successfully!', 'Your auction report has been finalized and published. It is now live and visible to users.');
-        
-        // Update the form data to reflect published status
-        updateFormData({ 
-          status: 'published',
-          published_at: new Date().toISOString()
-        });
-        
-        // Call the parent save handler
-        onSave(publishedData);
-      } else {
-        alert(`Failed to publish report: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error publishing auction report:', error);
-      alert('Failed to publish report. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
+    onPublish(); // Call the parent's publish handler
   };
 
   const confirmDraft = () => {

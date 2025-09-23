@@ -16,8 +16,27 @@ const ModernTrendChart: React.FC<{
   const isZAR = currency === 'ZAR';
   const isCertified = type === 'CERTIFIED';
   
-  const dataKey2025 = isZAR ? '2025_zar' : '2025_usd';
-  const dataKey2024 = isZAR ? '2024_zar' : '2024_usd';
+  // Dynamically determine the years from the data
+  const getYearsFromData = (data: TrendPoint[]) => {
+    if (!data || data.length === 0) return { currentYear: 2025, previousYear: 2024 };
+    
+    const firstPoint = data[0];
+    const keys = Object.keys(firstPoint);
+    
+    // Find year keys (format: YYYY_zar or YYYY_usd)
+    const yearKeys = keys.filter(key => /^\d{4}_(zar|usd)$/.test(key));
+    const years = yearKeys.map(key => parseInt(key.split('_')[0])).filter((year, index, arr) => arr.indexOf(year) === index);
+    years.sort((a, b) => b - a); // Sort descending
+    
+    return {
+      currentYear: years[0] || 2025,
+      previousYear: years[1] || 2024
+    };
+  };
+  
+  const { currentYear, previousYear } = getYearsFromData(data);
+  const dataKeyCurrent = isZAR ? `${currentYear}_zar` : `${currentYear}_usd`;
+  const dataKeyPrevious = isZAR ? `${previousYear}_zar` : `${previousYear}_usd`;
 
   // Handle empty or undefined data
   if (!data || !Array.isArray(data) || data.length === 0) {
@@ -54,26 +73,26 @@ const ModernTrendChart: React.FC<{
   // Create chart series only for available data
   const chartSeries = [];
   
-  // Add 2025 series if data exists (using auction catalogue name)
-  const has2025Data = data.some(point => point[dataKey2025] !== undefined && point[dataKey2025] !== null);
-  if (has2025Data) {
+  // Add current year series if data exists
+  const hasCurrentData = data.some(point => point[dataKeyCurrent] !== undefined && point[dataKeyCurrent] !== null);
+  if (hasCurrentData) {
     chartSeries.push({
-      name: data[0]?.auction_catalogue || `2025 ${currency}`, // Use auction catalogue name if available
+      name: `${currentYear} ${currency}`,
       data: data.map(point => ({
         x: point.period,
-        y: point[dataKey2025] || 0
+        y: point[dataKeyCurrent] || 0
       }))
     });
   }
   
-  // Add 2024 series if data exists (using auction catalogue name)
-  const has2024Data = data.some(point => point[dataKey2024] !== undefined && point[dataKey2024] !== null);
-  if (has2024Data) {
+  // Add previous year series if data exists
+  const hasPreviousData = data.some(point => point[dataKeyPrevious] !== undefined && point[dataKeyPrevious] !== null);
+  if (hasPreviousData) {
     chartSeries.push({
-      name: data[0]?.auction_catalogue || `2024 ${currency}`, // Use auction catalogue name if available
+      name: `${previousYear} ${currency}`,
       data: data.map(point => ({
         x: point.period,
-        y: point[dataKey2024] || 0
+        y: point[dataKeyPrevious] || 0
       }))
     });
   }
@@ -162,8 +181,8 @@ const ModernTrendChart: React.FC<{
   };
 
   // Calculate current values for display
-  const current2025 = data.length > 0 ? data[data.length - 1][dataKey2025] : 0;
-  const current2024 = data.length > 0 ? data[data.length - 1][dataKey2024] : 0;
+  const currentValue = data.length > 0 ? data[data.length - 1][dataKeyCurrent] : 0;
+  const previousValue = data.length > 0 ? data[data.length - 1][dataKeyPrevious] : 0;
 
   return (
     <div className="chart-container">
@@ -189,9 +208,9 @@ const ModernTrendChart: React.FC<{
         </div>
         
         <div className="text-left sm:text-right">
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Current 2025</div>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Current {currentYear}</div>
           <div className="text-sm font-bold" style={{ color: primaryColor }}>
-            {current2025.toFixed(2)} {currency}
+            {(currentValue || 0).toFixed(2)} {currency}
           </div>
         </div>
       </div>
