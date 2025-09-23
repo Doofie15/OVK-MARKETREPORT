@@ -2,13 +2,50 @@
 import { SupabaseAuctionDataService } from '../data/supabase-service';
 import type { AuctionReport } from '../types';
 
+// Simple in-memory cache for performance optimization
+class DataCache {
+  private static cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  
+  static set(key: string, data: any, ttlMinutes: number = 5): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttlMinutes * 60 * 1000
+    });
+  }
+  
+  static get<T>(key: string): T | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    
+    if (Date.now() - item.timestamp > item.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.data as T;
+  }
+  
+  static clear(): void {
+    this.cache.clear();
+  }
+}
+
 export class PublicDataService {
   /**
-   * Get all published auction reports for the public site
+   * Get all published auction reports for the public site - OPTIMIZED VERSION
    */
   static async getPublishedReports(): Promise<{ success: boolean; data?: AuctionReport[]; error?: string }> {
     try {
-      console.log('🔍 Fetching published auction reports...');
+      // OPTIMIZATION 1: Check cache first
+      const cacheKey = 'published_reports';
+      const cachedReports = DataCache.get<AuctionReport[]>(cacheKey);
+      if (cachedReports) {
+        console.log('🚀 Returning cached published reports');
+        return { success: true, data: cachedReports };
+      }
+
+      console.log('🚀 Fetching published auction reports (optimized)...');
       
       // Get all published auctions from the database
       const auctionsResult = await SupabaseAuctionDataService.getAuctions();
@@ -18,7 +55,7 @@ export class PublicDataService {
       }
 
       // Filter only published auctions
-      const publishedAuctions = auctionsResult.data.filter(auction => auction.status === 'published');
+      const publishedAuctions = (auctionsResult.data as any[]).filter((auction: any) => auction.status === 'published');
       
       if (publishedAuctions.length === 0) {
         console.log('📭 No published auctions found');
@@ -27,28 +64,37 @@ export class PublicDataService {
 
       console.log(`📊 Found ${publishedAuctions.length} published auctions`);
 
-      // Convert each published auction to a complete report
-      const reports: AuctionReport[] = [];
-      
-      for (const auction of publishedAuctions) {
+      // OPTIMIZATION 2: Load all reports in parallel instead of sequentially
+      console.log('⚡ Loading reports in parallel...');
+      const reportPromises = publishedAuctions.map(async (auction: any) => {
         try {
           const reportResult = await SupabaseAuctionDataService.getCompleteAuctionReport(auction.id);
           
           if (reportResult.success && reportResult.data) {
-            // Ensure the report has the correct status and published timestamp
-            const report = {
+            return {
               ...reportResult.data,
               status: 'published' as const,
               published_at: auction.published_at || auction.updated_at
             };
-            reports.push(report);
           } else {
             console.warn(`⚠️ Failed to load complete data for auction ${auction.id}:`, reportResult.error);
+            return null;
           }
         } catch (error) {
           console.error(`❌ Error loading report for auction ${auction.id}:`, error);
+          return null;
         }
-      }
+      });
+
+      // Wait for all reports to load in parallel
+      const reportResults = await Promise.allSettled(reportPromises);
+      
+      // Filter out failed loads and extract successful reports
+      const reports: AuctionReport[] = reportResults
+        .filter((result: any): result is PromiseFulfilledResult<AuctionReport> => 
+          result.status === 'fulfilled' && result.value !== null
+        )
+        .map((result: any) => result.value);
 
       // Sort reports by published date (newest first)
       reports.sort((a, b) => {
@@ -57,12 +103,15 @@ export class PublicDataService {
         return dateB.getTime() - dateA.getTime();
       });
 
-      console.log(`✅ Successfully loaded ${reports.length} published reports`);
+      // OPTIMIZATION 3: Cache the results for 5 minutes
+      DataCache.set(cacheKey, reports, 5);
+
+      console.log(`✅ Successfully loaded ${reports.length} published reports (parallel + cached)`);
       return { success: true, data: reports };
 
     } catch (error) {
       console.error('❌ Error fetching published reports:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as any).message };
     }
   }
 
