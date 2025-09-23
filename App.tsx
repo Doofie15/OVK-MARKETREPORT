@@ -4,13 +4,11 @@ import { MOCK_REPORTS } from './constants';
 import type { AuctionReport, Indicator } from './types';
 import PublicLayout from './components/PublicLayout';
 import AdminAppSupabase from './components/admin/AdminAppSupabase';
-import EnhancedPWAManager from './components/EnhancedPWAManager';
+import SimplePWAManager from './components/SimplePWAManager';
 import OVKLoadingSpinner from './components/OVKLoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import MobileDebugger from './components/MobileDebugger';
 import { AuthProvider } from './contexts/AuthContext';
-import { NotificationProvider } from './contexts/NotificationContext';
-import { ToastContainer } from './components/notifications';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicDataService from './services/public-data-service';
 
@@ -264,9 +262,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <NotificationProvider>
-          <EnhancedPWAManager />
-          <ToastContainer />
+          <SimplePWAManager />
           <MobileDebugger enabled={window.location.search.includes('debug=true')} />
           <Router>
           <Routes>
@@ -332,7 +328,6 @@ const App: React.FC = () => {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Router>
-        </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

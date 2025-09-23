@@ -52,14 +52,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.828 7l2.586 2.586a2 2 0 002.828 0L12.828 7H4.828z" />
-                </svg>
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
-              </button>
-
               {/* Search */}
               <div className="relative">
                 <input

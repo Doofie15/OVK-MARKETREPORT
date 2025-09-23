@@ -1,5 +1,4 @@
 import React from 'react';
-import { NotificationCenter } from './notifications';
 
 const PublicHeader: React.FC = () => {
   return (
@@ -18,11 +17,6 @@ const PublicHeader: React.FC = () => {
                 {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
             </div>
-          </div>
-          
-          {/* Notification Center */}
-          <div className="flex items-center">
-            <NotificationCenter />
           </div>
         </div>
         

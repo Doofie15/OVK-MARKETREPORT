@@ -902,6 +902,38 @@
   --transition-slow: 0.5s ease-in-out;
 }
 
+/* Dark Theme Colors */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Theme Backgrounds */
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-card: #1e293b;
+    --bg-hover: #334155;
+    
+    /* Dark Theme Text Colors */
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-accent: #38bdf8;
+    
+    /* Dark Theme Borders */
+    --border-primary: #334155;
+    --border-secondary: #475569;
+    
+    /* Dark Theme Shadows */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.6), 0 12px 24px -4px rgba(0, 0, 0, 0.5);
+    
+    /* Adjust Chart Colors for Dark Mode */
+    --chart-gradient-start: rgba(59, 130, 246, 0.8);
+    --chart-gradient-end: rgba(59, 130, 246, 0.1);
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -1703,6 +1735,95 @@ body {
     padding: 0 0.375rem !important;
     gap: 0.5rem !important;
   }
+}
+
+/* Dark Mode Utility Classes */
+@media (prefers-color-scheme: dark) {
+  /* Background utilities */
+  .bg-white { background-color: var(--bg-card) !important; }
+  .bg-gray-50 { background-color: var(--bg-tertiary) !important; }
+  .bg-gray-100 { background-color: var(--bg-secondary) !important; }
+  .bg-gray-200 { background-color: var(--bg-tertiary) !important; }
+  .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+  .bg-blue-100 { background-color: rgba(59, 130, 246, 0.2) !important; }
+  .bg-green-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
+  .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+  
+  /* Text utilities */
+  .text-gray-900 { color: var(--text-primary) !important; }
+  .text-gray-800 { color: var(--text-primary) !important; }
+  .text-gray-700 { color: var(--text-secondary) !important; }
+  .text-gray-600 { color: var(--text-secondary) !important; }
+  .text-gray-500 { color: var(--text-muted) !important; }
+  .text-gray-400 { color: var(--text-muted) !important; }
+  .text-blue-600 { color: var(--ovk-accent) !important; }
+  .text-blue-500 { color: var(--ovk-accent) !important; }
+  .text-green-600 { color: #10b981 !important; }
+  .text-red-600 { color: #ef4444 !important; }
+  
+  /* Border utilities */
+  .border-gray-200 { border-color: var(--border-primary) !important; }
+  .border-gray-300 { border-color: var(--border-secondary) !important; }
+  .border-blue-200 { border-color: rgba(59, 130, 246, 0.3) !important; }
+  
+  /* Gradient adjustments */
+  .from-blue-50 { --tw-gradient-from: rgba(59, 130, 246, 0.1) !important; }
+  .to-purple-50 { --tw-gradient-to: rgba(147, 51, 234, 0.1) !important; }
+  .from-blue-500 { --tw-gradient-from: var(--ovk-secondary) !important; }
+  .to-purple-600 { --tw-gradient-to: #7c3aed !important; }
+  
+  /* Special component adjustments */
+  .mobile-card {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-primary) !important;
+  }
+  
+  /* Chart specific dark mode */
+  .apexcharts-canvas {
+    filter: brightness(0.9);
+  }
+  
+  /* Form inputs */
+  input, select, textarea {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-primary) !important;
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: var(--text-muted) !important;
+  }
+  
+  /* Hover states in dark mode */
+  .hover\:bg-gray-100:hover {
+    background-color: var(--bg-hover) !important;
+  }
+  
+  .hover\:bg-gray-50:hover {
+    background-color: var(--bg-hover) !important;
+  }
+  
+  /* Focus states in dark mode */
+  .focus\:border-blue-500:focus {
+    border-color: var(--ovk-accent) !important;
+  }
+  
+  /* Shadow adjustments for dark mode */
+  .shadow-sm { box-shadow: var(--shadow-sm) !important; }
+  .shadow { box-shadow: var(--shadow-md) !important; }
+  .shadow-md { box-shadow: var(--shadow-md) !important; }
+  .shadow-lg { box-shadow: var(--shadow-lg) !important; }
+  .shadow-xl { box-shadow: var(--shadow-xl) !important; }
+}
+
+/* Ensure smooth transitions between light and dark modes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Disable transitions on page load to prevent flash */
+.no-transitions * {
+  transition: none !important;
 }
 
 /* Print Styles */

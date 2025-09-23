@@ -139,11 +139,21 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeaso
     
     // Calculate totals from the auction data
     const totals = seasonReports.reduce((acc, report) => {
+      // Check if we're accessing the right structure
+      console.log('🔍 Report structure:', {
+        hasAuction: !!report.auction,
+        hasSupplyStats: !!report.supply_stats,
+        hasGreasyStats: !!report.greasy_stats,
+        reportKeys: Object.keys(report),
+        auctionKeys: report.auction ? Object.keys(report.auction) : []
+      });
+      
       const auction = report.auction;
-      const supplyStats = auction.supply_stats;
-      const greasyStats = auction.greasy_stats;
+      const supplyStats = report.supply_stats || auction.supply_stats;
+      const greasyStats = report.greasy_stats || auction.greasy_stats;
       
       console.log('📈 Processing auction:', auction.catalogue_name, {
+        auction_full: auction,
         supplyStats,
         greasyStats,
         sold_bales: supplyStats?.sold_bales,
