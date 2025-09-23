@@ -5,6 +5,8 @@ interface MarketOverviewProps {
   currencies: Currency[];
   nextAuctionDate?: string;
   rwsPremium?: number;
+  currentAuctionDate?: string;
+  currentCatalogue?: string;
 }
 
 const UsaFlagIcon: React.FC = () => (
@@ -61,7 +63,7 @@ const flagIcons: Record<string, React.FC> = {
   GBP: UkFlagIcon,
 };
 
-const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuctionDate, rwsPremium = 0 }) => {
+const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuctionDate, rwsPremium = 0, currentAuctionDate, currentCatalogue }) => {
   // Debug currencies data
   console.log('🔍 MarketOverview currencies:', currencies);
   
@@ -76,10 +78,21 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
   // Use test data if currencies is empty
   const displayCurrencies = currencies && currencies.length > 0 ? currencies : testCurrencies;
   
-  // Calculate next auction date
+  // Calculate next auction date based on current auction + 7 days
   const getNextAuctionDate = () => {
-    if (nextAuctionDate) return nextAuctionDate;
+    if (currentAuctionDate) {
+      const currentDate = new Date(currentAuctionDate);
+      const nextDate = new Date(currentDate);
+      nextDate.setDate(currentDate.getDate() + 7);
+      
+      return nextDate.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short'
+      });
+    }
     
+    // Fallback to next Wednesday if no current auction date
     const today = new Date();
     const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
     const nextWednesday = new Date(today);
@@ -93,13 +106,72 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
   };
 
   const getDaysUntilAuction = () => {
+    if (currentAuctionDate) {
+      const currentDate = new Date(currentAuctionDate);
+      const nextDate = new Date(currentDate);
+      nextDate.setDate(currentDate.getDate() + 7);
+      
+      const today = new Date();
+      // Reset time to start of day for accurate day calculation
+      today.setHours(0, 0, 0, 0);
+      nextDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = nextDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // If negative (past date), return 0
+      return Math.max(0, diffDays);
+    }
+    
+    // Fallback calculation
     const today = new Date();
     const daysUntilWednesday = (3 - today.getDay() + 7) % 7;
     return daysUntilWednesday === 0 ? 7 : daysUntilWednesday;
   };
 
+  // Calculate payout date (next auction date + 7 days)
+  const getPayoutDate = () => {
+    if (currentAuctionDate) {
+      const currentDate = new Date(currentAuctionDate);
+      const nextAuctionDate = new Date(currentDate);
+      nextAuctionDate.setDate(currentDate.getDate() + 7);
+      
+      // Payout is 7 days after next auction date
+      const payoutDate = new Date(nextAuctionDate);
+      payoutDate.setDate(nextAuctionDate.getDate() + 7);
+      
+      return payoutDate.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short'
+      });
+    }
+    
+    return '17 Sept'; // Fallback
+  };
+
+  // Calculate next catalogue number by incrementing current catalogue
+  const getNextCatalogueNumber = (currentCatalogue?: string) => {
+    if (currentCatalogue) {
+      // Extract prefix and number (e.g., "CG03" → "CG" + "03")
+      const match = currentCatalogue.match(/^([A-Z]+)(\d+)$/);
+      if (match) {
+        const prefix = match[1]; // "CG"
+        const currentNumber = parseInt(match[2], 10); // 3
+        const nextNumber = currentNumber + 1;
+        
+        // Format with leading zero if needed (e.g., 04)
+        const formattedNumber = nextNumber.toString().padStart(match[2].length, '0');
+        return `${prefix}${formattedNumber}`;
+      }
+    }
+    
+    return 'CG04'; // Fallback
+  };
+
   const nextAuction = getNextAuctionDate();
   const daysUntil = getDaysUntilAuction();
+  const payoutDate = getPayoutDate();
+  const catalogueNumber = getNextCatalogueNumber(currentCatalogue);
 
   return (
     <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 shadow-lg border border-slate-200 relative overflow-hidden">
@@ -202,11 +274,11 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ currencies, nextAuction
           <div className="grid grid-cols-2 gap-1">
             <div className="flex justify-between items-center bg-slate-50 rounded p-1.5">
               <span className="text-slate-600 text-sm font-medium">Cat.</span>
-              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>P36</span>
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{catalogueNumber}</span>
             </div>
             <div className="flex justify-between items-center bg-slate-50 rounded p-1.5">
               <span className="text-slate-600 text-sm font-medium">Payout</span>
-              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>10 Sept</span>
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{payoutDate}</span>
             </div>
           </div>
         </div>

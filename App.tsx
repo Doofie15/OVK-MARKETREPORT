@@ -5,6 +5,7 @@ import type { AuctionReport, Indicator } from './types';
 import PublicLayout from './components/PublicLayout';
 import AdminAppSupabase from './components/admin/AdminAppSupabase';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import OVKLoadingSpinner from './components/OVKLoadingSpinner';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicDataService from './services/public-data-service';
@@ -195,14 +196,7 @@ const App: React.FC = () => {
     };
 
     if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading auction data...</p>
-          </div>
-        </div>
-      );
+      return <OVKLoadingSpinner message="Loading auction data..." />;
     }
 
     return (
@@ -229,14 +223,7 @@ const App: React.FC = () => {
     };
 
     if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading auction data...</p>
-          </div>
-        </div>
-      );
+      return <OVKLoadingSpinner message="Loading latest auction data..." />;
     }
 
     return (

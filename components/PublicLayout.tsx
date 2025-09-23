@@ -149,6 +149,8 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                   <MarketOverview 
                     currencies={activeReport.currencies}
                     rwsPremium={rwsPremium}
+                    currentAuctionDate={activeReport.auction.auction_date}
+                    currentCatalogue={activeReport.auction.catalogue_name}
                   />
                 </div>
               </div>
