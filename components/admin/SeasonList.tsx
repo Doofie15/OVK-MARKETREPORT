@@ -17,6 +17,19 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeaso
   const [deletePassword, setDeletePassword] = useState('');
   const [deletePasswordError, setDeletePasswordError] = useState<string | null>(null);
 
+  // Debug logging
+  console.log('🔍 SeasonList received props:', {
+    seasonsCount: seasons.length,
+    reportsCount: reports.length,
+    seasons: seasons.map(s => ({ id: s.id, season_year: s.season_year })),
+    reports: reports.map(r => ({ 
+      auction_id: r.auction.id, 
+      season_id: r.auction.season_id, 
+      season_label: r.auction.season_label,
+      catalogue_name: r.auction.catalogue_name
+    }))
+  });
+
   // Filter seasons based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -107,17 +120,36 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeaso
 
   // Calculate statistics for a season
   const getSeasonStats = (season: Season) => {
+    console.log('🔍 Calculating stats for season:', season.season_year, 'ID:', season.id);
+    console.log('📊 Total reports available:', reports.length);
+    
     // Filter reports for this season
     const seasonReports = reports.filter(report => 
       report.auction.season_id === season.id || 
       report.auction.season_label === season.season_year
     );
     
+    console.log('📋 Season reports found:', seasonReports.length);
+    console.log('📋 Season reports data:', seasonReports.map(r => ({
+      season_id: r.auction.season_id,
+      season_label: r.auction.season_label,
+      supply_stats: r.auction.supply_stats,
+      greasy_stats: r.auction.greasy_stats
+    })));
+    
     // Calculate totals from the auction data
     const totals = seasonReports.reduce((acc, report) => {
       const auction = report.auction;
       const supplyStats = auction.supply_stats;
       const greasyStats = auction.greasy_stats;
+      
+      console.log('📈 Processing auction:', auction.catalogue_name, {
+        supplyStats,
+        greasyStats,
+        sold_bales: supplyStats?.sold_bales,
+        mass_kg: greasyStats?.mass_kg,
+        turnover_rand: greasyStats?.turnover_rand
+      });
       
       return {
         auctionCount: acc.auctionCount + 1,
@@ -132,6 +164,7 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeaso
       totalTurnover: 0
     });
     
+    console.log('📊 Final totals calculated:', totals);
     return totals;
   };
 
