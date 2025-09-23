@@ -23,7 +23,8 @@ import {
   MobileProvincePriceMapCard,
   EnhancedMobileLayout,
   MobileTopSalesTable,
-  MobileMarketOverview
+  MobileMarketOverview,
+  MobileAuctionComparison
 } from './mobile';
 import SafeMobileLayout from './SafeMobileLayout';
 import type { AuctionReport, TopSale } from '../types';
@@ -87,7 +88,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-secondary)' }}>
       <PublicHeader />
-      <main className="w-full max-w-none mx-auto px-0 sm:px-4 py-2 sm:py-4">
+      <main className="w-full max-w-none mx-auto px-0 sm:px-4 py-2 sm:py-4" data-testid="main-content">
         <div className="space-y-4">
           {/* Error Banner */}
           {error && (
@@ -200,10 +201,19 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
                 </div>
               </SafeMobileLayout>
 
-              <AuctionComparison 
-                currentData={activeReport.micron_prices}
-                previousData={previousReport?.micron_prices}
-              />
+              <MobileLayout
+                mobileComponent={
+                  <MobileAuctionComparison 
+                    currentData={activeReport.micron_prices}
+                    previousData={previousReport?.micron_prices}
+                  />
+                }
+              >
+                <AuctionComparison 
+                  currentData={activeReport.micron_prices}
+                  previousData={previousReport?.micron_prices}
+                />
+              </MobileLayout>
 
               <MobileLayout
                 mobileComponent={<MobileMarketTrends data={activeReport.trends} />}

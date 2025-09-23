@@ -7,7 +7,7 @@ git add .
 
 echo.
 echo Committing changes...
-git commit -m "Mobile View Optimizations: Fixed card width consistency, improved headers, enhanced charts, and corrected data display"
+git commit -m "Real-Time Notification System: Complete notification system with push notifications, in-app notification center, toast messages, Supabase real-time integration, and enhanced PWA features"
 
 echo.
 echo Pushing to GitHub...

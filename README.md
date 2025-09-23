@@ -8,6 +8,15 @@ A comprehensive React-based web application for tracking and analyzing wool mark
 
 ## 🎯 Latest Updates
 
+- ✅ **Real-Time Notification System**: Complete notification system with instant alerts for new report publications
+- ✅ **Push Notifications**: Browser notifications that work even when the app is closed, with rich actions
+- ✅ **In-App Notification Center**: Notification bell with unread counts, history, and click-to-navigate functionality
+- ✅ **Toast Notifications**: Immediate visual feedback with auto-dismiss and multiple types (success, error, warning, info)
+- ✅ **Supabase Real-Time Integration**: Live database subscriptions for instant notification delivery
+- ✅ **Enhanced PWA System**: Improved Progressive Web App with smart install prompts and automatic cache updates
+- ✅ **Smart Install Timing**: Install prompts now wait for data to load and show after user has seen content
+- ✅ **Automatic Updates**: Seamless app updates with user notification when new versions are deployed
+- ✅ **Mobile Auction Comparison**: Added mobile-optimized component with abbreviated category labels (F, M, S)
 - ✅ **Enhanced Mobile Card Consistency**: Fixed width inconsistencies in mobile cards for uniform appearance across all sections
 - ✅ **Improved Mobile Header Styling**: Full-width color banners in mobile card headers for better visual hierarchy
 - ✅ **Provincial Top 10 Map Improvements**: Renamed from "Provincial Price Map" with clearer explanatory text

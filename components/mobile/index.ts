@@ -13,3 +13,4 @@ export { default as SamsungS25Optimizer } from './SamsungS25Optimizer';
 export { default as EnhancedMobileLayout } from './EnhancedMobileLayout';
 export { default as MobileTopSalesTable } from './MobileTopSalesTable';
 export { default as MobileMarketOverview } from './MobileMarketOverview';
+export { default as MobileAuctionComparison } from './MobileAuctionComparison';
