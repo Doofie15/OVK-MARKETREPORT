@@ -4813,7 +4813,7 @@ const ReviewSaveTab: React.FC<{
         completed: 0,
         total: 1,
         fields: [
-          { name: 'Insights Text', completed: !!(formData.insights && formData.insights.length > 50) }
+          { name: 'Insights Text', completed: !!(formData.insights && formData.insights.trim().split(/\s+/).length > 1) }
         ]
       }
     };

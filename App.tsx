@@ -4,6 +4,7 @@ import { MOCK_REPORTS } from './constants';
 import type { AuctionReport, Indicator } from './types';
 import PublicLayout from './components/PublicLayout';
 import AdminAppSupabase from './components/admin/AdminAppSupabase';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicDataService from './services/public-data-service';
@@ -250,6 +251,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
+      <PWAInstallPrompt />
       <Router>
         <Routes>
           {/* Public routes */}
