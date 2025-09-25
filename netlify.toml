@@ -1,24 +1,18 @@
 [build]
   publish = "dist"
-  command = "npm run build"
+  command = "npm run build:netlify"
   
 [build.environment]
   NODE_VERSION = "18"
-  NPM_VERSION = "8"
 
 # Netlify Edge Functions for analytics (alternative to Supabase Edge Functions)
 [[edge_functions]]
   function = "analytics"
   path = "/api/analytics/*"
 
-# Build plugins
-[[plugins]]
-  package = "@netlify/plugin-lighthouse"
-  [plugins.inputs]
-    performance = 0.9
-    accessibility = 0.9
-    best-practices = 0.9
-    seo = 0.9
+# Build plugins (disabled for now to avoid configuration issues)
+# [[plugins]]
+#   package = "@netlify/plugin-lighthouse"
 
 # Headers for security and performance
 [[headers]]

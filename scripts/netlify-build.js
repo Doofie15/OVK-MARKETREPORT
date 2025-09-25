@@ -5,9 +5,9 @@
  * Runs before the main build to optimize for Netlify deployment
  */
 
-import { execSync } from 'child_process';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+const { execSync } = require('child_process');
+const { writeFileSync, readFileSync, existsSync } = require('fs');
+const { join } = require('path');
 
 console.log('🚀 Starting Netlify build optimization...');
 
@@ -78,5 +78,3 @@ try {
 }
 
 console.log('🎉 Netlify build optimization complete!');
-
-export default {};
