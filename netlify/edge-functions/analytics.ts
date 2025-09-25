@@ -24,7 +24,9 @@ interface AnalyticsPayload {
 }
 
 const SUPABASE_URL = "https://gymdertakhxjmfrmcqgp.supabase.co";
-const ALLOWED_ORIGINS = [
+
+// Dynamic origin checking - will be enhanced with database lookup
+const DEFAULT_ALLOWED_ORIGINS = [
   "https://woolmarketreport.netlify.app",
   "https://www.woolmarketreport.netlify.app", 
   "https://main--woolmarketreport.netlify.app", // Branch deploys
@@ -68,11 +70,15 @@ export default async (request: Request, context: Context) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
-  // CORS check
+  // CORS check with dynamic origins
   const origin = request.headers.get("origin") ?? "";
   const isDevelopment = context.site?.url?.includes("localhost") || origin.includes("localhost");
   
-  if (!ALLOWED_ORIGINS.includes(origin) && !isDevelopment) {
+  // TODO: Load allowed origins from company_settings table
+  const allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
+  
+  if (!allowedOrigins.includes(origin) && !isDevelopment) {
+    console.log(`Blocked origin: ${origin}`);
     return new Response("Forbidden", { status: 403 });
   }
 

@@ -9,6 +9,7 @@ import SeasonList from './SeasonList';
 import CreateSeason from './CreateSeason';
 import UserManagement from './UserManagement';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import AdminSettings from './AdminSettings';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
 import SupabaseService from '../../data/supabase-service';
@@ -304,9 +305,12 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
     if (path.includes('/admin/seasons')) return 'seasons';
     if (path.includes('/admin/auctions')) return 'auctions';
     if (path.includes('/admin/analytics')) return 'analytics';
+    if (path.includes('/admin/insights')) return 'insights';
+    if (path.includes('/admin/settings')) return 'settings';
+    if (path.includes('/admin/users')) return 'users';
     if (path.includes('/admin/form')) return 'form';
     if (path.includes('/admin/capture')) return 'capture';
-    if (path.includes('/admin/users')) return 'users';
+    if (path.includes('/admin/import-export')) return 'import-export';
     return 'dashboard';
   };
 
@@ -444,6 +448,18 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
         <Route 
           path="/analytics" 
           element={<AnalyticsDashboard />} 
+        />
+
+        {/* User Management */}
+        <Route 
+          path="/users" 
+          element={<UserManagement />} 
+        />
+
+        {/* Settings */}
+        <Route 
+          path="/settings" 
+          element={<AdminSettings />} 
         />
         
         {/* Redirect to dashboard */}

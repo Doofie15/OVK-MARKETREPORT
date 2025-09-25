@@ -26,6 +26,7 @@ interface AnalyticsConfig {
   debug: boolean;
   sessionKey: string;
   heartbeatInterval: number;
+  enabled?: boolean;
 }
 
 class Analytics {
@@ -39,14 +40,24 @@ class Analytics {
   private sectionVisibilityData = new Map<string, { startTime: number; totalVisible: number }>();
 
   constructor(config: Partial<AnalyticsConfig> = {}) {
+    // Load settings from localStorage (set by admin)
+    const analyticsEnabled = localStorage.getItem('admin_analytics_enabled') === 'true';
+    
     this.config = {
       functionUrl: '/api/analytics',
       respectDNT: true,
       debug: import.meta.env.VITE_APP_ENV === 'development',
       sessionKey: 'ovk_analytics_session_id',
       heartbeatInterval: 15000, // 15 seconds
+      enabled: analyticsEnabled,
       ...config
     };
+
+    // Don't initialize if analytics is disabled
+    if (!this.config.enabled && !import.meta.env.VITE_APP_ENV === 'development') {
+      console.log('OVK Analytics disabled by admin settings');
+      return;
+    }
 
     // Initialize session ID
     this.sessionId = this.getOrCreateSessionId();

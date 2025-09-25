@@ -1,11 +1,17 @@
 # Netlify redirects for SPA routing
-# Analytics API proxy to Supabase Edge Function
+
+# Analytics API proxy to Supabase Edge Function (fallback if Netlify Edge Function fails)
 /api/analytics/* https://gymdertakhxjmfrmcqgp.supabase.co/functions/v1/ingest-analytics/:splat 200
 
-# Admin routes - require authentication
-/admin/* /admin/index.html 200!
+# Admin routes - SPA routing for admin panel
+/admin /admin/ 301
+/admin/* /index.html 200
 
-# SPA routing - all other routes should serve index.html
+# Public auction routes
+/auctions/* /index.html 200
+/reports/* /index.html 200
+
+# SPA routing - all other routes should serve index.html  
 /* /index.html 200
 
 # Security headers

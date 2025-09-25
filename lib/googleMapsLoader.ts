@@ -21,9 +21,17 @@ export const loadGoogleMaps = (): Promise<void> => {
 
     isLoading = true;
 
-    // Create script element
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
+  // Get API key from admin settings or environment
+  const apiKey = localStorage.getItem('admin_google_maps_key') || import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  if (!apiKey) {
+    reject(new Error('Google Maps API key not configured. Please set it in Admin Settings.'));
+    return;
+  }
+
+  // Create script element
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
     script.async = true;
     script.defer = true;
 
