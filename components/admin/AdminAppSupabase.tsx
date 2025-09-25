@@ -12,6 +12,7 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import SimpleAnalyticsDashboard from './SimpleAnalyticsDashboard';
 import AnalyticsTestDashboard from './AnalyticsTestDashboard';
 import MinimalAnalytics from './MinimalAnalytics';
+import AnalyticsAuthTest from './AnalyticsAuthTest';
 import AdminSettings from './AdminSettings';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
@@ -452,7 +453,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
         {/* Analytics Dashboard */}
         <Route 
           path="/analytics" 
-          element={<AnalyticsDashboard />} 
+          element={<AnalyticsAuthTest />} 
         />
 
         {/* User Management */}
