@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AdminLayout from './admin/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
 import AuctionsList from './admin/AuctionsList';
@@ -29,6 +29,7 @@ const AdminApp: React.FC<AdminAppProps> = ({
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [auctionsRefreshTrigger, setAuctionsRefreshTrigger] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleEditReport = (report: AuctionReport) => {
     setEditingReport(report);
@@ -72,6 +73,36 @@ const AdminApp: React.FC<AdminAppProps> = ({
     setShowCreateSeason(true);
   };
 
+  // Handle navigation from dashboard quick actions
+  const handleDashboardNavigation = (page: string) => {
+    console.log('Navigating to:', page);
+    switch (page) {
+      case 'auctions':
+        navigate('/admin/auctions');
+        break;
+      case 'seasons':
+        navigate('/admin/seasons');
+        break;
+      case 'import-export':
+        navigate('/admin/import-export');
+        break;
+      case 'user-management':
+        navigate('/admin/users');
+        break;
+      case 'cape-mohair-reports':
+        navigate('/admin/cape-mohair');
+        break;
+      case 'analytics':
+        navigate('/admin/analytics');
+        break;
+      case 'insights':
+        navigate('/admin/insights');
+        break;
+      default:
+        console.log('Unknown navigation target:', page);
+    }
+  };
+
   // Get current admin section from URL
   const getCurrentAdminSection = (): AdminSection => {
     const path = location.pathname;
@@ -97,7 +128,7 @@ const AdminApp: React.FC<AdminAppProps> = ({
     >
       <Routes>
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/dashboard" element={<AdminDashboard />} />
+        <Route path="/dashboard" element={<AdminDashboard onNavigate={handleDashboardNavigation} />} />
         
         <Route path="/seasons" element={
           showCreateSeason ? (

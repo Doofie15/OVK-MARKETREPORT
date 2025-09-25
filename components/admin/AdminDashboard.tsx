@@ -300,7 +300,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         </svg>
       ),
       color: 'bg-blue-500',
-      onClick: () => onNavigate?.('auctions')
+      onClick: () => {
+        console.log('New Wool Auction clicked - navigating to auctions');
+        onNavigate?.('auctions');
+      }
     },
     {
       title: 'Manage Seasons',
@@ -311,18 +314,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         </svg>
       ),
       color: 'bg-green-500',
-      onClick: () => onNavigate?.('seasons')
-    },
-    {
-      title: 'Market Insights',
-      description: 'AI-powered market analysis',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-      color: 'bg-purple-500',
-      onClick: () => onNavigate?.('insights')
+      onClick: () => {
+        console.log('Manage Seasons clicked - navigating to seasons');
+        onNavigate?.('seasons');
+      }
     },
     {
       title: 'Export Market Data',
@@ -333,7 +328,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         </svg>
       ),
       color: 'bg-indigo-500',
-      onClick: () => onNavigate?.('import-export')
+      onClick: () => {
+        console.log('Export Market Data clicked - navigating to import-export');
+        onNavigate?.('import-export');
+      }
     },
     {
       title: 'User Management',
@@ -344,18 +342,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         </svg>
       ),
       color: 'bg-orange-500',
-      onClick: () => onNavigate?.('user-management')
-    },
-    {
-      title: 'Cape Mohair Reports',
-      description: 'Generate mohair market data',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-      color: 'bg-emerald-500',
-      onClick: () => onNavigate?.('cape-mohair-reports')
+      onClick: () => {
+        console.log('User Management clicked - navigating to user-management');
+        onNavigate?.('user-management');
+      }
     }
   ];
 
@@ -396,7 +386,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {quickActions.map((action, index) => (
                 <button
                   key={index}
