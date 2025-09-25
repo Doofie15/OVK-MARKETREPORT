@@ -53,6 +53,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigate }) => {
       // Get current authenticated user
       const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
       
+      console.log('Auth user result:', { authUser, authError });
+      
       if (authError) {
         throw new Error('Authentication error: ' + authError.message);
       }
@@ -93,6 +95,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigate }) => {
       }
     } catch (err) {
       console.error('Error loading user profile:', err);
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        type: typeof err
+      });
       setError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally {
       setLoading(false);
@@ -237,6 +244,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigate }) => {
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+  console.log('UserProfile render state:', { loading, user, error });
 
   if (loading) {
     return (
