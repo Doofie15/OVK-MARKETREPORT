@@ -14,6 +14,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, loading } = useAuth()
 
+  // Development bypass for testing (remove in production)
+  const isDevelopment = import.meta.env.VITE_APP_ENV === 'development' || import.meta.env.DEV
+  const bypassAuth = isDevelopment && window.location.search.includes('bypass=true')
+  
+  if (bypassAuth) {
+    console.log('🔓 Authentication bypassed for development testing')
+    return <>{children}</>
+  }
+
   if (loading) {
     return (
       <Box

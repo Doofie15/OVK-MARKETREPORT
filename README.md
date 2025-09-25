@@ -8,6 +8,12 @@ A comprehensive React-based web application for tracking and analyzing wool mark
 
 ## 🎯 Latest Updates
 
+- ✅ **Privacy-Friendly Analytics System**: Comprehensive GA-style analytics with geographic insights and auction engagement tracking
+- ✅ **Google Maps Integration**: Interactive world and South Africa provincial maps showing visitor distribution
+- ✅ **Auction Engagement Analytics**: Deep insights into which auction reports and sections engage users most
+- ✅ **Admin Settings Configuration**: Companies can now configure their own API keys without touching deployment settings
+- ✅ **Netlify Optimization**: Enhanced routing and edge functions for sub-100ms analytics processing
+- ✅ **POPIA Compliance**: Privacy-friendly data collection with daily rotating IP hashes and no personal data storage
 - ✅ **Real-Time Notification System**: Complete notification system with instant alerts for new report publications
 - ✅ **Push Notifications**: Browser notifications that work even when the app is closed, with rich actions
 - ✅ **In-App Notification Center**: Notification bell with unread counts, history, and click-to-navigate functionality
@@ -94,11 +100,28 @@ This application serves as a comprehensive market intelligence platform for the 
 - **Micron Price Analysis**: Visualize price trends across different wool micron categories (Fine, Medium, Strong)
 
 ### 📈 Analytics & Insights
+
+#### **Business Analytics**
 - **Buyer Performance**: Track buyer market share, weekly purchases, and year-to-date bale counts
 - **Broker Analytics**: Monitor broker catalogue offerings and sales performance
 - **Top Producers**: Identify top-performing farms by province with detailed pricing and certification data
 - **Market Trends**: Historical price comparisons between RWS and non-RWS wool across different periods
 - **Provincial Analysis**: Geographic breakdown of average prices and top producers by South African provinces
+
+#### **Website Analytics (New!)**
+- **Privacy-Friendly Tracking**: POPIA-compliant analytics with daily rotating IP hashes
+- **Geographic Intelligence**: Interactive world map and South Africa provincial breakdown
+- **Real-time Dashboard**: Live visitor activity with 30-second auto-refresh
+- **Auction Engagement**: Deep insights into which reports and sections engage users most
+- **User Behavior**: Navigation patterns, time-on-page, and interaction tracking
+- **Export Analytics**: PDF download tracking and data usage patterns
+
+#### **Admin Analytics Features**
+- **Three-Tab Dashboard**: Overview, Geography, and Auction Engagement analytics
+- **Interactive Maps**: Google Maps integration showing visitor distribution
+- **Performance Metrics**: Engagement scores, bounce rates, and session tracking
+- **Company Configuration**: API key management through admin interface
+- **Security Controls**: Manage allowed domains and privacy settings
 
 ### 🛠️ Administrative Tools
 - **Complete User Management System**: Full user administration with role-based access control and approval workflow
@@ -132,12 +155,26 @@ This application serves as a comprehensive market intelligence platform for the 
 
 ### Backend Stack
 - **Supabase** for PostgreSQL database with real-time capabilities
+- **Netlify Edge Functions** for analytics processing (sub-100ms response times)
 - **Node.js** with Express.js for API server (legacy support)
 - **JSON-based storage** for data persistence (legacy support)
 - **CORS enabled** for cross-origin requests
 - **Helmet** for security headers
 - **Morgan** for request logging
 - **UUID** for unique identifier generation
+
+### Admin Panel Routes
+The admin panel is accessible at `/admin` and includes the following sections:
+- `/admin/dashboard` - Main dashboard with overview metrics
+- `/admin/analytics` - **NEW!** Complete analytics dashboard with maps and engagement tracking
+- `/admin/settings` - **NEW!** API configuration and company settings  
+- `/admin/seasons` - Season management and creation
+- `/admin/auctions` - Auction data management and editing
+- `/admin/users` - User management with role-based access control
+- `/admin/cape-mohair` - Cape Mohair specialized reporting (coming soon)
+- `/admin/ovk-reports` - Enhanced OVK market reports (coming soon)
+- `/admin/insights` - AI-powered market insights (coming soon)
+- `/admin/import-export` - Bulk data operations (coming soon)
 
 ### Project Structure
 ```

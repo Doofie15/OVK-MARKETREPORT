@@ -3,13 +3,26 @@
 # Analytics API proxy to Supabase Edge Function (fallback if Netlify Edge Function fails)
 /api/analytics/* https://gymdertakhxjmfrmcqgp.supabase.co/functions/v1/ingest-analytics/:splat 200
 
-# Admin routes - SPA routing for admin panel
+# Admin routes - specific SPA routing for admin panel
 /admin /admin/ 301
+/admin/dashboard /index.html 200
+/admin/seasons/* /index.html 200
+/admin/auctions/* /index.html 200
+/admin/analytics /index.html 200
+/admin/analytics/* /index.html 200
+/admin/analytics?* /index.html 200
+/admin/settings /index.html 200
+/admin/users /index.html 200
+/admin/cape-mohair /index.html 200
+/admin/ovk-reports /index.html 200
+/admin/insights /index.html 200
+/admin/import-export /index.html 200
+/admin/form /index.html 200
+/admin/capture /index.html 200
 /admin/* /index.html 200
 
-# Public auction routes
-/auctions/* /index.html 200
-/reports/* /index.html 200
+# Public auction routes (numeric routes like /202501)
+/:auctionId /index.html 200
 
 # SPA routing - all other routes should serve index.html  
 /* /index.html 200

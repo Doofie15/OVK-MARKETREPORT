@@ -461,6 +461,70 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
           path="/settings" 
           element={<AdminSettings />} 
         />
+
+        {/* Cape Mohair Reports */}
+        <Route 
+          path="/cape-mohair" 
+          element={
+            <div className="p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Cape Mohair Reports</h2>
+                <p className="text-gray-600 mb-4">Specialized reporting for Cape Mohair auction data.</p>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-blue-800">This section is under development. Cape Mohair specific features will be available soon.</p>
+                </div>
+              </div>
+            </div>
+          } 
+        />
+
+        {/* OVK Market Reports */}
+        <Route 
+          path="/ovk-reports" 
+          element={
+            <div className="p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">OVK Market Reports</h2>
+                <p className="text-gray-600 mb-4">Advanced market reporting and analysis tools.</p>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <p className="text-green-800">Enhanced reporting features coming soon with advanced analytics integration.</p>
+                </div>
+              </div>
+            </div>
+          } 
+        />
+
+        {/* Insights */}
+        <Route 
+          path="/insights" 
+          element={
+            <div className="p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Market Insights</h2>
+                <p className="text-gray-600 mb-4">AI-powered market analysis and trend predictions.</p>
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <p className="text-purple-800">Advanced AI insights and predictive analytics are being developed using the analytics data.</p>
+                </div>
+              </div>
+            </div>
+          } 
+        />
+
+        {/* Import/Export */}
+        <Route 
+          path="/import-export" 
+          element={
+            <div className="p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Import/Export</h2>
+                <p className="text-gray-600 mb-4">Data import and export tools for auction information.</p>
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <p className="text-yellow-800">Bulk import/export functionality is being developed to complement the existing auction management.</p>
+                </div>
+              </div>
+            </div>
+          } 
+        />
         
         {/* Redirect to dashboard */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
