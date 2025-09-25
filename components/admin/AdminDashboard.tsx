@@ -44,8 +44,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   });
 
   useEffect(() => {
-    loadDashboardData();
-    checkSystemStatus();
+    const initializeDashboard = async () => {
+      loadDashboardData();
+      checkSystemStatus();
+      
+      // Log dashboard access activity (after logActivity function is defined)
+      setTimeout(() => {
+        logActivity('Admin dashboard accessed', 'info', { timestamp: new Date().toISOString() });
+      }, 1000);
+    };
+    
+    initializeDashboard();
     
     // Refresh data every 5 minutes
     const interval = setInterval(loadDashboardData, 5 * 60 * 1000);
@@ -161,10 +170,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     try {
       const activities: RecentActivity[] = [];
       
-      // Get activities from the activity_log table (real logged activities only)
+      // Get activities from the activity_log table with user information
       const { data: activityLogData, error: activityError } = await supabaseClient
         .from('activity_log')
-        .select('*')
+        .select(`
+          *,
+          users:user_id (
+            name,
+            surname
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -172,53 +187,81 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         console.error('Error fetching activity log:', activityError);
       } else if (activityLogData && activityLogData.length > 0) {
         activityLogData.forEach(log => {
+          // Get user name from the joined user data or fall back to user_name field
+          const user = log.users;
+          const userName = user && user.name 
+            ? `${user.name}${user.surname ? ' ' + user.surname : ''}`
+            : log.user_name || 'Unknown User';
+
           activities.push({
             id: log.id,
             action: log.action,
-            user: log.user_name,
+            user: userName,
             timestamp: log.created_at,
             type: log.activity_type as 'success' | 'info' | 'warning'
           });
         });
       }
 
-      // Get ONLY real auction activities from published auctions
-      const auctionsResult = await SupabaseAuctionDataService.getAuctions();
-      if (auctionsResult.success) {
-        const recentAuctions = auctionsResult.data
-          .filter(auction => auction.status === 'published')
+      // Get ONLY real auction activities from published auctions with user information
+      const { data: auctionsWithUsers, error: auctionsError } = await supabaseClient
+        .from('auctions')
+        .select(`
+          id,
+          catalogue_prefix,
+          catalogue_number,
+          auction_date,
+          status,
+          published_at,
+          created_at,
+          created_by,
+          users:created_by (
+            name,
+            surname
+          )
+        `)
+        .eq('status', 'published')
+        .order('auction_date', { ascending: false })
+        .limit(5);
+
+      if (!auctionsError && auctionsWithUsers) {
+        auctionsWithUsers
           .sort((a, b) => {
             // Sort by published_at if available, otherwise by created_at, then auction_date
             const aTime = a.published_at || a.created_at || a.auction_date;
             const bTime = b.published_at || b.created_at || b.auction_date;
             return new Date(bTime).getTime() - new Date(aTime).getTime();
           })
-          .slice(0, 5); // Show up to 5 real auctions
-
-        recentAuctions.forEach(auction => {
-          // Only add if not already in activities (avoid duplicates)
-          const auctionActivityExists = activities.some(activity => 
-            activity.id === `auction-${auction.id}`
-          );
-          
-          if (!auctionActivityExists) {
-            // Create proper catalogue name from prefix and number
-            const catalogueName = auction.catalogue_prefix && auction.catalogue_number 
-              ? `${auction.catalogue_prefix}${auction.catalogue_number}`
-              : 'Unknown Catalogue';
+          .forEach(auction => {
+            // Only add if not already in activities (avoid duplicates)
+            const auctionActivityExists = activities.some(activity => 
+              activity.id === `auction-${auction.id}`
+            );
             
-            // Use published_at if available, otherwise created_at for more accurate timing
-            const activityTime = auction.published_at || auction.created_at;
-            
-            activities.push({
-              id: `auction-${auction.id}`,
-              action: `Auction report ${catalogueName} published`,
-              user: 'Admin User',
-              timestamp: activityTime,
-              type: 'success'
-            });
-          }
-        });
+            if (!auctionActivityExists) {
+              // Create proper catalogue name from prefix and number
+              const catalogueName = auction.catalogue_prefix && auction.catalogue_number 
+                ? `${auction.catalogue_prefix}${auction.catalogue_number}`
+                : 'Unknown Catalogue';
+              
+              // Get user name from the joined user data
+              const user = auction.users;
+              const userName = user && user.name 
+                ? `${user.name}${user.surname ? ' ' + user.surname : ''}`
+                : 'Admin User';
+              
+              // Use published_at if available, otherwise created_at for more accurate timing
+              const activityTime = auction.published_at || auction.created_at;
+              
+              activities.push({
+                id: `auction-${auction.id}`,
+                action: `Auction report ${catalogueName} published`,
+                user: userName,
+                timestamp: activityTime,
+                type: 'success'
+              });
+            }
+          });
       }
 
       // Sort by timestamp (most recent first)
@@ -235,14 +278,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  // Function to log new activities
-  const logActivity = async (action: string, user: string, type: 'success' | 'info' | 'warning' | 'error', details: any = {}) => {
+  // Function to log new activities with automatic user detection
+  const logActivity = async (action: string, type: 'success' | 'info' | 'warning' | 'error', details: any = {}) => {
     try {
+      // Try to get the current user
+      const { data: { user: currentUser }, error: userError } = await supabaseClient.auth.getUser();
+      
+      let userId = null;
+      let userName = 'System';
+      
+      if (!userError && currentUser) {
+        userId = currentUser.id;
+        // Try to get user details from the users table
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('name, surname')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (userData && userData.name) {
+          userName = `${userData.name}${userData.surname ? ' ' + userData.surname : ''}`;
+        } else {
+          userName = currentUser.email?.split('@')[0] || 'Admin User';
+        }
+      }
+
       const { error } = await supabaseClient
         .from('activity_log')
         .insert({
           action,
-          user_name: user,
+          user_name: userName,
+          user_id: userId,
           activity_type: type,
           details
         });
