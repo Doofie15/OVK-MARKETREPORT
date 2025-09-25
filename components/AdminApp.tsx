@@ -7,6 +7,7 @@ import AdminForm from './admin/AdminForm';
 import AuctionDataCaptureForm from './admin/AuctionDataCaptureForm';
 import SeasonList from './admin/SeasonList';
 import CreateSeason from './admin/CreateSeason';
+import UserProfile from './admin/UserProfile';
 import type { AdminSection } from './admin/AdminSidebar';
 import type { Season, AuctionReport } from '../types';
 
@@ -98,6 +99,9 @@ const AdminApp: React.FC<AdminAppProps> = ({
       case 'insights':
         navigate('/admin/insights');
         break;
+      case 'profile':
+        navigate('/admin/profile');
+        break;
       default:
         console.log('Unknown navigation target:', page);
     }
@@ -114,6 +118,7 @@ const AdminApp: React.FC<AdminAppProps> = ({
     if (path.includes('/insights')) return 'insights';
     if (path.includes('/import-export')) return 'import-export';
     if (path.includes('/users')) return 'users';
+    if (path.includes('/profile')) return 'profile';
     if (path.includes('/settings')) return 'settings';
     return 'dashboard';
   };
@@ -202,6 +207,7 @@ const AdminApp: React.FC<AdminAppProps> = ({
         <Route path="/insights" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">Insights - Coming Soon</h2></div>} />
         <Route path="/import-export" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">Import/Export - Coming Soon</h2></div>} />
         <Route path="/users" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">User Management - Coming Soon</h2></div>} />
+        <Route path="/profile" element={<UserProfile onNavigate={handleDashboardNavigation} />} />
         <Route path="/settings" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">Settings - Coming Soon</h2></div>} />
         
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
