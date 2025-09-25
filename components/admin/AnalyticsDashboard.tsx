@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabaseClient } from '../../lib/supabase';
 import Chart from 'react-apexcharts';
 import WorldMap from './WorldMap';
 import SouthAfricaMap from './SouthAfricaMap';
@@ -138,19 +138,19 @@ const AnalyticsDashboard: React.FC = () => {
       
       // Try to fetch analytics data with graceful fallbacks
       const queries = [
-        supabase.from('v_active_users_5m').select('*').single().catch(() => ({ data: null, error: null })),
-        supabase.from('v_dau_wau_mau').select('*').single().catch(() => ({ data: null, error: null })),
-        supabase.from('v_top_pages_30d').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_users_by_country_30d').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_channel_performance_30d').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_device_breakdown_30d').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_avg_time_on_page_30d').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_section_leaderboard_30d').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_pwa_metrics_30d').select('*').single().catch(() => ({ data: null, error: null })),
-        supabase.from('v_realtime_events').select('*').catch(() => ({ data: [], error: null })),
-        supabase.from('v_engagement_metrics_30d').select('*').single().catch(() => ({ data: null, error: null })),
-        supabase.from('mv_hourly_stats').select('*').order('hour', { ascending: false }).limit(24).catch(() => ({ data: [], error: null })),
-        supabase.from('mv_daily_stats').select('*').order('day', { ascending: false }).limit(30).catch(() => ({ data: [], error: null }))
+        supabaseClient.from('v_active_users_5m').select('*').single().then(result => result).catch(() => ({ data: null, error: null })),
+        supabaseClient.from('v_dau_wau_mau').select('*').single().then(result => result).catch(() => ({ data: null, error: null })),
+        supabaseClient.from('v_top_pages_30d').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_users_by_country_30d').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_channel_performance_30d').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_device_breakdown_30d').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_avg_time_on_page_30d').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_section_leaderboard_30d').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_pwa_metrics_30d').select('*').single().then(result => result).catch(() => ({ data: null, error: null })),
+        supabaseClient.from('v_realtime_events').select('*').then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('v_engagement_metrics_30d').select('*').single().then(result => result).catch(() => ({ data: null, error: null })),
+        supabaseClient.from('mv_hourly_stats').select('*').order('hour', { ascending: false }).limit(24).then(result => result).catch(() => ({ data: [], error: null })),
+        supabaseClient.from('mv_daily_stats').select('*').order('day', { ascending: false }).limit(30).then(result => result).catch(() => ({ data: [], error: null }))
       ];
 
       const [
@@ -170,7 +170,7 @@ const AnalyticsDashboard: React.FC = () => {
       ] = await Promise.all(queries);
 
       // Fetch geographical data separately with fallback
-      const geoRes = await supabase.from('v_engagement_by_country').select('*').catch(() => ({ data: [], error: null }));
+      const geoRes = await supabaseClient.from('v_engagement_by_country').select('*').then(result => result).catch(() => ({ data: [], error: null }));
       setGeoData(geoRes.data || []);
 
       setData({

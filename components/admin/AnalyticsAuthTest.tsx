@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabaseClient } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AnalyticsAuthTest: React.FC = () => {
@@ -36,7 +36,7 @@ const AnalyticsAuthTest: React.FC = () => {
 
       // Test 2: Check if user exists in custom users table
       console.log('🔍 Testing custom user lookup...');
-      const { data: customUser, error: customUserError } = await supabase
+      const { data: customUser, error: customUserError } = await supabaseClient
         .from('users')
         .select('id, name, email, approval_status, user_type_id')
         .eq('id', user.id)
@@ -49,25 +49,25 @@ const AnalyticsAuthTest: React.FC = () => {
       };
 
       // Test 3: Check user type and permissions
-      if (customUser) {
+      if (customUser && (customUser as any).user_type_id) {
         console.log('🔍 Testing user type and permissions...');
-        const { data: userType, error: userTypeError } = await supabase
+        const { data: userType, error: userTypeError } = await supabaseClient
           .from('user_types')
           .select('id, name, permissions')
-          .eq('id', customUser.user_type_id)
+          .eq('id', (customUser as any).user_type_id)
           .single();
 
         results.user_type = {
           found: !!userType,
           data: userType,
           error: userTypeError?.message,
-          has_analytics_access: userType?.name === 'super_admin' || userType?.name === 'admin'
+          has_analytics_access: (userType && ((userType as any).name === 'super_admin' || (userType as any).name === 'admin'))
         };
       }
 
       // Test 4: Try to access analytics tables
       console.log('🔍 Testing analytics table access...');
-      const { data: sessionCount, error: sessionError } = await supabase
+      const { data: sessionCount, error: sessionError } = await supabaseClient
         .from('analytics_session')
         .select('session_id', { count: 'exact', head: true });
 
@@ -79,7 +79,7 @@ const AnalyticsAuthTest: React.FC = () => {
 
       // Test 5: Try to access analytics views
       console.log('🔍 Testing analytics views access...');
-      const { data: activeUsers, error: viewError } = await supabase
+      const { data: activeUsers, error: viewError } = await supabaseClient
         .from('v_active_users_5m')
         .select('*')
         .single();
@@ -92,12 +92,14 @@ const AnalyticsAuthTest: React.FC = () => {
 
       // Test 6: Check current auth context
       console.log('🔍 Testing auth context...');
-      const { data: authTest, error: authError } = await supabase
-        .rpc('auth.uid')
+      const { data: authTest, error: authError } = await supabaseClient
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
         .single();
 
       results.auth_context = {
-        current_user_id: authTest,
+        current_user_id: (authTest && (authTest as any).id) ? (authTest as any).id : user.id,
         error: authError?.message
       };
 

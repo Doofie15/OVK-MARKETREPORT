@@ -453,7 +453,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
         {/* Analytics Dashboard */}
         <Route 
           path="/analytics" 
-          element={<AnalyticsAuthTest />} 
+          element={<AnalyticsDashboard />} 
         />
 
         {/* User Management */}
