@@ -32,6 +32,27 @@ type CertificationRow = Tables['certifications']['Row']
 type CommodityTypeRow = Tables['commodity_types']['Row']
 
 export class SupabaseAuctionDataService {
+  
+  // Helper function to log activities
+  static async logActivity(action: string, userId?: string, details: any = {}) {
+    try {
+      const { error } = await supabaseClient
+        .from('activity_log')
+        .insert({
+          action,
+          user_name: userId ? 'Admin User' : 'System',
+          user_id: userId || null,
+          activity_type: 'info',
+          details
+        });
+      
+      if (error) {
+        console.error('Error logging activity:', error);
+      }
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+  }
   // Authentication methods
   static async getCurrentUser() {
     try {

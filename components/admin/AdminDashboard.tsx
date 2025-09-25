@@ -161,7 +161,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     try {
       const activities: RecentActivity[] = [];
       
-      // Get activities from the activity_log table
+      // Get activities from the activity_log table (real logged activities only)
       const { data: activityLogData, error: activityError } = await supabaseClient
         .from('activity_log')
         .select('*')
@@ -170,7 +170,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 
       if (activityError) {
         console.error('Error fetching activity log:', activityError);
-      } else if (activityLogData) {
+      } else if (activityLogData && activityLogData.length > 0) {
         activityLogData.forEach(log => {
           activities.push({
             id: log.id,
@@ -182,50 +182,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         });
       }
 
-      // Also get recent auction activities if we don't have enough from activity_log
-      if (activities.length < 3) {
-        const auctionsResult = await SupabaseAuctionDataService.getAuctions();
-        if (auctionsResult.success) {
-          const recentAuctions = auctionsResult.data
-            .filter(auction => auction.status === 'published')
-            .sort((a, b) => {
-              // Sort by published_at if available, otherwise by created_at, then auction_date
-              const aTime = a.published_at || a.created_at || a.auction_date;
-              const bTime = b.published_at || b.created_at || b.auction_date;
-              return new Date(bTime).getTime() - new Date(aTime).getTime();
-            })
-            .slice(0, 3);
+      // Get ONLY real auction activities from published auctions
+      const auctionsResult = await SupabaseAuctionDataService.getAuctions();
+      if (auctionsResult.success) {
+        const recentAuctions = auctionsResult.data
+          .filter(auction => auction.status === 'published')
+          .sort((a, b) => {
+            // Sort by published_at if available, otherwise by created_at, then auction_date
+            const aTime = a.published_at || a.created_at || a.auction_date;
+            const bTime = b.published_at || b.created_at || b.auction_date;
+            return new Date(bTime).getTime() - new Date(aTime).getTime();
+          })
+          .slice(0, 5); // Show up to 5 real auctions
 
-          recentAuctions.forEach(auction => {
-            // Only add if not already in activities (avoid duplicates)
-            const auctionActivityExists = activities.some(activity => 
-              activity.id === `auction-${auction.id}`
-            );
+        recentAuctions.forEach(auction => {
+          // Only add if not already in activities (avoid duplicates)
+          const auctionActivityExists = activities.some(activity => 
+            activity.id === `auction-${auction.id}`
+          );
+          
+          if (!auctionActivityExists) {
+            // Create proper catalogue name from prefix and number
+            const catalogueName = auction.catalogue_prefix && auction.catalogue_number 
+              ? `${auction.catalogue_prefix}${auction.catalogue_number}`
+              : 'Unknown Catalogue';
             
-            if (!auctionActivityExists) {
-              // Create proper catalogue name from prefix and number
-              const catalogueName = auction.catalogue_prefix && auction.catalogue_number 
-                ? `${auction.catalogue_prefix}${auction.catalogue_number}`
-                : 'Unknown Catalogue';
-              
-              // Use published_at if available, otherwise created_at for more accurate timing
-              const activityTime = auction.published_at || auction.created_at;
-              
-              activities.push({
-                id: `auction-${auction.id}`,
-                action: `New auction report published: ${catalogueName}`,
-                user: 'Admin User',
-                timestamp: activityTime,
-                type: 'success'
-              });
-            }
-          });
-        }
+            // Use published_at if available, otherwise created_at for more accurate timing
+            const activityTime = auction.published_at || auction.created_at;
+            
+            activities.push({
+              id: `auction-${auction.id}`,
+              action: `Auction report ${catalogueName} published`,
+              user: 'Admin User',
+              timestamp: activityTime,
+              type: 'success'
+            });
+          }
+        });
       }
 
       // Sort by timestamp (most recent first)
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+      // Return only real activities - NO mock data
       return {
         success: true,
         data: activities.slice(0, 5)
