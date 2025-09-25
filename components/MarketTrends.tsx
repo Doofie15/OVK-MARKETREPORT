@@ -177,12 +177,63 @@ const ModernTrendChart: React.FC<{
       shared: true,
       intersect: false,
       style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
-      x: { formatter: (val) => `${val}` }, // Show auction catalogue name directly
-      y: { 
-        formatter: (val, opts) => {
-          const currencySymbol = currency; // Use the currency prop from component
-          return `${val.toFixed(2)} ${currencySymbol}`;
-        }
+      custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+        const period = w.globals.labels[dataPointIndex];
+        
+        // Get values for both series at this data point
+        let currentValue = null;
+        let previousValue = null;
+        let currentLabel = '';
+        let previousLabel = '';
+        
+        // Find current and previous year values
+        series.forEach((serie, index) => {
+          const seriesName = w.globals.seriesNames[index];
+          const value = serie[dataPointIndex];
+          
+          if (seriesName.includes(currentSeason)) {
+            currentValue = value;
+            currentLabel = seriesName;
+          } else if (seriesName.includes(previousSeason)) {
+            previousValue = value;
+            previousLabel = seriesName;
+          }
+        });
+        
+        // Calculate difference and percentage
+        const difference = currentValue && previousValue ? currentValue - previousValue : 0;
+        const percentage = previousValue && previousValue !== 0 ? ((difference / previousValue) * 100) : 0;
+        const isPositive = difference >= 0;
+        
+        return `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 200px;">
+            <div style="color: #1e293b; font-weight: 600; margin-bottom: 8px; font-size: 13px;">
+              Period ${period}
+            </div>
+            ${currentValue !== null ? `
+              <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                <div style="width: 8px; height: 8px; background: ${primaryColor}; border-radius: 50%; margin-right: 8px;"></div>
+                <span style="color: #64748b; font-size: 11px; margin-right: 8px;">${currentLabel}:</span>
+                <span style="color: ${primaryColor}; font-weight: 600; font-size: 12px;">${currentValue.toFixed(2)} ${currency}</span>
+              </div>
+            ` : ''}
+            ${previousValue !== null ? `
+              <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                <div style="width: 8px; height: 8px; background: ${secondaryColor}; border-radius: 50%; margin-right: 8px;"></div>
+                <span style="color: #64748b; font-size: 11px; margin-right: 8px;">${previousLabel}:</span>
+                <span style="color: ${secondaryColor}; font-weight: 600; font-size: 12px;">${previousValue.toFixed(2)} ${currency}</span>
+              </div>
+            ` : ''}
+            ${currentValue !== null && previousValue !== null ? `
+              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 10px;">Change:</span>
+                <span style="color: ${isPositive ? '#10b981' : '#ef4444'}; font-weight: 600; font-size: 11px; margin-left: 4px;">
+                  ${isPositive ? '+' : ''}${difference.toFixed(2)} ${currency} (${isPositive ? '+' : ''}${percentage.toFixed(1)}%)
+                </span>
+              </div>
+            ` : ''}
+          </div>
+        `;
       }
     },
     legend: {

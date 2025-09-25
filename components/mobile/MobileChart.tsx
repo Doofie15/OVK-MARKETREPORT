@@ -83,8 +83,67 @@ const MobileChart: React.FC<MobileChartProps> = ({
     },
     tooltip: {
       theme: 'light',
-      style: { fontSize: '14px', fontFamily: 'Inter, sans-serif' },
-      x: { formatter: (val) => `Period ${val}` }
+      shared: true,
+      intersect: false,
+      style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+      custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+        const period = w.globals.labels[dataPointIndex];
+        
+        // Get values for both series at this data point
+        let currentValue = null;
+        let previousValue = null;
+        let currentLabel = '';
+        let previousLabel = '';
+        
+        // Find current and previous year values
+        series.forEach((serie, index) => {
+          const seriesName = w.globals.seriesNames[index];
+          const value = serie[dataPointIndex];
+          
+          if (seriesName.includes('2025/2026')) {
+            currentValue = value;
+            currentLabel = seriesName;
+          } else if (seriesName.includes('2024/2025')) {
+            previousValue = value;
+            previousLabel = seriesName;
+          }
+        });
+        
+        // Calculate difference and percentage
+        const difference = currentValue && previousValue ? currentValue - previousValue : 0;
+        const percentage = previousValue && previousValue !== 0 ? ((difference / previousValue) * 100) : 0;
+        const isPositive = difference >= 0;
+        
+        return `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 180px;">
+            <div style="color: #1e293b; font-weight: 600; margin-bottom: 6px; font-size: 12px;">
+              Period ${period}
+            </div>
+            ${currentValue !== null ? `
+              <div style="display: flex; align-items: center; margin-bottom: 3px;">
+                <div style="width: 6px; height: 6px; background: ${colors[0]}; border-radius: 50%; margin-right: 6px;"></div>
+                <span style="color: #64748b; font-size: 10px; margin-right: 6px;">${currentLabel}:</span>
+                <span style="color: ${colors[0]}; font-weight: 600; font-size: 11px;">${currentValue.toFixed(2)} ${currency || ''}</span>
+              </div>
+            ` : ''}
+            ${previousValue !== null ? `
+              <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                <div style="width: 6px; height: 6px; background: ${colors[1] || colors[0]}; border-radius: 50%; margin-right: 6px;"></div>
+                <span style="color: #64748b; font-size: 10px; margin-right: 6px;">${previousLabel}:</span>
+                <span style="color: ${colors[1] || colors[0]}; font-weight: 600; font-size: 11px;">${previousValue.toFixed(2)} ${currency || ''}</span>
+              </div>
+            ` : ''}
+            ${currentValue !== null && previousValue !== null ? `
+              <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 9px;">Change:</span>
+                <span style="color: ${isPositive ? '#10b981' : '#ef4444'}; font-weight: 600; font-size: 10px; margin-left: 4px;">
+                  ${isPositive ? '+' : ''}${difference.toFixed(2)} ${currency || ''} (${isPositive ? '+' : ''}${percentage.toFixed(1)}%)
+                </span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
     },
     legend: showLegend ? {
       position: 'top',
