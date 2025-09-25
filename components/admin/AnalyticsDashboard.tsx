@@ -136,7 +136,23 @@ const AnalyticsDashboard: React.FC = () => {
     try {
       setError(null);
       
-      // Fetch all analytics data in parallel
+      // Try to fetch analytics data with graceful fallbacks
+      const queries = [
+        supabase.from('v_active_users_5m').select('*').single().catch(() => ({ data: null, error: null })),
+        supabase.from('v_dau_wau_mau').select('*').single().catch(() => ({ data: null, error: null })),
+        supabase.from('v_top_pages_30d').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_users_by_country_30d').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_channel_performance_30d').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_device_breakdown_30d').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_avg_time_on_page_30d').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_section_leaderboard_30d').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_pwa_metrics_30d').select('*').single().catch(() => ({ data: null, error: null })),
+        supabase.from('v_realtime_events').select('*').catch(() => ({ data: [], error: null })),
+        supabase.from('v_engagement_metrics_30d').select('*').single().catch(() => ({ data: null, error: null })),
+        supabase.from('mv_hourly_stats').select('*').order('hour', { ascending: false }).limit(24).catch(() => ({ data: [], error: null })),
+        supabase.from('mv_daily_stats').select('*').order('day', { ascending: false }).limit(30).catch(() => ({ data: [], error: null }))
+      ];
+
       const [
         activeUsersRes,
         dauWauMauRes,
@@ -151,24 +167,10 @@ const AnalyticsDashboard: React.FC = () => {
         engagementRes,
         hourlyStatsRes,
         dailyStatsRes
-      ] = await Promise.all([
-        supabase.from('v_active_users_5m').select('*').single(),
-        supabase.from('v_dau_wau_mau').select('*').single(),
-        supabase.from('v_top_pages_30d').select('*'),
-        supabase.from('v_users_by_country_30d').select('*'),
-        supabase.from('v_channel_performance_30d').select('*'),
-        supabase.from('v_device_breakdown_30d').select('*'),
-        supabase.from('v_avg_time_on_page_30d').select('*'),
-        supabase.from('v_section_leaderboard_30d').select('*'),
-        supabase.from('v_pwa_metrics_30d').select('*').single(),
-        supabase.from('v_realtime_events').select('*'),
-        supabase.from('v_engagement_metrics_30d').select('*').single(),
-        supabase.from('mv_hourly_stats').select('*').order('hour', { ascending: false }).limit(24),
-        supabase.from('mv_daily_stats').select('*').order('day', { ascending: false }).limit(30)
-      ]);
+      ] = await Promise.all(queries);
 
-      // Fetch geographical data separately
-      const geoRes = await supabase.from('v_engagement_by_country').select('*');
+      // Fetch geographical data separately with fallback
+      const geoRes = await supabase.from('v_engagement_by_country').select('*').catch(() => ({ data: [], error: null }));
       setGeoData(geoRes.data || []);
 
       setData({

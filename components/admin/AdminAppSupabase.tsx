@@ -9,6 +9,7 @@ import SeasonList from './SeasonList';
 import CreateSeason from './CreateSeason';
 import UserManagement from './UserManagement';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import SimpleAnalyticsDashboard from './SimpleAnalyticsDashboard';
 import AdminSettings from './AdminSettings';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
