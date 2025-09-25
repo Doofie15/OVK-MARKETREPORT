@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SupabaseAuctionDataService } from '../../data/supabase-service';
+import { supabase as supabaseClient } from '../../lib/supabase';
 
 interface DashboardStats {
   totalAuctions: number;
@@ -160,44 +161,69 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     try {
       const activities: RecentActivity[] = [];
       
-      // Get recent auctions
-      const auctionsResult = await SupabaseAuctionDataService.getAuctions();
-      if (auctionsResult.success) {
-        const recentAuctions = auctionsResult.data
-          .filter(auction => auction.status === 'published')
-          .sort((a, b) => new Date(b.auction_date).getTime() - new Date(a.auction_date).getTime())
-          .slice(0, 3);
+      // Get activities from the activity_log table
+      const { data: activityLogData, error: activityError } = await supabaseClient
+        .from('activity_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-        recentAuctions.forEach(auction => {
+      if (activityError) {
+        console.error('Error fetching activity log:', activityError);
+      } else if (activityLogData) {
+        activityLogData.forEach(log => {
           activities.push({
-            id: `auction-${auction.id}`,
-            action: `New auction report published: ${auction.catalogue_name}`,
-            user: 'Admin User',
-            timestamp: new Date(auction.auction_date).toISOString(),
-            type: 'success'
+            id: log.id,
+            action: log.action,
+            user: log.user_name,
+            timestamp: log.created_at,
+            type: log.activity_type as 'success' | 'info' | 'warning'
           });
         });
       }
 
-      // Add some system activities
-      activities.push(
-        {
-          id: 'system-sync',
-          action: 'Market data synchronized',
-          user: 'System',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          type: 'info'
-        },
-        {
-          id: 'backup',
-          action: 'Database backup completed',
-          user: 'System',
-          timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          type: 'info'
-        }
-      );
+      // Also get recent auction activities if we don't have enough from activity_log
+      if (activities.length < 3) {
+        const auctionsResult = await SupabaseAuctionDataService.getAuctions();
+        if (auctionsResult.success) {
+          const recentAuctions = auctionsResult.data
+            .filter(auction => auction.status === 'published')
+            .sort((a, b) => {
+              // Sort by published_at if available, otherwise by created_at, then auction_date
+              const aTime = a.published_at || a.created_at || a.auction_date;
+              const bTime = b.published_at || b.created_at || b.auction_date;
+              return new Date(bTime).getTime() - new Date(aTime).getTime();
+            })
+            .slice(0, 3);
 
-      // Sort by timestamp
+          recentAuctions.forEach(auction => {
+            // Only add if not already in activities (avoid duplicates)
+            const auctionActivityExists = activities.some(activity => 
+              activity.id === `auction-${auction.id}`
+            );
+            
+            if (!auctionActivityExists) {
+              // Create proper catalogue name from prefix and number
+              const catalogueName = auction.catalogue_prefix && auction.catalogue_number 
+                ? `${auction.catalogue_prefix}${auction.catalogue_number}`
+                : 'Unknown Catalogue';
+              
+              // Use published_at if available, otherwise created_at for more accurate timing
+              const activityTime = auction.published_at || auction.created_at;
+              
+              activities.push({
+                id: `auction-${auction.id}`,
+                action: `New auction report published: ${catalogueName}`,
+                user: 'Admin User',
+                timestamp: activityTime,
+                type: 'success'
+              });
+            }
+          });
+        }
+      }
+
+      // Sort by timestamp (most recent first)
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       return {
@@ -207,6 +233,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     } catch (error) {
       console.error('Error getting recent activities:', error);
       return { success: false, error: error.message };
+    }
+  };
+
+  // Function to log new activities
+  const logActivity = async (action: string, user: string, type: 'success' | 'info' | 'warning' | 'error', details: any = {}) => {
+    try {
+      const { error } = await supabaseClient
+        .from('activity_log')
+        .insert({
+          action,
+          user_name: user,
+          activity_type: type,
+          details
+        });
+      
+      if (error) {
+        console.error('Error logging activity:', error);
+      } else {
+        // Refresh activities after logging
+        loadDashboardData();
+      }
+    } catch (error) {
+      console.error('Error logging activity:', error);
     }
   };
 
