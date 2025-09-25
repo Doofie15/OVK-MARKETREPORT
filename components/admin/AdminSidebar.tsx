@@ -33,6 +33,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const location = useLocation();
 
   const handleSectionChange = (section: AdminSection) => {
+    console.log('handleSectionChange called with:', section);
+    console.log('Navigating to:', `/admin/${section}`);
     navigate(`/admin/${section}`);
     onSectionChange(section);
   };
@@ -215,7 +217,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* User Actions */}
         <div className="space-y-1 mb-3">
           <button 
-            onClick={() => handleSectionChange('profile')}
+            onClick={() => {
+              console.log('Profile button clicked');
+              handleSectionChange('profile');
+            }}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
               activeSection === 'profile'
                 ? 'bg-blue-600 text-white'

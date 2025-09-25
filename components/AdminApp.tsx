@@ -208,7 +208,16 @@ const AdminApp: React.FC<AdminAppProps> = ({
         <Route path="/insights" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">Insights - Coming Soon</h2></div>} />
         <Route path="/import-export" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">Import/Export - Coming Soon</h2></div>} />
         <Route path="/users" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">User Management - Coming Soon</h2></div>} />
-        <Route path="/profile" element={<UserProfile onNavigate={handleDashboardNavigation} />} />
+        <Route path="/profile" element={
+          <div className="p-8">
+            <h1 className="text-2xl font-bold text-green-600">✅ Profile Route Working!</h1>
+            <p className="mt-4 text-gray-600">If you see this, the navigation is working correctly.</p>
+            <p className="mt-2 text-gray-600">Now let's load the actual profile component...</p>
+            <div className="mt-6">
+              <UserProfile onNavigate={handleDashboardNavigation} />
+            </div>
+          </div>
+        } />
         <Route path="/settings" element={<div className="text-center py-20"><h2 className="text-2xl font-bold text-gray-600">Settings - Coming Soon</h2></div>} />
         
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
