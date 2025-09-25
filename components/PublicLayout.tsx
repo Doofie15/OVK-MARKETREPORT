@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PublicHeader from './PublicHeader';
 import AuctionSelector from './AuctionSelector';
 import IndicatorsGrid from './IndicatorsGrid';
@@ -34,6 +34,8 @@ interface PublicLayoutProps {
   reports: AuctionReport[];
   selectedWeekId: string;
   onWeekChange: (weekId: string) => void;
+  selectedSeason?: string;
+  onSeasonChange?: (season: string) => void;
   error?: string | null;
 }
 
@@ -41,9 +43,15 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
   reports, 
   selectedWeekId, 
   onWeekChange,
+  selectedSeason = 'all',
+  onSeasonChange,
   error 
 }) => {
-  const activeReport = reports.find(report => report.auction.week_id === selectedWeekId);
+  // Memoize active report to prevent unnecessary re-renders
+  const activeReport = useMemo(() => 
+    reports.find(report => report.auction.week_id === selectedWeekId), 
+    [reports, selectedWeekId]
+  );
   
   const previousReport = (() => {
     const currentIndex = reports.findIndex(r => r.auction.week_id === selectedWeekId);
@@ -81,10 +89,23 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
         }));
   })();
 
-  const availableWeeks = reports.map(report => ({
-    id: report.auction.week_id,
-    label: `${report.auction.catalogue_name || `Week ${report.auction.week_id.split('_')[2]}`} (${new Date(report.auction.auction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
-  })).sort((a,b) => b.id.localeCompare(a.id));
+  // Memoize expensive calculations to prevent unnecessary re-renders
+  const { availableSeasons, currentSeason, filteredReports, availableWeeks } = useMemo(() => {
+    const seasons = Array.from(new Set(reports.map(report => report.auction.season_label).filter(Boolean))).sort().reverse();
+    const season = selectedSeason || seasons[0];
+    const filtered = reports.filter(report => report.auction.season_label === season);
+    const weeks = filtered.map(report => ({
+      id: report.auction.week_id,
+      label: `${report.auction.catalogue_name || `Week ${report.auction.week_id.split('_')[2]}`} (${new Date(report.auction.auction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
+    })).sort((a,b) => b.id.localeCompare(a.id));
+    
+    return {
+      availableSeasons: seasons,
+      currentSeason: season,
+      filteredReports: filtered,
+      availableWeeks: weeks
+    };
+  }, [reports, selectedSeason]);
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-secondary)' }}>
@@ -108,6 +129,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
             weeks={availableWeeks}
             selectedWeekId={selectedWeekId}
             onWeekChange={onWeekChange}
+            seasons={availableSeasons}
+            selectedSeason={currentSeason}
+            onSeasonChange={onSeasonChange}
           />
           {activeReport ? (
             <div className="space-y-0 sm:space-y-4 mobile-spacing-fix">

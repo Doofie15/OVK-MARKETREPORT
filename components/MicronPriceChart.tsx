@@ -45,11 +45,17 @@ const MicronPriceChart: React.FC<MicronPriceChartProps> = ({ data, previousData,
     ? [...previousData].sort((a, b) => parseFloat(a.bucket_micron) - parseFloat(b.bucket_micron)) 
     : [];
 
-  // Create two series: certified and non-certified prices
-  const certifiedData = sortedData.map(item => item.certified_price_clean_zar_per_kg || 0);
-  const nonCertifiedData = sortedData.map(item => item.price_clean_zar_per_kg || 0);
+  // Filter out data points with zero values to improve aggregation
+  const filteredData = sortedData.filter(item => 
+    (item.certified_price_clean_zar_per_kg && item.certified_price_clean_zar_per_kg > 0) ||
+    (item.price_clean_zar_per_kg && item.price_clean_zar_per_kg > 0)
+  );
+
+  // Create two series: certified and non-certified prices (only include non-zero values)
+  const certifiedData = filteredData.map(item => item.certified_price_clean_zar_per_kg || null);
+  const nonCertifiedData = filteredData.map(item => item.price_clean_zar_per_kg || null);
   
-  const categories = sortedData.map(item => `${item.bucket_micron}µm`);
+  const categories = filteredData.map(item => `${item.bucket_micron}µm`);
   
   // Debug logging
   console.log('Chart Data Debug:', {

@@ -69,11 +69,22 @@ const IndicatorCard: React.FC<{
     unit: string;
     change?: number;
     ytdValue?: string;
-}> = ({ title, value, unit, change, ytdValue }) => {
+    tint?: 'blue' | 'green';
+}> = ({ title, value, unit, change, ytdValue, tint }) => {
     const isPositive = change !== undefined && change >= 0;
 
+    // Get tint classes based on the tint prop
+    const getTintClasses = () => {
+        if (tint === 'blue') {
+            return 'bg-gradient-to-br from-blue-50 to-blue-100/30 border-blue-200/50';
+        } else if (tint === 'green') {
+            return 'bg-gradient-to-br from-green-50 to-green-100/30 border-green-200/50';
+        }
+        return '';
+    };
+
     return (
-        <div className="metric-card h-32 flex flex-col justify-between p-4 pb-5">
+        <div className={`metric-card h-32 flex flex-col justify-between p-4 pb-5 ${getTintClasses()}`}>
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     {getIndicatorIcon(title)}
@@ -102,7 +113,7 @@ const IndicatorCard: React.FC<{
                 <div className="h-5">
                     {ytdValue && (
                         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                            YTD: {ytdValue}
+                            Season: {ytdValue}
                         </p>
                     )}
                 </div>
@@ -166,18 +177,18 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
         data: allMerino
     });
     
-    // 7. All Merino Avg (YTD)
-    const allMerinoYtd = yearly_average_prices?.find(p => p.label.includes('All - Merino Wool'));
-    if (allMerinoYtd) orderedCards.push({
-        type: 'yearly_price',
-        data: allMerinoYtd
-    });
-    
-    // 8. Certified (YTD)
+    // 7. Certified (YTD) - moved to position 7
     const certifiedYtd = yearly_average_prices?.find(p => p.label.includes('Certified Wool'));
     if (certifiedYtd) orderedCards.push({
         type: 'yearly_price',
         data: certifiedYtd
+    });
+    
+    // 8. All Merino Avg (YTD) - moved to position 8
+    const allMerinoYtd = yearly_average_prices?.find(p => p.label.includes('All - Merino Wool'));
+    if (allMerinoYtd) orderedCards.push({
+        type: 'yearly_price',
+        data: allMerinoYtd
     });
     
     
@@ -210,6 +221,9 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                         );
                     } else if (card.type === 'benchmark') {
                         const benchmark = card.data;
+                        // Apply tints: blue for Certified, green for All-Merino
+                        const tint = benchmark.label === 'Certified' ? 'blue' : 
+                                   benchmark.label === 'All-Merino' ? 'green' : undefined;
                         return (
                             <IndicatorCard
                                 key={benchmark.label}
@@ -217,16 +231,21 @@ const IndicatorsGrid: React.FC<IndicatorsGridProps> = ({ indicators, benchmarks,
                                 value={benchmark.price.toFixed(2)}
                                 unit={benchmark.currency.split(' ')[0]}
                                 change={benchmark.day_change_pct}
+                                tint={tint}
                             />
                         );
                     } else if (card.type === 'yearly_price') {
                         const price = card.data;
+                        // Apply tints: blue for Certified, green for All-Merino
+                        const tint = price.label.includes('Certified Wool') ? 'blue' : 
+                                   price.label.includes('All - Merino Wool') ? 'green' : undefined;
                         return (
                             <IndicatorCard
                                 key={price.label}
                                 title={price.label}
                                 value={price.value.toFixed(2)}
                                 unit={price.unit}
+                                tint={tint}
                             />
                         );
                     }

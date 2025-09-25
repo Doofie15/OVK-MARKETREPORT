@@ -2922,7 +2922,7 @@ const MarketStatsTab: React.FC<{
     } else if (field === 'total_value') {
       let item = indicators.find(i => i.type === 'total_value');
       if(item) item.value = numericValue; 
-      else indicators.push({ type: 'total_value', value: numericValue, unit: 'ZAR M', pct_change: 0 });
+      else indicators.push({ type: 'total_value', value: numericValue, unit: 'R M', pct_change: 0 });
     } else if (field === 'avg_rws') {
       let item = yearlyPrices.find(p => p.label.includes('Certified Wool'));
       if(item) item.value = numericValue; 
@@ -5128,7 +5128,7 @@ const ReviewSaveTab: React.FC<{
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <div className="text-2xl font-bold text-purple-600">
-                  ZAR {(formData.indicators.find(i => i.type === 'total_value')?.value || (formData.greasy_stats?.turnover_rand || 0) / 1000000 || 0).toFixed(1)}M
+                  R{(formData.indicators.find(i => i.type === 'total_value')?.value || (formData.greasy_stats?.turnover_rand || 0) / 1000000 || 0).toFixed(1)}M
                 </div>
                 <div className="text-sm text-gray-600">Total Value</div>
               </div>

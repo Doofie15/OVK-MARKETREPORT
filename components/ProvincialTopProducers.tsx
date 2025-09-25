@@ -89,13 +89,13 @@ const ProvincialTopProducers: React.FC<ProvincialTopProducersProps> = ({ data, p
             <div className="overflow-x-auto rounded-md" style={{ background: 'var(--bg-hover)' }}>
               <table className="w-full text-xs table-fixed">
                 <colgroup>
-                  <col className="w-12" /> {/* POS */}
-                  <col className="w-48 sm:w-64" /> {/* PRODUCER NAME */}
-                  <col className="w-24 sm:w-32 hidden sm:table-column" /> {/* DISTRICT */}
-                  <col className="w-12 hidden md:table-column" /> {/* DESC */}
-                  <col className="w-16" /> {/* MICRON */}
-                  <col className="w-20" /> {/* PRICE/KG */}
-                  <col className="w-20 hidden md:table-column" /> {/* CERTIFIED */}
+                  <col className="w-12" />
+                  <col className="w-48 sm:w-64" />
+                  <col className="w-24 sm:w-32 hidden sm:table-column" />
+                  <col className="w-12 hidden md:table-column" />
+                  <col className="w-16" />
+                  <col className="w-20" />
+                  <col className="w-20 hidden md:table-column" />
                 </colgroup>
                 <thead>
                   <tr>

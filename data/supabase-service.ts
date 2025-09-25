@@ -1771,10 +1771,9 @@ export class SupabaseAuctionDataService {
             .select('exchange_rates_zar_usd, exchange_rates_zar_eur, exchange_rates_zar_jpy, exchange_rates_zar_gbp, exchange_rates_usd_aud')
             .lt('auction_date', auction.auction_date)
             .order('auction_date', { ascending: false })
-            .limit(1)
-            .single();
+            .limit(1);
           
-          const previousAuction = previousAuctionQuery.data;
+          const previousAuction = previousAuctionQuery.data?.[0];
           
           // Calculate percentage change
           const calculateChange = (current: number, previous: number | null | undefined) => {
@@ -1909,6 +1908,11 @@ export class SupabaseAuctionDataService {
 
   // Calculate indicators with percentage changes
   static async calculateIndicatorsWithChanges(auction: any, seasonIndicatorTotalsResult: any) {
+    console.log('🔍 calculateIndicatorsWithChanges Debug:', {
+      auction_id: auction.id,
+      season_id: auction.season_id,
+      seasonIndicatorTotalsResult: seasonIndicatorTotalsResult
+    });
     const previousAuctionResult = await this.getPreviousAuction(auction);
     const previousAuction = previousAuctionResult.success ? previousAuctionResult.data : null;
 
@@ -1943,19 +1947,37 @@ export class SupabaseAuctionDataService {
       avgPrice: `${currentAvgPrice} vs ${previousAvgPrice} = ${avgPriceChange}%`
     });
 
+    // Calculate YTD values with fallback
+    const ytdLots = seasonIndicatorTotalsResult.success ? seasonIndicatorTotalsResult.data.totalBales : currentLots;
+    const ytdVolume = seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalVolume / 1000) : currentVolume;
+    const ytdValue = seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalValue / 1000000) : currentValue;
+
+    console.log('🔍 YTD Values Debug:', {
+      seasonIndicatorTotalsSuccess: seasonIndicatorTotalsResult.success,
+      seasonData: seasonIndicatorTotalsResult.data,
+      calculated: {
+        ytdLots,
+        ytdVolume,
+        ytdValue,
+        currentLots,
+        currentVolume,
+        currentValue
+      }
+    });
+
     return [
       {
         type: 'total_lots',
         unit: 'bales',
         value: currentLots,
-        value_ytd: seasonIndicatorTotalsResult.success ? seasonIndicatorTotalsResult.data.totalBales : 0,
+        value_ytd: ytdLots,
         pct_change: lotsChange
       },
       {
         type: 'total_volume',
         unit: 'MT',
         value: currentVolume,
-        value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalVolume / 1000) : 0,
+        value_ytd: ytdVolume,
         pct_change: volumeChange
       },
       {
@@ -1968,7 +1990,7 @@ export class SupabaseAuctionDataService {
         type: 'total_value',
         unit: 'ZAR M',
         value: currentValue,
-        value_ytd: seasonIndicatorTotalsResult.success ? (seasonIndicatorTotalsResult.data.totalValue / 1000000) : 0,
+        value_ytd: ytdValue,
         pct_change: valueChange
       }
     ];
@@ -2031,7 +2053,7 @@ export class SupabaseAuctionDataService {
       const currentSeasonResult = await this.getSeasonById(seasonId);
       if (!currentSeasonResult.success) {
         console.error('Failed to get current season:', currentSeasonResult.error);
-        return { rws: [], non_rws: [], awex: [] };
+        return { rws: [], non_rws: [], awex: [], exchange_rates: [] };
       }
       
       const currentSeason = currentSeasonResult.data;
@@ -2060,7 +2082,7 @@ export class SupabaseAuctionDataService {
       
       if (currentError) {
         console.error('Error fetching current season auctions:', currentError);
-        return { rws: [], non_rws: [], awex: [] };
+        return { rws: [], non_rws: [], awex: [], exchange_rates: [] };
       }
       
       // Get previous year season (if exists)
@@ -2111,10 +2133,10 @@ export class SupabaseAuctionDataService {
           const currentAuction = currentAuctions[i];
           const previousAuction = previousAuctions[i];
           
-          // Use auction number as period (e.g., "C001", "C002", etc.)
+          // Use auction number as period (just the number, e.g., "1", "2", etc.)
           const period = currentAuction ? 
-            `${currentAuction.catalogue_prefix}${currentAuction.catalogue_number}` :
-            `Auction ${i + 1}`;
+            String(parseInt(currentAuction.catalogue_number) || i + 1) :
+            String(i + 1);
           
           points.push({
             period,
@@ -2201,7 +2223,24 @@ export class SupabaseAuctionDataService {
         sample_awex: awex[0]
       });
       
-      return { rws, non_rws, awex };
+      // Generate Exchange Rate trend data (ZAR/USD)
+      const exchange_rates = trendPoints.map(point => {
+        const currentRate = point.currentAuction?.exchange_rates_zar_usd ? 
+          parseFloat(point.currentAuction.exchange_rates_zar_usd) : null;
+        const previousRate = point.previousAuction?.exchange_rates_zar_usd ? 
+          parseFloat(point.previousAuction.exchange_rates_zar_usd) : null;
+        
+        return {
+          period: point.period,
+          auction_catalogue: point.auction_catalogue,
+          [`${currentYear}_zar`]: currentRate, // For ZAR/USD, we store the rate as "ZAR"
+          [`${previousYear}_zar`]: previousRate,
+          [`${currentYear}_usd`]: currentRate, // Same value, different display context
+          [`${previousYear}_usd`]: previousRate
+        };
+      });
+
+      return { rws, non_rws, awex, exchange_rates };
     } catch (error) {
       console.error('Error generating season trend data:', error);
       return { rws: [], non_rws: [], awex: [] };

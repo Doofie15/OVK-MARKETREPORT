@@ -375,7 +375,7 @@ const SeasonList: React.FC<SeasonListProps> = ({ seasons, reports, onCreateSeaso
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          ZAR {(stats.totalTurnover / 1000000).toFixed(1)}M
+                          R{(stats.totalTurnover / 1000000).toFixed(1)}M
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

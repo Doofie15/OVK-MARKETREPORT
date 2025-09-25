@@ -405,7 +405,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
         </div>
         <div className="bg-yellow-50 p-4 rounded-lg">
           <div className="text-2xl font-bold text-yellow-600">
-            ZAR {(sales.reduce((sum, s) => sum + (s.total_turnover || 0), 0) / 1000000).toFixed(1)}M
+            R{(sales.reduce((sum, s) => sum + (s.total_turnover || 0), 0) / 1000000).toFixed(1)}M
           </div>
           <div className="text-sm text-yellow-800">Turnover</div>
         </div>
@@ -638,7 +638,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        ZAR {((sale.total_turnover || 0) / 1000000).toFixed(1)}M
+                        R{((sale.total_turnover || 0) / 1000000).toFixed(1)}M
                       </span>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">

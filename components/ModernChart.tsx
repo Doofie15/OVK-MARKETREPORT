@@ -126,16 +126,24 @@ const ModernChart: React.FC<ModernChartProps> = ({
     
     switch (type) {
       case 'donut':
-        return data.map(item => item.value || item.y || 0);
+        // Filter out zero values for donut charts
+        return data
+          .filter(item => (item.value || item.y) && (item.value || item.y) > 0)
+          .map(item => item.value || item.y);
       case 'radialBar':
-        return data.map(item => item.percentage || item.value || 0);
+        // Filter out zero values for radial bar charts
+        return data
+          .filter(item => (item.percentage || item.value) && (item.percentage || item.value) > 0)
+          .map(item => item.percentage || item.value);
       default:
         return [{
           name: title,
-          data: data.map(item => ({
-            x: item.label || item.name || item.x,
-            y: item.value || item.y
-          }))
+          data: data
+            .filter(item => (item.value || item.y) && (item.value || item.y) > 0)
+            .map(item => ({
+              x: item.label || item.name || item.x,
+              y: item.value || item.y
+            }))
         }];
     }
   };

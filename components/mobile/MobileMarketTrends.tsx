@@ -14,28 +14,54 @@ const MobileMarketTrends: React.FC<MobileMarketTrendsProps> = ({ data }) => {
     </svg>
   );
 
-  // Prepare chart data
+  // Helper function to clean period labels - remove CG/CF prefixes and show just numbers
+  const cleanPeriodLabel = (period: string) => {
+    // Remove prefixes like CG, CF, C, P and return just the number
+    const match = period.match(/[A-Z]*(\d+)/);
+    return match ? match[1] : period;
+  };
+
+  // Prepare chart data (filter out zero values for proper aggregation)
   const prepareChartData = (trendData: any[], currency: string, title: string) => {
+    if (!trendData || !Array.isArray(trendData)) return [];
+    
     const isZAR = currency === 'ZAR';
     const dataKey2025 = isZAR ? '2025_zar' : '2025_usd';
     const dataKey2024 = isZAR ? '2024_zar' : '2024_usd';
     
-    return [
-      {
-        name: `2025 ${currency}`,
-        data: trendData.map(point => ({
-          x: point.period,
-          y: point[dataKey2025]
-        }))
-      },
-      {
-        name: `2024 ${currency}`,
-        data: trendData.map(point => ({
-          x: point.period,
-          y: point[dataKey2024]
-        }))
-      }
-    ];
+    const series = [];
+    
+    // Add 2025 series if data exists and has non-zero values
+    const data2025 = trendData
+      .filter(point => point[dataKey2025] && point[dataKey2025] > 0)
+      .map(point => ({
+        x: cleanPeriodLabel(point.period),
+        y: point[dataKey2025]
+      }));
+    
+    if (data2025.length > 0) {
+      series.push({
+        name: `2025/2026 ${currency}`,
+        data: data2025
+      });
+    }
+    
+    // Add 2024 series if data exists and has non-zero values
+    const data2024 = trendData
+      .filter(point => point[dataKey2024] && point[dataKey2024] > 0)
+      .map(point => ({
+        x: cleanPeriodLabel(point.period),
+        y: point[dataKey2024]
+      }));
+    
+    if (data2024.length > 0) {
+      series.push({
+        name: `2024/2025 ${currency}`,
+        data: data2024
+      });
+    }
+    
+    return series;
   };
 
   // Get colors based on chart type
@@ -66,7 +92,7 @@ const MobileMarketTrends: React.FC<MobileMarketTrendsProps> = ({ data }) => {
     },
     {
       title: 'EXCHANGE RATE',
-      data: prepareChartData(data.rws, 'USD', 'EXCHANGE RATE'),
+      data: prepareChartData(data.exchange_rates, 'USD', 'EXCHANGE RATE'),
       colors: getColors('EXCHANGE RATE'),
       currency: 'USD'
     },

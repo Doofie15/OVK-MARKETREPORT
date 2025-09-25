@@ -26,7 +26,7 @@ export const BROKERS: string[] = [
 const generateTrendData = (baseZar: number, baseUsd: number) => {
   const data = [];
   for (let i = 1; i <= 35; i += 2) {
-    const period = `P${String(i).padStart(2, '0')}`;
+    const period = `C${String(Math.ceil(i/2)).padStart(3, '0')}`;
     data.push({
       period,
       '2025_zar': baseZar + (Math.random() - 0.4) * 15 + i * 0.5,
@@ -93,17 +93,17 @@ export const MOCK_REPORTS: AuctionReport[] = [
     "indicators": [
       {"type":"total_lots","unit":"bales","value":10250,"value_ytd": 50123,"pct_change":5.2},
       {"type":"total_volume","unit":"MT","value":1550.8,"value_ytd": 7580.4,"pct_change":3.1},
-      {"type":"avg_price","unit":"ZAR/kg","value":181.45,"pct_change":-2.3},
-      {"type":"total_value","unit":"ZAR M","value":281.4,"value_ytd": 1250.8,"pct_change":0.7}
+      {"type":"avg_price","unit":"R/kg","value":181.45,"pct_change":-2.3},
+      {"type":"total_value","unit":"R M","value":281.4,"value_ytd": 1250.8,"pct_change":0.7}
     ],
     "benchmarks": [
-      {"label":"Certified","price":184.35,"currency":"ZAR/kg clean","day_change_pct":1.4},
-      {"label":"All-Merino","price":179.53,"currency":"ZAR/kg clean","day_change_pct":1.0},
+      {"label":"Certified","price":184.35,"currency":"R/kg clean","day_change_pct":1.4},
+      {"label":"All-Merino","price":179.53,"currency":"R/kg clean","day_change_pct":1.0},
       {"label":"AWEX","price":12.61,"currency":"USD/kg clean","day_change_pct":0.6}
     ],
     "yearly_average_prices": [
-      {"label": "Certified Wool Avg Price (YTD)", "value": 188.50, "unit": "ZAR/kg"},
-      {"label": "All - Merino Wool Avg Price (YTD)", "value": 175.20, "unit": "ZAR/kg"}
+      {"label": "Certified Wool Avg Price (YTD)", "value": 188.50, "unit": "R/kg"},
+      {"label": "All - Merino Wool Avg Price (YTD)", "value": 175.20, "unit": "R/kg"}
     ],
     "micron_prices": [
       {"bucket_micron":"17","category":"Fine","price_clean_zar_per_kg":225.50,"certified_price_clean_zar_per_kg":228.20,"all_merino_price_clean_zar_per_kg":222.80},
@@ -142,7 +142,8 @@ export const MOCK_REPORTS: AuctionReport[] = [
     "trends": {
       "rws": generateTrendData(180, 10),
       "non_rws": generateTrendData(170, 9.5),
-      "awex": generateTrendData(0, 12.5) // AWEX is typically in USD
+      "awex": generateTrendData(0, 12.5), // AWEX is typically in USD
+      "exchange_rates": generateTrendData(17.5, 17.5) // ZAR/USD exchange rate
     },
     "provincial_producers": [
         { province: 'Eastern Cape', producers: [
@@ -279,17 +280,17 @@ export const MOCK_REPORTS: AuctionReport[] = [
     "indicators": [
       {"type":"total_lots","unit":"bales","value":9830,"value_ytd": 40000,"pct_change":-1.5},
       {"type":"total_volume","unit":"MT","value":1504.1,"value_ytd": 6000.0,"pct_change":-0.8},
-      {"type":"avg_price","unit":"ZAR/kg","value":185.72,"pct_change":1.1},
-      {"type":"total_value","unit":"ZAR M","value":279.3,"value_ytd": 1180.5,"pct_change":0.3}
+      {"type":"avg_price","unit":"R/kg","value":185.72,"pct_change":1.1},
+      {"type":"total_value","unit":"R M","value":279.3,"value_ytd": 1180.5,"pct_change":0.3}
     ],
     "benchmarks": [
-      {"label":"Certified","price":181.80,"currency":"ZAR/kg clean","day_change_pct":-0.5},
-      {"label":"All-Merino","price":177.75,"currency":"ZAR/kg clean","day_change_pct":-0.2},
+      {"label":"Certified","price":181.80,"currency":"R/kg clean","day_change_pct":-0.5},
+      {"label":"All-Merino","price":177.75,"currency":"R/kg clean","day_change_pct":-0.2},
       {"label":"AWEX","price":12.54,"currency":"USD/kg clean","day_change_pct":-0.1}
     ],
     "yearly_average_prices": [
-        {"label": "Certified Wool Avg Price (YTD)", "value": 185.90, "unit": "ZAR/kg"},
-        {"label": "All - Merino Wool Avg Price (YTD)", "value": 172.10, "unit": "ZAR/kg"}
+        {"label": "Certified Wool Avg Price (YTD)", "value": 185.90, "unit": "R/kg"},
+        {"label": "All - Merino Wool Avg Price (YTD)", "value": 172.10, "unit": "R/kg"}
     ],
     "micron_prices": [
       {"bucket_micron":"17","category":"Fine","price_clean_zar_per_kg":220.10,"certified_price_clean_zar_per_kg":222.80,"all_merino_price_clean_zar_per_kg":217.40},
@@ -326,7 +327,8 @@ export const MOCK_REPORTS: AuctionReport[] = [
     "trends": {
       "rws": generateTrendData(178, 9.8),
       "non_rws": generateTrendData(168, 9.3),
-      "awex": generateTrendData(0, 12.2) // AWEX is typically in USD
+      "awex": generateTrendData(0, 12.2), // AWEX is typically in USD
+      "exchange_rates": generateTrendData(17.2, 17.2) // ZAR/USD exchange rate
     },
      "provincial_producers": [
         { province: 'Eastern Cape', producers: [

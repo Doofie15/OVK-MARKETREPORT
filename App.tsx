@@ -54,6 +54,7 @@ const getSeasonCatalogueByWeekId = (reports: AuctionReport[], weekId: string): {
 const App: React.FC = () => {
   const [reports, setReports] = useState<AuctionReport[]>([]);
   const [selectedWeekId, setSelectedWeekId] = useState<string>('');
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,9 +69,10 @@ const App: React.FC = () => {
       
       if (result.success && result.latestReport) {
         // STEP 1: Show latest report immediately (fast first render)
-        console.log('⚡ Showing latest report immediately');
+        console.log('⚡ Latest report loaded:', result.latestReport.auction.week_id, 'dated:', result.latestReport.auction.auction_date);
         setReports([result.latestReport]);
         setSelectedWeekId(result.latestReport.auction.week_id);
+        setSelectedSeason(result.latestReport.auction.season_label);
         setLoading(false); // Stop loading spinner - user can see content!
         
         // STEP 2: Load remaining reports in background
@@ -80,12 +82,27 @@ const App: React.FC = () => {
           result.allReportsPromise.then((allReportsResult) => {
             if (allReportsResult.success && allReportsResult.data) {
               console.log(`✅ Background loading complete: ${allReportsResult.data.length} total reports`);
-              setReports(allReportsResult.data);
               
-              // Keep the same selected report if it's still valid
+              // SMOOTH UPDATE: Only update reports if current selection is still valid
               const currentSelection = allReportsResult.data.find(r => r.auction.week_id === selectedWeekId);
-              if (!currentSelection && allReportsResult.data.length > 0) {
-                setSelectedWeekId(allReportsResult.data[0].auction.week_id);
+              if (currentSelection) {
+                // Current selection is valid, just update the reports list smoothly
+                setReports(allReportsResult.data);
+                console.log('📊 Background loading: Current selection still valid, smooth update');
+              } else {
+                // Current selection invalid, need to update both reports and selection
+                console.log('📊 Background loading: Current selection invalid, updating...');
+                const sortedReports = [...allReportsResult.data].sort((a, b) => {
+                  const dateA = new Date(a.auction.auction_date);
+                  const dateB = new Date(b.auction.auction_date);
+                  return dateB.getTime() - dateA.getTime();
+                });
+                const latestReport = sortedReports[0];
+                
+                // Batch state updates to prevent multiple re-renders
+                setReports(allReportsResult.data);
+                setSelectedWeekId(latestReport.auction.week_id);
+                setSelectedSeason(latestReport.auction.season_label);
               }
             } else {
               console.warn('⚠️ Background loading failed, keeping latest report only');
@@ -229,6 +246,8 @@ const App: React.FC = () => {
         reports={reports}
         selectedWeekId={selectedWeekId}
         onWeekChange={handleWeekChange}
+        selectedSeason={selectedSeason}
+        onSeasonChange={(season) => setSelectedSeason(season)}
         error={error}
       />
     );
@@ -238,12 +257,45 @@ const App: React.FC = () => {
   const HomeRoute: React.FC = () => {
     const navigate = useNavigate();
     
+    // Only ensure latest auction if we don't have a selection (rare edge case)
+    useEffect(() => {
+      if (!loading && reports.length > 0 && !selectedWeekId) {
+        // Sort reports by auction date to get the absolute latest
+        const sortedReports = [...reports].sort((a, b) => {
+          const dateA = new Date(a.auction.auction_date);
+          const dateB = new Date(b.auction.auction_date);
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+        if (sortedReports.length > 0) {
+          const latestReport = sortedReports[0];
+          setSelectedWeekId(latestReport.auction.week_id);
+          setSelectedSeason(latestReport.auction.season_label);
+          console.log('🏠 Home route: Fallback to latest auction:', latestReport.auction.week_id);
+        }
+      }
+    }, [loading, reports.length]); // Removed selectedWeekId from deps to prevent extra triggers
+    
     const handleWeekChange = (weekId: string) => {
       setSelectedWeekId(weekId);
       const seasonCatalogue = getSeasonCatalogueByWeekId(reports, weekId);
       if (seasonCatalogue) {
         const urlPath = seasonCatalogueToUrl(seasonCatalogue.season, seasonCatalogue.catalogue);
         navigate(`/${urlPath}`, { replace: true });
+      }
+    };
+
+    const handleSeasonChange = (season: string) => {
+      setSelectedSeason(season);
+      // When season changes, reset to latest available week in that season
+      const filteredReports = reports.filter(r => r.auction.season_label === season);
+      if (filteredReports.length > 0) {
+        const latestInSeason = filteredReports.sort((a, b) => {
+          const dateA = new Date(a.auction.auction_date);
+          const dateB = new Date(b.auction.auction_date);
+          return dateB.getTime() - dateA.getTime();
+        })[0];
+        handleWeekChange(latestInSeason.auction.week_id);
       }
     };
 
@@ -256,6 +308,8 @@ const App: React.FC = () => {
         reports={reports}
         selectedWeekId={selectedWeekId}
         onWeekChange={handleWeekChange}
+        selectedSeason={selectedSeason}
+        onSeasonChange={handleSeasonChange}
         error={error}
       />
     );

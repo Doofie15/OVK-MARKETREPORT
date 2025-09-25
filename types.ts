@@ -229,6 +229,7 @@ export interface TrendData {
   rws: TrendPoint[];
   non_rws: TrendPoint[];
   awex: TrendPoint[];
+  exchange_rates: TrendPoint[];
 }
 
 export interface YearlyAveragePrice {

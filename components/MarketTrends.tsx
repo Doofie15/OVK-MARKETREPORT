@@ -18,7 +18,7 @@ const ModernTrendChart: React.FC<{
   
   // Dynamically determine the years from the data
   const getYearsFromData = (data: TrendPoint[]) => {
-    if (!data || data.length === 0) return { currentYear: 2025, previousYear: 2024 };
+    if (!data || data.length === 0) return { currentSeason: '2025/2026', previousSeason: '2024/2025' };
     
     const firstPoint = data[0];
     const keys = Object.keys(firstPoint);
@@ -28,13 +28,18 @@ const ModernTrendChart: React.FC<{
     const years = yearKeys.map(key => parseInt(key.split('_')[0])).filter((year, index, arr) => arr.indexOf(year) === index);
     years.sort((a, b) => b - a); // Sort descending
     
+    const currentYear = years[0] || 2025;
+    const previousYear = years[1] || 2024;
+    
     return {
-      currentYear: years[0] || 2025,
-      previousYear: years[1] || 2024
+      currentSeason: `${currentYear}/${currentYear + 1}`,
+      previousSeason: `${previousYear}/${previousYear + 1}`,
+      currentYear,
+      previousYear
     };
   };
   
-  const { currentYear, previousYear } = getYearsFromData(data);
+  const { currentSeason, previousSeason, currentYear, previousYear } = getYearsFromData(data);
   const dataKeyCurrent = isZAR ? `${currentYear}_zar` : `${currentYear}_usd`;
   const dataKeyPrevious = isZAR ? `${previousYear}_zar` : `${previousYear}_usd`;
 
@@ -73,27 +78,38 @@ const ModernTrendChart: React.FC<{
   // Create chart series only for available data
   const chartSeries = [];
   
-  // Add current year series if data exists
-  const hasCurrentData = data.some(point => point[dataKeyCurrent] !== undefined && point[dataKeyCurrent] !== null);
+  // Helper function to clean period labels - remove CG/CF prefixes and show just numbers
+  const cleanPeriodLabel = (period: string) => {
+    // Remove prefixes like CG, CF, C, P and return just the number
+    const match = period.match(/[A-Z]*(\d+)/);
+    return match ? match[1] : period;
+  };
+
+  // Add current year series if data exists (filter out zero values)
+  const hasCurrentData = data.some(point => point[dataKeyCurrent] !== undefined && point[dataKeyCurrent] !== null && point[dataKeyCurrent] > 0);
   if (hasCurrentData) {
     chartSeries.push({
-      name: `${currentYear} ${currency}`,
-      data: data.map(point => ({
-        x: point.period,
-        y: point[dataKeyCurrent] || 0
-      }))
+      name: `${currentSeason} ${currency}`,
+      data: data
+        .filter(point => point[dataKeyCurrent] && point[dataKeyCurrent] > 0)
+        .map(point => ({
+          x: cleanPeriodLabel(point.period),
+          y: point[dataKeyCurrent]
+        }))
     });
   }
   
-  // Add previous year series if data exists
-  const hasPreviousData = data.some(point => point[dataKeyPrevious] !== undefined && point[dataKeyPrevious] !== null);
+  // Add previous year series if data exists (filter out zero values)
+  const hasPreviousData = data.some(point => point[dataKeyPrevious] !== undefined && point[dataKeyPrevious] !== null && point[dataKeyPrevious] > 0);
   if (hasPreviousData) {
     chartSeries.push({
-      name: `${previousYear} ${currency}`,
-      data: data.map(point => ({
-        x: point.period,
-        y: point[dataKeyPrevious] || 0
-      }))
+      name: `${previousSeason} ${currency}`,
+      data: data
+        .filter(point => point[dataKeyPrevious] && point[dataKeyPrevious] > 0)
+        .map(point => ({
+          x: cleanPeriodLabel(point.period),
+          y: point[dataKeyPrevious]
+        }))
     });
   }
   
@@ -102,7 +118,7 @@ const ModernTrendChart: React.FC<{
     chartSeries.push({
       name: data[0]?.auction_catalogue || `Current ${currency}`,
       data: data.map(point => ({
-        x: point.period,
+        x: cleanPeriodLabel(point.period),
         y: 0
       }))
     });
@@ -260,7 +276,7 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <ModernTrendChart title="CERTIFIED WOOL 2 YEAR TREND" data={data.rws || []} currency="ZAR" type="CERTIFIED" />
         <ModernTrendChart title="ALL MERINO 2 YEAR TREND" data={data.non_rws || []} currency="ZAR" type="ALL-MERINO" />
-        <ModernTrendChart title="EXCHANGE RATE 2 YEAR TREND" data={data.rws || []} currency="USD" type="CERTIFIED" />
+        <ModernTrendChart title="EXCHANGE RATE 2 YEAR TREND" data={data.exchange_rates || []} currency="USD" type="CERTIFIED" />
         <ModernTrendChart title="AWEX 2 YEAR TREND" data={data.awex || []} currency="USD" type="ALL-MERINO" />
       </div>
     </div>

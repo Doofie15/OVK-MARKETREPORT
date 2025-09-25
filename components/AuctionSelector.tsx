@@ -5,6 +5,9 @@ interface AuctionSelectorProps {
   weeks: { id: string; label: string }[];
   selectedWeekId: string;
   onWeekChange: (weekId: string) => void;
+  seasons?: string[];
+  selectedSeason?: string;
+  onSeasonChange?: (season: string) => void;
 }
 
 const ModernSelector: React.FC<{
@@ -38,7 +41,14 @@ const ModernSelector: React.FC<{
   </div>
 );
 
-const AuctionSelector: React.FC<AuctionSelectorProps> = ({ weeks, selectedWeekId, onWeekChange }) => {
+const AuctionSelector: React.FC<AuctionSelectorProps> = ({ 
+  weeks, 
+  selectedWeekId, 
+  onWeekChange,
+  seasons = [],
+  selectedSeason,
+  onSeasonChange
+}) => {
   return (
     <div className="card">
       <div className="flex items-center gap-2 mb-3">
@@ -66,9 +76,9 @@ const AuctionSelector: React.FC<AuctionSelectorProps> = ({ weeks, selectedWeekId
         />
         <ModernSelector
           label="Season"
-          value="2025/26"
-          onChange={() => {}} // No-op for now
-          options={[{ value: '2025/26', label: '2025/26 Season' }]}
+          value={selectedSeason}
+          onChange={(e) => onSeasonChange && onSeasonChange(e.target.value)}
+          options={seasons.map(season => ({ value: season, label: `${season} Season` }))}
           icon={
             <svg className="w-4 h-4" style={{ color: 'var(--accent-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z" />
