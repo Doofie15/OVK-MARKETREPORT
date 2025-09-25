@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MOCK_REPORTS } from './constants';
 import type { AuctionReport, Indicator } from './types';
 import PublicLayout from './components/PublicLayout';
@@ -13,6 +13,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicDataService from './services/public-data-service';
 import DarkModeProvider from './components/DarkModeProvider';
 import DarkModeDebugger from './components/DarkModeDebugger';
+import AnalyticsRouteTracker from './components/AnalyticsRouteTracker';
+import analytics from './lib/analytics';
 
 // Helper function to convert season and catalogue to URL format (e.g., "202501")
 const seasonCatalogueToUrl = (seasonLabel: string, catalogueName: string): string => {
@@ -323,6 +325,7 @@ const App: React.FC = () => {
             <DarkModeDebugger />
             <MobileDebugger enabled={window.location.search.includes('debug=true')} />
             <Router>
+            <AnalyticsRouteTracker />
           <Routes>
             {/* Public routes */}
             <Route 

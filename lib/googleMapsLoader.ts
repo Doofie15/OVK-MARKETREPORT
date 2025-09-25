@@ -1,0 +1,50 @@
+// Google Maps loader utility
+let isGoogleMapsLoaded = false;
+let isLoading = false;
+const callbacks: Array<() => void> = [];
+
+export const loadGoogleMaps = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // If already loaded, resolve immediately
+    if (isGoogleMapsLoaded && window.google && window.google.maps) {
+      resolve();
+      return;
+    }
+
+    // Add to callback queue
+    callbacks.push(() => resolve());
+
+    // If already loading, don't load again
+    if (isLoading) {
+      return;
+    }
+
+    isLoading = true;
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      isGoogleMapsLoaded = true;
+      isLoading = false;
+      // Execute all callbacks
+      callbacks.forEach(callback => callback());
+      callbacks.length = 0; // Clear callbacks
+    };
+
+    script.onerror = () => {
+      isLoading = false;
+      reject(new Error('Failed to load Google Maps API'));
+    };
+
+    // Append to head
+    document.head.appendChild(script);
+  });
+};
+
+export const isGoogleMapsReady = (): boolean => {
+  return isGoogleMapsLoaded && window.google && window.google.maps;
+};

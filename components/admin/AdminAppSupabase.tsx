@@ -8,6 +8,7 @@ import AuctionDataCaptureForm from './AuctionDataCaptureForm';
 import SeasonList from './SeasonList';
 import CreateSeason from './CreateSeason';
 import UserManagement from './UserManagement';
+import AnalyticsDashboard from './AnalyticsDashboard';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
 import SupabaseService from '../../data/supabase-service';
@@ -302,6 +303,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
     const path = location.pathname;
     if (path.includes('/admin/seasons')) return 'seasons';
     if (path.includes('/admin/auctions')) return 'auctions';
+    if (path.includes('/admin/analytics')) return 'analytics';
     if (path.includes('/admin/form')) return 'form';
     if (path.includes('/admin/capture')) return 'capture';
     if (path.includes('/admin/users')) return 'users';
@@ -436,6 +438,12 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
               currentUser={currentUser}
             />
           } 
+        />
+
+        {/* Analytics Dashboard */}
+        <Route 
+          path="/analytics" 
+          element={<AnalyticsDashboard />} 
         />
         
         {/* Redirect to dashboard */}

@@ -1,45 +1,79 @@
 [build]
-  # Directory to change to before starting a build
-  base = "."
-  
-  # Directory that contains the deploy-ready HTML files and assets
   publish = "dist"
-  
-  # Default build command
   command = "npm run build"
-
+  
 [build.environment]
-  # Node.js version
   NODE_VERSION = "18"
+  NPM_VERSION = "8"
 
-# Redirect rules for SPA routing
-[[redirects]]
-  from = "/admin/*"
-  to = "/index.html"
-  status = 200
+# Netlify Edge Functions for analytics (alternative to Supabase Edge Functions)
+[[edge_functions]]
+  function = "analytics"
+  path = "/api/analytics/*"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Build plugins
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+  [plugins.inputs]
+    performance = 0.9
+    accessibility = 0.9
+    best-practices = 0.9
+    seo = 0.9
 
 # Headers for security and performance
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
 
-# Cache static assets
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Cache HTML files for shorter time
 [[headers]]
-  for = "/*.html"
+  for = "/admin/analytics"
   [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://gymdertakhxjmfrmcqgp.supabase.co; connect-src 'self' https://gymdertakhxjmfrmcqgp.supabase.co https://*.google.com; img-src 'self' data: https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+
+# Redirects for admin authentication
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+
+# Analytics API proxy
+[[redirects]]
+  from = "/api/analytics/*"
+  to = "https://gymdertakhxjmfrmcqgp.supabase.co/functions/v1/ingest-analytics/:splat"
+  status = 200
+  headers = {X-Forwarded-Host = "woolmarketreport.netlify.app"}
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Forms for feedback/contact (if needed)
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true

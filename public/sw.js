@@ -1,173 +1,230 @@
-const CACHE_NAME = 'ovk-wool-market-v3.0';
-const STATIC_CACHE = 'ovk-static-v3.0';
-const DYNAMIC_CACHE = 'ovk-dynamic-v3.0';
-const API_CACHE = 'ovk-api-v3.0';
+// Service Worker for OVK Analytics
+// Optimized for Netlify deployment with offline analytics queuing
 
-// Cache different types of resources
-const STATIC_ASSETS = [
+const CACHE_NAME = 'ovk-analytics-v1';
+const ANALYTICS_QUEUE_KEY = 'ovk-analytics-queue';
+
+// Cache analytics requests for offline sending
+const CACHE_URLS = [
   '/',
-  '/index.html',
-  '/index.css',
-  '/manifest.json',
-  '/assets/logos/ovk-logo-embedded.svg',
-  '/favicon.ico'
+  '/admin/',
+  '/lib/analytics.js',
+  '/api/analytics'
 ];
 
-// Install event - cache static resources and skip waiting
+// Install event
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
   event.waitUntil(
-    Promise.all([
-      caches.open(STATIC_CACHE).then((cache) => {
-        console.log('Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      }),
-      caches.open(DYNAMIC_CACHE),
-      caches.open(API_CACHE)
-    ]).then(() => {
-      console.log('Service Worker installed successfully');
-      // Skip waiting to activate immediately
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(CACHE_URLS))
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean up old caches and claim clients
+// Activate event
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
   event.waitUntil(
-    Promise.all([
-      // Clean up old caches
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (![STATIC_CACHE, DYNAMIC_CACHE, API_CACHE].includes(cacheName)) {
-              console.log('Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      }),
-      // Claim all clients immediately
-      self.clients.claim()
-    ]).then(() => {
-      console.log('Service Worker activated successfully');
-    })
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
-// Message event - handle skip waiting requests
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
-// Fetch event - implement cache strategies
+// Fetch event - handle analytics requests
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
+  const url = new URL(event.request.url);
   
-  // Skip external requests (except for APIs we want to cache)
-  if (!url.origin.includes(self.location.origin) && !url.pathname.includes('/api/')) {
+  // Handle analytics requests
+  if (url.pathname.includes('/api/analytics')) {
+    event.respondWith(handleAnalyticsRequest(event.request));
     return;
   }
-
-  // Handle different types of requests
-  if (url.pathname.includes('/api/') || url.hostname.includes('supabase')) {
-    // API requests - Network First with cache fallback
-    event.respondWith(handleApiRequest(request));
-  } else if (STATIC_ASSETS.some(asset => url.pathname === asset || url.pathname.endsWith(asset))) {
-    // Static assets - Cache First
-    event.respondWith(handleStaticRequest(request));
-  } else {
-    // Dynamic content - Stale While Revalidate
-    event.respondWith(handleDynamicRequest(request));
-  }
+  
+  // Handle other requests with cache-first strategy
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        return response || fetch(event.request);
+      })
+  );
 });
 
-// Network First strategy for API requests
-async function handleApiRequest(request) {
+// Handle analytics requests with offline queuing
+async function handleAnalyticsRequest(request) {
   try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(API_CACHE);
-      cache.put(request, networkResponse.clone());
-      return networkResponse;
+    // Try to send the request
+    const response = await fetch(request.clone());
+    
+    if (response.ok) {
+      // If successful, process any queued requests
+      await processQueuedAnalytics();
+      return response;
+    } else {
+      throw new Error('Analytics request failed');
     }
-    throw new Error('Network response not ok');
   } catch (error) {
-    console.log('Network failed, trying cache for:', request.url);
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
+    // If offline or failed, queue the request
+    await queueAnalyticsRequest(request);
+    return new Response('Queued for later', { status: 202 });
+  }
+}
+
+// Queue analytics request for later sending
+async function queueAnalyticsRequest(request) {
+  try {
+    const requestData = {
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers.entries()),
+      body: await request.text(),
+      timestamp: Date.now()
+    };
+    
+    // Get existing queue
+    const queue = await getAnalyticsQueue();
+    queue.push(requestData);
+    
+    // Limit queue size (keep last 50 requests)
+    if (queue.length > 50) {
+      queue.splice(0, queue.length - 50);
     }
-    return new Response('Network error', { 
-      status: 408, 
-      statusText: 'Network timeout' 
+    
+    // Save updated queue
+    await setAnalyticsQueue(queue);
+    
+    console.log('Analytics request queued for later sending');
+  } catch (error) {
+    console.error('Failed to queue analytics request:', error);
+  }
+}
+
+// Process queued analytics requests
+async function processQueuedAnalytics() {
+  try {
+    const queue = await getAnalyticsQueue();
+    
+    if (queue.length === 0) return;
+    
+    console.log(`Processing ${queue.length} queued analytics requests`);
+    
+    const successfulRequests = [];
+    
+    for (const requestData of queue) {
+      try {
+        const response = await fetch(requestData.url, {
+          method: requestData.method,
+          headers: requestData.headers,
+          body: requestData.body
+        });
+        
+        if (response.ok) {
+          successfulRequests.push(requestData);
+        }
+      } catch (error) {
+        console.error('Failed to send queued analytics request:', error);
+        // Keep failed requests in queue
+      }
+    }
+    
+    // Remove successful requests from queue
+    if (successfulRequests.length > 0) {
+      const remainingQueue = queue.filter(req => 
+        !successfulRequests.some(success => 
+          success.timestamp === req.timestamp
+        )
+      );
+      await setAnalyticsQueue(remainingQueue);
+      console.log(`Successfully sent ${successfulRequests.length} queued analytics requests`);
+    }
+  } catch (error) {
+    console.error('Failed to process analytics queue:', error);
+  }
+}
+
+// Get analytics queue from IndexedDB
+async function getAnalyticsQueue() {
+  try {
+    const db = await openAnalyticsDB();
+    const transaction = db.transaction(['queue'], 'readonly');
+    const store = transaction.objectStore('queue');
+    const result = await new Promise((resolve, reject) => {
+      const request = store.get(ANALYTICS_QUEUE_KEY);
+      request.onsuccess = () => resolve(request.result?.data || []);
+      request.onerror = () => reject(request.error);
     });
-  }
-}
-
-// Cache First strategy for static assets
-async function handleStaticRequest(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-  
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
+    return result;
   } catch (error) {
-    console.error('Failed to fetch static asset:', request.url);
-    return new Response('Asset not found', { status: 404 });
+    console.error('Failed to get analytics queue:', error);
+    return [];
   }
 }
 
-// Stale While Revalidate strategy for dynamic content
-async function handleDynamicRequest(request) {
-  const cache = await caches.open(DYNAMIC_CACHE);
-  const cachedResponse = await cache.match(request);
-  
-  // Fetch from network in background
-  const fetchPromise = fetch(request).then((networkResponse) => {
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  }).catch(() => {
-    // If network fails and we have cache, return cache
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    // For navigation requests, return the main page
-    if (request.mode === 'navigate') {
-      return caches.match('/');
-    }
-    return new Response('Content not available', { status: 408 });
-  });
-  
-  // Return cached version immediately if available, otherwise wait for network
-  return cachedResponse || fetchPromise;
+// Set analytics queue in IndexedDB
+async function setAnalyticsQueue(queue) {
+  try {
+    const db = await openAnalyticsDB();
+    const transaction = db.transaction(['queue'], 'readwrite');
+    const store = transaction.objectStore('queue');
+    await new Promise((resolve, reject) => {
+      const request = store.put({ id: ANALYTICS_QUEUE_KEY, data: queue });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error('Failed to set analytics queue:', error);
+  }
 }
 
-// Background sync for offline actions (if needed)
+// Open IndexedDB for analytics queue
+async function openAnalyticsDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('OVKAnalytics', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('queue')) {
+        db.createObjectStore('queue', { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+// Background sync for analytics
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    event.waitUntil(doBackgroundSync());
+  if (event.tag === 'analytics-sync') {
+    event.waitUntil(processQueuedAnalytics());
   }
 });
 
-async function doBackgroundSync() {
-  // Handle any offline actions that need to be synced
-  console.log('Background sync triggered');
-}
+// Periodic background sync (if supported)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'analytics-cleanup') {
+    event.waitUntil(cleanupOldAnalytics());
+  }
+});
 
+// Cleanup old analytics data
+async function cleanupOldAnalytics() {
+  try {
+    const queue = await getAnalyticsQueue();
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    
+    const recentQueue = queue.filter(item => item.timestamp > oneDayAgo);
+    
+    if (recentQueue.length < queue.length) {
+      await setAnalyticsQueue(recentQueue);
+      console.log(`Cleaned up ${queue.length - recentQueue.length} old analytics requests`);
+    }
+  } catch (error) {
+    console.error('Failed to cleanup old analytics:', error);
+  }
+}

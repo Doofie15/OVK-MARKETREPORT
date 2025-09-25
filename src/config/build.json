@@ -1,0 +1,7 @@
+{
+  "endpoint": "/api/analytics",
+  "netlifyOptimized": true,
+  "deployContext": "development",
+  "deployUrl": "http://localhost:5173",
+  "timestamp": "2024-01-20T22:48:00.000Z"
+}
