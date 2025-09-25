@@ -1,40 +1,13 @@
-import React, { createContext, useContext, useState } from 'react';
+import React from 'react';
 import type { TrendData } from '../../types';
 import MobileCard from './MobileCard';
 import MobileChart from './MobileChart';
-
-// Context for synchronized tooltips across mobile charts
-interface SyncedTooltipContextType {
-  hoveredDataPoint: number | null;
-  setHoveredDataPoint: (index: number | null) => void;
-}
-
-const SyncedTooltipContext = createContext<SyncedTooltipContextType | null>(null);
 
 interface MobileMarketTrendsProps {
   data: TrendData;
 }
 
-const MobileMarketTrendsWithProvider: React.FC<MobileMarketTrendsProps> = ({ data }) => {
-  const [hoveredDataPoint, setHoveredDataPoint] = useState<number | null>(null);
-
-  return (
-    <SyncedTooltipContext.Provider value={{ hoveredDataPoint, setHoveredDataPoint }}>
-      <MobileMarketTrendsContent data={data} />
-    </SyncedTooltipContext.Provider>
-  );
-};
-
-const MobileMarketTrendsContent: React.FC<MobileMarketTrendsProps> = ({ data }) => {
-  const syncedTooltipContext = useContext(SyncedTooltipContext);
-
-  const useSyncedTooltip = () => {
-    const context = useContext(SyncedTooltipContext);
-    if (!context) {
-      throw new Error('useSyncedTooltip must be used within a SyncedTooltipProvider');
-    }
-    return context;
-  };
+const MobileMarketTrends: React.FC<MobileMarketTrendsProps> = ({ data }) => {
   const icon = (
     <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -153,7 +126,6 @@ const MobileMarketTrendsContent: React.FC<MobileMarketTrendsProps> = ({ data }) 
             height={240}
             currency={chart.currency}
             compact={true}
-            syncedTooltipContext={syncedTooltipContext || undefined}
           />
         ))}
       </div>
@@ -161,8 +133,5 @@ const MobileMarketTrendsContent: React.FC<MobileMarketTrendsProps> = ({ data }) 
     </div>
   );
 };
-
-// Export the wrapped component
-const MobileMarketTrends = MobileMarketTrendsWithProvider;
 
 export default MobileMarketTrends;

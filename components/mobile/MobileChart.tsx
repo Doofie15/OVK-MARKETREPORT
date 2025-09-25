@@ -12,10 +12,6 @@ interface MobileChartProps {
   currency?: string;
   showLegend?: boolean;
   compact?: boolean;
-  syncedTooltipContext?: {
-    hoveredDataPoint: number | null;
-    setHoveredDataPoint: (index: number | null) => void;
-  };
 }
 
 const MobileChart: React.FC<MobileChartProps> = ({
@@ -27,8 +23,7 @@ const MobileChart: React.FC<MobileChartProps> = ({
   height = 320,
   currency,
   showLegend = true,
-  compact = false,
-  syncedTooltipContext
+  compact = false
 }) => {
   const options: ApexOptions = {
     theme: { mode: 'light' },
@@ -39,17 +34,7 @@ const MobileChart: React.FC<MobileChartProps> = ({
       toolbar: { show: false },
       animations: { enabled: true, speed: 600 },
       zoom: { enabled: false },
-      selection: { enabled: false },
-      events: syncedTooltipContext ? {
-        mouseMove: (event, chartContext, config) => {
-          if (config.dataPointIndex !== undefined && config.dataPointIndex !== -1) {
-            syncedTooltipContext.setHoveredDataPoint(config.dataPointIndex);
-          }
-        },
-        mouseLeave: () => {
-          syncedTooltipContext.setHoveredDataPoint(null);
-        }
-      } : undefined
+      selection: { enabled: false }
     },
     colors,
     stroke: type === 'line' ? {
@@ -102,17 +87,7 @@ const MobileChart: React.FC<MobileChartProps> = ({
       intersect: false,
       style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
       custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-        // Use synchronized data point if available, otherwise use current
-        const syncedIndex = syncedTooltipContext?.hoveredDataPoint !== null && syncedTooltipContext?.hoveredDataPoint !== undefined 
-          ? syncedTooltipContext.hoveredDataPoint 
-          : dataPointIndex;
-        
-        // Return empty if no valid index
-        if (syncedIndex === null || syncedIndex === undefined || syncedIndex === -1) {
-          return '';
-        }
-        
-        const period = w.globals.labels[syncedIndex];
+        const period = w.globals.labels[dataPointIndex];
         
         // Get values for both series at this data point
         let currentValue = null;
@@ -123,7 +98,7 @@ const MobileChart: React.FC<MobileChartProps> = ({
         // Find current and previous year values
         series.forEach((serie, index) => {
           const seriesName = w.globals.seriesNames[index];
-          const value = serie[syncedIndex];
+          const value = serie[dataPointIndex];
           
           if (seriesName.includes('2025/2026')) {
             currentValue = value;

@@ -1,23 +1,7 @@
-import React, { createContext, useContext, useState } from 'react';
+import React from 'react';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import type { TrendData, TrendPoint } from '../types';
-
-// Context for synchronized tooltips across charts
-interface SyncedTooltipContextType {
-  hoveredDataPoint: number | null;
-  setHoveredDataPoint: (index: number | null) => void;
-}
-
-const SyncedTooltipContext = createContext<SyncedTooltipContextType | null>(null);
-
-const useSyncedTooltip = () => {
-  const context = useContext(SyncedTooltipContext);
-  if (!context) {
-    throw new Error('useSyncedTooltip must be used within a SyncedTooltipProvider');
-  }
-  return context;
-};
 
 interface MarketTrendsProps {
   data: TrendData;
@@ -29,7 +13,6 @@ const ModernTrendChart: React.FC<{
   currency: 'ZAR' | 'USD';
   type: 'CERTIFIED' | 'ALL-MERINO';
 }> = ({ title, data, currency, type }) => {
-  const { hoveredDataPoint, setHoveredDataPoint } = useSyncedTooltip();
   const isZAR = currency === 'ZAR';
   const isCertified = type === 'CERTIFIED';
   
@@ -150,17 +133,7 @@ const ModernTrendChart: React.FC<{
       toolbar: { show: false },
       animations: { enabled: true, speed: 800 },
       zoom: { enabled: false },
-      selection: { enabled: false },
-      events: {
-        mouseMove: (event, chartContext, config) => {
-          if (config.dataPointIndex !== undefined && config.dataPointIndex !== -1) {
-            setHoveredDataPoint(config.dataPointIndex);
-          }
-        },
-        mouseLeave: () => {
-          setHoveredDataPoint(null);
-        }
-      }
+      selection: { enabled: false }
     },
     colors: [primaryColor, secondaryColor],
     stroke: {
@@ -205,15 +178,7 @@ const ModernTrendChart: React.FC<{
       intersect: false,
       style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
       custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-        // Use synchronized data point if available, otherwise use current
-        const syncedIndex = hoveredDataPoint !== null ? hoveredDataPoint : dataPointIndex;
-        
-        // Return empty if no valid index
-        if (syncedIndex === null || syncedIndex === undefined || syncedIndex === -1) {
-          return '';
-        }
-        
-        const period = w.globals.labels[syncedIndex];
+        const period = w.globals.labels[dataPointIndex];
         
         // Get values for both series at this data point
         let currentValue = null;
@@ -224,7 +189,7 @@ const ModernTrendChart: React.FC<{
         // Find current and previous year values
         series.forEach((serie, index) => {
           const seriesName = w.globals.seriesNames[index];
-          const value = serie[syncedIndex];
+          const value = serie[dataPointIndex];
           
           if (seriesName.includes(currentSeason)) {
             currentValue = value;
@@ -243,7 +208,7 @@ const ModernTrendChart: React.FC<{
         return `
           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 200px;">
             <div style="color: #1e293b; font-weight: 600; margin-bottom: 8px; font-size: 13px;">
-              ${title} - Period ${period}
+              Period ${period}
             </div>
             ${currentValue !== null ? `
               <div style="display: flex; align-items: center; margin-bottom: 4px;">
@@ -327,17 +292,7 @@ const ModernTrendChart: React.FC<{
   );
 };
 
-const MarketTrendsWithProvider: React.FC<MarketTrendsProps> = ({ data }) => {
-  const [hoveredDataPoint, setHoveredDataPoint] = useState<number | null>(null);
-
-  return (
-    <SyncedTooltipContext.Provider value={{ hoveredDataPoint, setHoveredDataPoint }}>
-      <MarketTrendsContent data={data} />
-    </SyncedTooltipContext.Provider>
-  );
-};
-
-const MarketTrendsContent: React.FC<MarketTrendsProps> = ({ data }) => {
+const MarketTrends: React.FC<MarketTrendsProps> = ({ data }) => {
   // Handle empty or undefined data
   if (!data || (!data.rws && !data.non_rws && !data.awex)) {
     return (
@@ -378,8 +333,5 @@ const MarketTrendsContent: React.FC<MarketTrendsProps> = ({ data }) => {
     </div>
   );
 };
-
-// Export the wrapped component
-const MarketTrends = MarketTrendsWithProvider;
 
 export default MarketTrends;
