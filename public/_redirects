@@ -10,7 +10,6 @@
 /admin/auctions/* /index.html 200
 /admin/analytics /index.html 200
 /admin/analytics/* /index.html 200
-/admin/analytics?* /index.html 200
 /admin/settings /index.html 200
 /admin/users /index.html 200
 /admin/cape-mohair /index.html 200
