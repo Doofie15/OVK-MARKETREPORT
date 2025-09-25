@@ -10,6 +10,7 @@ import CreateSeason from './CreateSeason';
 import UserManagement from './UserManagement';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SimpleAnalyticsDashboard from './SimpleAnalyticsDashboard';
+import AnalyticsTestDashboard from './AnalyticsTestDashboard';
 import AdminSettings from './AdminSettings';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
@@ -303,15 +304,22 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
   // Determine current section based on location
   const getCurrentSection = (): AdminSection => {
     const path = location.pathname;
+    console.log('🔍 AdminAppSupabase getCurrentSection - current path:', path);
+    
     if (path.includes('/admin/seasons')) return 'seasons';
     if (path.includes('/admin/auctions')) return 'auctions';
-    if (path.includes('/admin/analytics')) return 'analytics';
+    if (path.includes('/admin/analytics')) {
+      console.log('✅ Analytics section detected!');
+      return 'analytics';
+    }
     if (path.includes('/admin/insights')) return 'insights';
     if (path.includes('/admin/settings')) return 'settings';
     if (path.includes('/admin/users')) return 'users';
     if (path.includes('/admin/form')) return 'form';
     if (path.includes('/admin/capture')) return 'capture';
     if (path.includes('/admin/import-export')) return 'import-export';
+    
+    console.log('🔄 Defaulting to dashboard section');
     return 'dashboard';
   };
 
@@ -435,6 +443,12 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
           } 
         />
         
+        {/* Analytics Dashboard */}
+        <Route 
+          path="/analytics" 
+          element={<AnalyticsTestDashboard />} 
+        />
+
         {/* User Management */}
         <Route 
           path="/users" 
@@ -443,18 +457,6 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
               currentUser={currentUser}
             />
           } 
-        />
-
-        {/* Analytics Dashboard */}
-        <Route 
-          path="/analytics" 
-          element={<AnalyticsDashboard />} 
-        />
-
-        {/* User Management */}
-        <Route 
-          path="/users" 
-          element={<UserManagement />} 
         />
 
         {/* Settings */}
