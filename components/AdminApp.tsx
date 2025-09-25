@@ -100,6 +100,7 @@ const AdminApp: React.FC<AdminAppProps> = ({
         navigate('/admin/insights');
         break;
       case 'profile':
+        console.log('Navigating to profile page');
         navigate('/admin/profile');
         break;
       default:

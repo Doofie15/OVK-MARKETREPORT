@@ -37,12 +37,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadUserProfile();
+    // Scroll to top when component mounts to prevent jumping
+    window.scrollTo(0, 0);
   }, []);
 
   const loadUserProfile = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      console.log('Loading user profile...');
 
       // Get current authenticated user
       const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
