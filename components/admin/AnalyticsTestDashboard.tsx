@@ -2,6 +2,16 @@ import React from 'react';
 
 const AnalyticsTestDashboard: React.FC = () => {
   console.log('📊 AnalyticsTestDashboard rendering...');
+  console.log('🔍 Current location:', window.location.href);
+  console.log('🔍 Current pathname:', window.location.pathname);
+  
+  // Add a useEffect to track any route changes
+  React.useEffect(() => {
+    console.log('🔄 AnalyticsTestDashboard mounted');
+    return () => {
+      console.log('🔄 AnalyticsTestDashboard unmounting');
+    };
+  }, []);
   
   return (
     <div className="p-6">

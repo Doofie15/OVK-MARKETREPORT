@@ -4,7 +4,6 @@
 /api/analytics/* https://gymdertakhxjmfrmcqgp.supabase.co/functions/v1/ingest-analytics/:splat 200
 
 # Admin routes - specific SPA routing for admin panel
-/admin /admin/ 301
 /admin/dashboard /index.html 200
 /admin/seasons/* /index.html 200
 /admin/auctions/* /index.html 200
@@ -19,6 +18,7 @@
 /admin/form /index.html 200
 /admin/capture /index.html 200
 /admin/* /index.html 200
+/admin /index.html 200
 
 # Public auction routes (numeric routes like /202501)
 /:auctionId /index.html 200

@@ -11,6 +11,7 @@ import UserManagement from './UserManagement';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SimpleAnalyticsDashboard from './SimpleAnalyticsDashboard';
 import AnalyticsTestDashboard from './AnalyticsTestDashboard';
+import MinimalAnalytics from './MinimalAnalytics';
 import AdminSettings from './AdminSettings';
 import type { AdminSection } from './AdminSidebar';
 import type { Season, AuctionReport } from '../../types';
@@ -38,6 +39,11 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Debug navigation changes
+  useEffect(() => {
+    console.log('🔍 AdminAppSupabase location changed:', location.pathname);
+  }, [location.pathname]);
 
   // Handle route parameter changes for editing auctions
   useEffect(() => {
@@ -446,7 +452,7 @@ const AdminAppSupabase: React.FC<AdminAppSupabaseProps> = () => {
         {/* Analytics Dashboard */}
         <Route 
           path="/analytics" 
-          element={<AnalyticsTestDashboard />} 
+          element={<MinimalAnalytics />} 
         />
 
         {/* User Management */}
