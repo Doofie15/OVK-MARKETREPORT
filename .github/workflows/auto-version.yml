@@ -1,0 +1,176 @@
+name: Auto Version & Release
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type to bump'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  version-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Configure Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Detect version type from commit messages
+      id: detect_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version_type=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
+          echo "Manual trigger: ${{ github.event.inputs.version_type }}"
+          exit 0
+        fi
+        
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          COMMITS=$(git log --pretty=format:"%s" HEAD~10..HEAD)
+        else
+          COMMITS=$(git log --pretty=format:"%s" ${LAST_TAG}..HEAD)
+        fi
+        
+        echo "Analyzing commits:"
+        echo "$COMMITS"
+        
+        # Check for breaking changes or major version indicators
+        if echo "$COMMITS" | grep -qiE "(BREAKING CHANGE|major:|breaking:|!:)"; then
+          echo "version_type=major" >> $GITHUB_OUTPUT
+          echo "Detected: MAJOR version bump"
+        # Check for new features
+        elif echo "$COMMITS" | grep -qiE "(feat:|feature:|minor:|add:|new:)"; then
+          echo "version_type=minor" >> $GITHUB_OUTPUT
+          echo "Detected: MINOR version bump"
+        # Default to patch for fixes, docs, etc.
+        elif echo "$COMMITS" | grep -qiE "(fix:|patch:|bug:|hotfix:|docs:|style:|refactor:|perf:|test:|chore:)"; then
+          echo "version_type=patch" >> $GITHUB_OUTPUT
+          echo "Detected: PATCH version bump"
+        else
+          # If no conventional commit pattern, check for keywords in commit messages
+          if echo "$COMMITS" | grep -qiE "(break|breaking|major|incompatible)"; then
+            echo "version_type=major" >> $GITHUB_OUTPUT
+            echo "Detected: MAJOR version bump (keyword-based)"
+          elif echo "$COMMITS" | grep -qiE "(feature|feat|add|new|minor)"; then
+            echo "version_type=minor" >> $GITHUB_OUTPUT
+            echo "Detected: MINOR version bump (keyword-based)"
+          else
+            echo "version_type=patch" >> $GITHUB_OUTPUT
+            echo "Detected: PATCH version bump (default)"
+          fi
+        fi
+
+    - name: Get current version
+      id: current_version
+      run: |
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $CURRENT_VERSION"
+
+    - name: Update version
+      id: update_version
+      run: |
+        VERSION_TYPE="${{ steps.detect_version.outputs.version_type }}"
+        echo "Updating version with type: $VERSION_TYPE"
+        
+        # Update version using our script
+        node scripts/update-version.js $VERSION_TYPE
+        
+        # Get the new version
+        NEW_VERSION=$(node -p "require('./package.json').version")
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "New version: $NEW_VERSION"
+
+    - name: Commit version changes
+      run: |
+        git add package.json config/version.ts
+        git commit -m "chore: bump version to v${{ steps.update_version.outputs.new_version }} [skip ci]"
+        git push origin ${{ github.ref_name }}
+
+    - name: Create Git tag
+      run: |
+        git tag -a "v${{ steps.update_version.outputs.new_version }}" -m "Release v${{ steps.update_version.outputs.new_version }}"
+        git push origin "v${{ steps.update_version.outputs.new_version }}"
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        NEW_VERSION="${{ steps.update_version.outputs.new_version }}"
+        VERSION_TYPE="${{ steps.detect_version.outputs.version_type }}"
+        
+        # Get commits since last tag for release notes
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          COMMITS=$(git log --pretty=format:"- %s (%h)" HEAD~10..HEAD~1)
+        else
+          COMMITS=$(git log --pretty=format:"- %s (%h)" ${LAST_TAG}..HEAD~1)
+        fi
+        
+        cat > release_notes.md << EOF
+        # Release v${NEW_VERSION}
+        
+        **Version Type:** ${VERSION_TYPE^^}
+        
+        ## Changes
+        ${COMMITS}
+        
+        ## Version Information
+        - **Build Date:** $(date -u +"%Y-%m-%d")
+        - **Environment:** Production
+        - **Git Commit:** ${GITHUB_SHA:0:8}
+        
+        ---
+        *This release was automatically generated by GitHub Actions*
+        EOF
+        
+        echo "Generated release notes:"
+        cat release_notes.md
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.update_version.outputs.new_version }}
+        release_name: Release v${{ steps.update_version.outputs.new_version }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+
+    - name: Build application
+      run: npm run build
+
+    - name: Summary
+      run: |
+        echo "## Version Update Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Previous Version:** ${{ steps.current_version.outputs.current }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **New Version:** ${{ steps.update_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version Type:** ${{ steps.detect_version.outputs.version_type }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Git Tag:** v${{ steps.update_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release:** [View Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.update_version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY

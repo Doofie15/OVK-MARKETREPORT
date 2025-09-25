@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import AdminSidebar from './AdminSidebar';
+import VersionDisplay from '../VersionDisplay';
 import type { AdminSection } from './AdminSidebar';
 import { 
   AppBar, 
@@ -184,6 +185,9 @@ const AdminLayoutSupabase: React.FC<AdminLayoutSupabaseProps> = ({
           {children}
         </Box>
       </Box>
+      
+      {/* Version Display */}
+      <VersionDisplay position="bottom-right" size="xs" />
     </Box>
   );
 };

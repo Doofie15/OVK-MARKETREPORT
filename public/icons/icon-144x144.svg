@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <rect width="144" height="144" fill="#1e40af" rx="16"/>
+  <text x="72" y="85" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">OVK</text>
+  <circle cx="72" cy="35" r="8" fill="white"/>
+</svg>

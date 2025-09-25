@@ -27,6 +27,7 @@ import {
   MobileAuctionComparison
 } from './mobile';
 import SafeMobileLayout from './SafeMobileLayout';
+import { getVersionString } from '../config/version';
 import type { AuctionReport, TopSale } from '../types';
 
 interface PublicLayoutProps {
@@ -285,7 +286,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
         </div>
       </main>
       <footer className="text-center py-3 text-sm border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-primary)' }}>
-        <p>&copy; {new Date().getFullYear()} OVK Wool & Mohair Market Platform. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} OVK Wool & Mohair Market Platform. All rights reserved. • {getVersionString()}</p>
       </footer>
     </div>
   );

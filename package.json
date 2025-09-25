@@ -1,7 +1,7 @@
 {
   "name": "ovk-wool-market-report",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.2.1",
   "description": "A comprehensive React-based web application for tracking and analyzing wool market data from weekly auctions in South Africa",
   "keywords": [
     "wool",
@@ -30,7 +30,11 @@
     "dev:network": "npx vite --host 0.0.0.0",
     "build": "npx vite build",
     "preview": "npx vite preview",
-    "preview:network": "npx vite preview --host 0.0.0.0"
+    "preview:network": "npx vite preview --host 0.0.0.0",
+    "version:patch": "node scripts/update-version.js patch",
+    "version:minor": "node scripts/update-version.js minor",
+    "version:major": "node scripts/update-version.js major",
+    "version:set": "node scripts/update-version.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

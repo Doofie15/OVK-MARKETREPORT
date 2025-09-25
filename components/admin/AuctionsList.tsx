@@ -32,6 +32,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
   const [sales, setSales] = useState<AuctionListItem[]>([]);
   const [filteredSales, setFilteredSales] = useState<AuctionListItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSeason, setSelectedSeason] = useState<string>('all');
   const [selectedSales, setSelectedSales] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,19 +60,23 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     }
   }, [dropdownOpen]);
 
-  // Filter sales based on search term and ensure minimum 10 rows
+  // Filter sales based on search term and season, and ensure minimum 10 rows
   useEffect(() => {
-    let filtered: AuctionListItem[] = [];
+    let filtered: AuctionListItem[] = sales;
     
-    if (!searchTerm.trim()) {
-      filtered = sales;
-    } else {
-      filtered = sales.filter(sale =>
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(sale =>
         sale.auction_date.includes(searchTerm) ||
         sale.catalogue_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sale.week_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sale.season.toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
+    
+    // Apply season filter
+    if (selectedSeason !== 'all') {
+      filtered = filtered.filter(sale => sale.season === selectedSeason);
     }
     
     // Ensure minimum 10 rows by padding with empty rows if needed
@@ -96,7 +101,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
     
     setFilteredSales(filtered);
     setCurrentPage(1); // Reset to first page when filtering
-  }, [sales, searchTerm]);
+  }, [sales, searchTerm, selectedSeason]);
 
   const loadSales = async () => {
     try {
@@ -430,6 +435,23 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
               />
             </div>
           </div>
+          
+          {/* Season Filter */}
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+            </svg>
+            <select
+              value={selectedSeason}
+              onChange={(e) => setSelectedSeason(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
+            >
+              <option value="all">All Seasons</option>
+              {Array.from(new Set(sales.map(sale => sale.season).filter(Boolean))).sort().reverse().map(season => (
+                <option key={season} value={season}>{season}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Export Controls */}
           <div className="flex items-center gap-2">
@@ -514,7 +536,7 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left">
+                  <th className="px-4 py-2 text-left">
                     <input
                       type="checkbox"
                       checked={selectedSales.length === filteredSales.length && filteredSales.length > 0}
@@ -522,42 +544,42 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Auction Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Catalogue Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Week ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Season
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Bales Offered
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Bales Sold
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Clearance %
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Turnover
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {getPaginatedSales().map((sale) => (
-                  <tr key={sale.id} className={`${sale.is_empty ? 'opacity-0' : 'hover:bg-gray-50'}`}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={sale.id} className={`${sale.is_empty ? 'opacity-0' : 'hover:bg-gray-50'} h-12`}>
+                    <td className="px-4 py-2 whitespace-nowrap">
                       {!sale.is_empty && (
                         <input
                           type="checkbox"
@@ -567,23 +589,23 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                         />
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {sale.auction_date ? formatDate(sale.auction_date) : ''}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {sale.catalogue_name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">
                       {sale.week_id}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {sale.season}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       {sale.status && (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           sale.status === 'published' ? 'bg-green-100 text-green-800' :
                           sale.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
@@ -593,33 +615,33 @@ const AuctionsList: React.FC<AuctionsListProps> = ({ reports, onAddNew, onEdit, 
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {sale.total_bales_offered !== undefined && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {sale.total_bales_offered?.toLocaleString() || 0}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {sale.total_bales_sold !== undefined && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           {sale.total_bales_sold?.toLocaleString() || 0}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {sale.clearance_pct !== undefined && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                           {sale.clearance_pct?.toFixed(1) || 0}%
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                         ZAR {((sale.total_turnover || 0) / 1000000).toFixed(1)}M
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
                       {!sale.is_empty && (
                         <div className="relative">
                           <button
