@@ -159,7 +159,7 @@ export class PublicDataService {
         return { success: false, error: 'No published reports available' };
       }
 
-      // The reports are already sorted by published date (newest first)
+      // The reports are already sorted by auction date (newest first)
       const latestReport = reportsResult.data[0];
       
       return { success: true, data: latestReport };
@@ -267,9 +267,9 @@ export class PublicDataService {
       const publishedAuctions = (auctionsResult.data as any[])
         .filter((auction: any) => auction.status === 'published')
         .sort((a: any, b: any) => {
-          // Sort by auction date (newest first)
-          const dateA = new Date(a.auction_date || a.updated_at);
-          const dateB = new Date(b.auction_date || b.updated_at);
+          // Sort by auction date (newest first) - ensure consistent sorting
+          const dateA = new Date(a.auction_date);
+          const dateB = new Date(b.auction_date);
           return dateB.getTime() - dateA.getTime();
         });
 
@@ -361,10 +361,10 @@ export class PublicDataService {
       // Combine latest + additional reports
       const allReports = [latestReport, ...additionalReports];
 
-      // Sort by published date (newest first)
+      // Sort by auction date (newest first) - consistent with main sorting logic
       allReports.sort((a, b) => {
-        const dateA = new Date(a.published_at || a.auction.auction_date);
-        const dateB = new Date(b.published_at || b.auction.auction_date);
+        const dateA = new Date(a.auction.auction_date);
+        const dateB = new Date(b.auction.auction_date);
         return dateB.getTime() - dateA.getTime();
       });
 

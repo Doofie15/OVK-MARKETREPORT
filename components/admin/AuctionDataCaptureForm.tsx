@@ -4056,7 +4056,20 @@ const ProvincialDataTab: React.FC<{
         topPerformers.forEach(performer => {
           // Normalize province name using mapping
           const rawProvince = performer.province || 'Unknown';
-          const normalizedProvince = PROVINCE_MAPPING[rawProvince.toLowerCase()] || rawProvince;
+          const cleanProvince = rawProvince.toLowerCase().trim();
+          let normalizedProvince = PROVINCE_MAPPING[cleanProvince];
+          
+          // If no exact mapping found, try to find a partial match
+          if (!normalizedProvince) {
+            // Try to find a province that contains the clean province name
+            const matchingProvince = PROVINCES.find(province => 
+              province.toLowerCase().includes(cleanProvince) || 
+              cleanProvince.includes(province.toLowerCase())
+            );
+            normalizedProvince = matchingProvince || rawProvince;
+          }
+          
+          console.log(`Province mapping: "${rawProvince}" -> "${cleanProvince}" -> "${normalizedProvince}"`); // Debug log
           
           if (!provincialGroups[normalizedProvince]) {
             provincialGroups[normalizedProvince] = [];
@@ -4065,6 +4078,8 @@ const ProvincialDataTab: React.FC<{
         });
 
         console.log('Provincial groups:', provincialGroups); // Debug log
+        console.log('Available provinces in form:', PROVINCES); // Debug log
+        console.log('Province mapping keys:', Object.keys(PROVINCE_MAPPING)); // Debug log
 
         // Transform to provincial data format
         const provincialData = Object.entries(provincialGroups).map(([province, performers]) => ({
@@ -4195,12 +4210,23 @@ const ProvincialDataTab: React.FC<{
     'northern cape': 'Northern Cape',
     'kwaZulu-natal': 'KwaZulu-Natal',
     'kwaZulu natal': 'KwaZulu-Natal',
+    'kwa zulu-natal': 'KwaZulu-Natal',
+    'kwa zulu natal': 'KwaZulu-Natal',
     'mpumalanga': 'Mpumalanga',
+    'mpumalanga province': 'Mpumalanga',
+    'mpumalanga prov': 'Mpumalanga',
+    'mpumulanga': 'Mpumalanga', // Handle common typo in CSV data
+    'mpumulanga province': 'Mpumalanga',
+    'mp': 'Mpumalanga',
     'gauteng': 'Gauteng',
+    'gauteng province': 'Gauteng',
     'limpopo': 'Limpopo',
+    'limpopo province': 'Limpopo',
     'north west': 'North West',
     'north-west province': 'North West',
     'north west province': 'North West',
+    'northwest': 'North West',
+    'north western': 'North West',
     'lesotho': 'Lesotho'
   };
   const [selectedProvince, setSelectedProvince] = useState(PROVINCES[0]);
