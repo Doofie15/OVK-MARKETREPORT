@@ -103,6 +103,52 @@ async function updatePackageJson(newVersion) {
   fs.writeFileSync(PACKAGE_FILE, JSON.stringify(packageData, null, 2) + '\n');
 }
 
+async function updateCacheBustingFiles(newVersion) {
+  const INDEX_FILE = path.join(process.cwd(), 'index.html');
+  const SW_FILE = path.join(process.cwd(), 'public/sw.js');
+  
+  // Update index.html with new version parameters
+  let indexContent = fs.readFileSync(INDEX_FILE, 'utf8');
+  
+  // Update CSS link
+  indexContent = indexContent.replace(
+    /href="\/index\.css\?v=[^"]*"/,
+    `href="/index.css?v=${newVersion}"`
+  );
+  
+  // Update script src
+  indexContent = indexContent.replace(
+    /src="\/index\.tsx\?v=[^"]*"/,
+    `src="/index.tsx?v=${newVersion}"`
+  );
+  
+  // Update cache-bust-version meta tag
+  indexContent = indexContent.replace(
+    /content="[^"]*"/,
+    `content="${newVersion}"`
+  );
+  
+  // Update cache buster script version
+  indexContent = indexContent.replace(
+    /const APP_VERSION = '[^']*';/,
+    `const APP_VERSION = '${newVersion}';`
+  );
+  
+  fs.writeFileSync(INDEX_FILE, indexContent);
+  console.log('✅ Updated index.html with new version parameters');
+  
+  // Update service worker with new version
+  let swContent = fs.readFileSync(SW_FILE, 'utf8');
+  
+  swContent = swContent.replace(
+    /const APP_VERSION = '[^']*';/,
+    `const APP_VERSION = '${newVersion}';`
+  );
+  
+  fs.writeFileSync(SW_FILE, swContent);
+  console.log('✅ Updated service worker with new version');
+}
+
 function getCurrentVersion() {
   const versionContent = fs.readFileSync(VERSION_FILE, 'utf8');
   const match = versionContent.match(/version: '([^']*)'/);
@@ -149,6 +195,7 @@ Examples:
     // Update files
     await updateVersionFile(newVersion, gitCommit);
     await updatePackageJson(newVersion);
+    await updateCacheBustingFiles(newVersion);
     
     console.log('✅ Version updated successfully!');
     console.log(`📦 Package.json: ${newVersion}`);

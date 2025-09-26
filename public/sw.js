@@ -1,7 +1,9 @@
-// Service Worker for OVK Analytics
-// Optimized for Netlify deployment with offline analytics queuing
+// Enhanced Service Worker for OVK Wool Market Report
+// Optimized for Netlify deployment with offline analytics queuing and cache busting
 
-const CACHE_NAME = 'ovk-analytics-v1';
+// DYNAMIC VERSION: Updated automatically by build process
+const APP_VERSION = '1.2.2';
+const CACHE_NAME = `ovk-v${APP_VERSION}`;
 const ANALYTICS_QUEUE_KEY = 'ovk-analytics-queue';
 
 // Cache analytics requests for offline sending
@@ -12,27 +14,64 @@ const CACHE_URLS = [
   '/api/analytics'
 ];
 
-// Install event
+console.log(`🚀 Service Worker v${APP_VERSION} initializing`);
+
+// Install event - clear old caches immediately
 self.addEventListener('install', (event) => {
+  console.log(`📦 Installing SW version ${APP_VERSION}`);
+  
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(CACHE_URLS))
-      .then(() => self.skipWaiting())
+    Promise.all([
+      // Delete all old caches first
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME) {
+              console.log(`🗑️ Deleting old cache: ${cacheName}`);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Cache new files
+      caches.open(CACHE_NAME)
+        .then((cache) => cache.addAll(CACHE_URLS))
+    ]).then(() => {
+      console.log(`✅ SW ${APP_VERSION} installed successfully`);
+      return self.skipWaiting();
+    })
   );
 });
 
-// Activate event
+// Activate event - take control immediately
 self.addEventListener('activate', (event) => {
+  console.log(`🎯 Activating SW version ${APP_VERSION}`);
+  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log(`🧹 Cleaning up old cache: ${cacheName}`);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()).then(() => {
+      console.log(`✅ SW ${APP_VERSION} activated and controlling all clients`);
+      
+      // Notify all clients to refresh
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SW_UPDATED',
+            version: APP_VERSION,
+            action: 'REFRESH'
+          });
+        });
+        console.log(`📢 Notified ${clients.length} clients about update`);
+      });
+    })
   );
 });
 
@@ -46,7 +85,34 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Handle other requests with cache-first strategy
+  // Network-first strategy for CSS/JS/HTML to prevent cache issues
+  if (url.pathname === '/' || 
+      url.pathname.endsWith('.html') ||
+      url.pathname.includes('/assets/') ||
+      url.pathname.endsWith('.css') ||
+      url.pathname.endsWith('.js')) {
+    
+    event.respondWith(
+      fetch(event.request.clone())
+        .then(response => {
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+            console.log(`🔄 Fresh content loaded: ${url.pathname}`);
+          }
+          return response;
+        })
+        .catch(() => {
+          console.log(`📱 Network failed for ${url.pathname}, trying cache`);
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+  
+  // Default cache-first for other requests
   event.respondWith(
     caches.match(event.request)
       .then((response) => {

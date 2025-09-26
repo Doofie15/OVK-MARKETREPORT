@@ -16,6 +16,7 @@
     <!-- PWA Meta Tags -->
     <meta name="description" content="Real-time wool market intelligence and auction reports from OVK. Track prices, trends, and market data for informed trading decisions." />
     <meta name="theme-color" content="#1e40af" />
+    <meta name="cache-bust-version" content="1.2.2" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="OVK Wool" />
@@ -68,7 +69,7 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+<link rel="stylesheet" href="/index.css?v=1.2.2">
 </head>
   <body>
     <div id="root">
@@ -99,7 +100,7 @@
       }
     </style>
     
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx?v=1.2.2"></script>
     
     <!-- Remove loading indicator once React loads -->
     <script>
@@ -113,6 +114,43 @@
       });
     </script>
     
+    <!-- Aggressive Cache Buster -->
+    <script>
+      (function() {
+        const APP_VERSION = '1.2.2';
+        const CACHE_CHECK_KEY = 'ovk-cache-version';
+        
+        // Check if version has changed
+        const storedVersion = localStorage.getItem(CACHE_CHECK_KEY);
+        
+        if (storedVersion && storedVersion !== APP_VERSION) {
+          console.log(`🔄 Version change detected: ${storedVersion} → ${APP_VERSION}`);
+          
+          // Clear all caches
+          if ('caches' in window) {
+            caches.keys().then(cacheNames => {
+              return Promise.all(
+                cacheNames.map(name => {
+                  console.log(`🗑️ Clearing cache: ${name}`);
+                  return caches.delete(name);
+                })
+              );
+            }).then(() => {
+              console.log('🧹 All caches cleared, reloading...');
+              window.location.reload(true);
+            });
+          } else {
+            // Fallback: just reload
+            window.location.reload(true);
+          }
+        }
+        
+        // Store current version
+        localStorage.setItem(CACHE_CHECK_KEY, APP_VERSION);
+        console.log(`✅ Version ${APP_VERSION} loaded`);
+      })();
+    </script>
+    
     <!-- PWA Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
@@ -120,6 +158,9 @@
           navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
               console.log('SW registered: ', registration);
+              
+              // Check for updates every 30 seconds
+              setInterval(() => registration.update(), 30000);
             })
             .catch((registrationError) => {
               console.log('SW registration failed: ', registrationError);
