@@ -4051,25 +4051,46 @@ const ProvincialDataTab: React.FC<{
           }); // Debug log
         }
 
-        // Group performers by province with proper name mapping
+        // Group performers by province with comprehensive name mapping
         const provincialGroups: { [key: string]: any[] } = {};
-        topPerformers.forEach(performer => {
-          // Normalize province name using mapping
+        topPerformers.forEach((performer, index) => {
+          // Normalize province name using comprehensive mapping
           const rawProvince = performer.province || 'Unknown';
-          const cleanProvince = rawProvince.toLowerCase().trim();
-          let normalizedProvince = PROVINCE_MAPPING[cleanProvince];
+          const trimmedProvince = rawProvince.trim();
           
-          // If no exact mapping found, try to find a partial match
-          if (!normalizedProvince) {
-            // Try to find a province that contains the clean province name
+          // Try multiple normalization strategies
+          let normalizedProvince = '';
+          
+          // Strategy 1: Direct mapping (handles all case variations)
+          if (PROVINCE_MAPPING[trimmedProvince]) {
+            normalizedProvince = PROVINCE_MAPPING[trimmedProvince];
+            console.log(`✅ Direct mapping found: "${rawProvince}" -> "${normalizedProvince}"`);
+          }
+          // Strategy 2: Lowercase mapping
+          else if (PROVINCE_MAPPING[trimmedProvince.toLowerCase()]) {
+            normalizedProvince = PROVINCE_MAPPING[trimmedProvince.toLowerCase()];
+            console.log(`✅ Lowercase mapping found: "${rawProvince}" -> "${normalizedProvince}"`);
+          }
+          // Strategy 3: Partial matching with PROVINCES array
+          else {
+            const cleanProvince = trimmedProvince.toLowerCase();
             const matchingProvince = PROVINCES.find(province => 
               province.toLowerCase().includes(cleanProvince) || 
-              cleanProvince.includes(province.toLowerCase())
+              cleanProvince.includes(province.toLowerCase()) ||
+              province.toLowerCase().replace(/[^a-z]/g, '') === cleanProvince.replace(/[^a-z]/g, '')
             );
             normalizedProvince = matchingProvince || rawProvince;
+            console.log(`⚠️ Partial match: "${rawProvince}" -> "${normalizedProvince}"`);
           }
           
-          console.log(`Province mapping: "${rawProvince}" -> "${cleanProvince}" -> "${normalizedProvince}"`); // Debug log
+          // Enhanced debug logging
+          console.log(`Row ${index + 1} Province mapping:`, {
+            raw: `"${rawProvince}"`,
+            trimmed: `"${trimmedProvince}"`,
+            normalized: `"${normalizedProvince}"`,
+            inMapping: PROVINCE_MAPPING[trimmedProvince] ? 'YES' : 'NO',
+            inMappingLower: PROVINCE_MAPPING[trimmedProvince.toLowerCase()] ? 'YES' : 'NO'
+          });
           
           if (!provincialGroups[normalizedProvince]) {
             provincialGroups[normalizedProvince] = [];
@@ -4079,7 +4100,20 @@ const ProvincialDataTab: React.FC<{
 
         console.log('Provincial groups:', provincialGroups); // Debug log
         console.log('Available provinces in form:', PROVINCES); // Debug log
-        console.log('Province mapping keys:', Object.keys(PROVINCE_MAPPING)); // Debug log
+        console.log('Province mapping keys (first 20):', Object.keys(PROVINCE_MAPPING).slice(0, 20)); // Debug log
+        console.log('Total province mappings available:', Object.keys(PROVINCE_MAPPING).length); // Debug log
+        
+        // Show some example mappings for debugging
+        console.log('Example province mappings:', {
+          'MPUMALANGA': PROVINCE_MAPPING['MPUMALANGA'],
+          'mpumalanga': PROVINCE_MAPPING['mpumalanga'],
+          'Mpumalanga': PROVINCE_MAPPING['Mpumalanga'],
+          'MPUMULANGA': PROVINCE_MAPPING['MPUMULANGA'],
+          'mpumulanga': PROVINCE_MAPPING['mpumulanga'],
+          'EASTERN CAPE': PROVINCE_MAPPING['EASTERN CAPE'],
+          'eastern cape': PROVINCE_MAPPING['eastern cape'],
+          'Eastern Cape': PROVINCE_MAPPING['Eastern Cape']
+        }); // Debug log
 
         // Transform to provincial data format
         const provincialData = Object.entries(provincialGroups).map(([province, performers]) => ({
@@ -4202,33 +4236,71 @@ const ProvincialDataTab: React.FC<{
   const PROVINCES = ['Eastern Cape', 'Free State', 'Western Cape', 'Northern Cape', 'KwaZulu-Natal', 'Mpumalanga', 'Gauteng', 'Limpopo', 'North West', 'Lesotho'];
   
   // Province name mapping to handle variations in CSV data
-  const PROVINCE_MAPPING: { [key: string]: string } = {
-    'freestate': 'Free State',
-    'free state': 'Free State',
-    'eastern cape': 'Eastern Cape',
-    'western cape': 'Western Cape',
-    'northern cape': 'Northern Cape',
-    'kwaZulu-natal': 'KwaZulu-Natal',
-    'kwaZulu natal': 'KwaZulu-Natal',
-    'kwa zulu-natal': 'KwaZulu-Natal',
-    'kwa zulu natal': 'KwaZulu-Natal',
-    'mpumalanga': 'Mpumalanga',
-    'mpumalanga province': 'Mpumalanga',
-    'mpumalanga prov': 'Mpumalanga',
-    'mpumulanga': 'Mpumalanga', // Handle common typo in CSV data
-    'mpumulanga province': 'Mpumalanga',
-    'mp': 'Mpumalanga',
-    'gauteng': 'Gauteng',
-    'gauteng province': 'Gauteng',
-    'limpopo': 'Limpopo',
-    'limpopo province': 'Limpopo',
-    'north west': 'North West',
-    'north-west province': 'North West',
-    'north west province': 'North West',
-    'northwest': 'North West',
-    'north western': 'North West',
-    'lesotho': 'Lesotho'
+  // This function creates a comprehensive mapping for all case variations
+  const createProvinceMapping = (): { [key: string]: string } => {
+    const baseMapping = {
+      'freestate': 'Free State',
+      'free state': 'Free State',
+      'eastern cape': 'Eastern Cape',
+      'western cape': 'Western Cape',
+      'northern cape': 'Northern Cape',
+      'kwaZulu-natal': 'KwaZulu-Natal',
+      'kwaZulu natal': 'KwaZulu-Natal',
+      'kwa zulu-natal': 'KwaZulu-Natal',
+      'kwa zulu natal': 'KwaZulu-Natal',
+      'mpumalanga': 'Mpumalanga',
+      'mpumalanga province': 'Mpumalanga',
+      'mpumalanga prov': 'Mpumalanga',
+      'mpumulanga': 'Mpumalanga', // Handle common typo in CSV data
+      'mpumulanga province': 'Mpumalanga',
+      'mp': 'Mpumalanga',
+      'gauteng': 'Gauteng',
+      'gauteng province': 'Gauteng',
+      'limpopo': 'Limpopo',
+      'limpopo province': 'Limpopo',
+      'north west': 'North West',
+      'north-west province': 'North West',
+      'north west province': 'North West',
+      'northwest': 'North West',
+      'north western': 'North West',
+      'lesotho': 'Lesotho'
+    };
+
+    // Create comprehensive mapping with all case variations
+    const comprehensiveMapping: { [key: string]: string } = {};
+    
+    // Add all base mappings
+    Object.entries(baseMapping).forEach(([key, value]) => {
+      comprehensiveMapping[key] = value;
+    });
+
+    // Add all case variations for each mapping
+    Object.entries(baseMapping).forEach(([key, value]) => {
+      // Add uppercase version
+      comprehensiveMapping[key.toUpperCase()] = value;
+      // Add title case version
+      comprehensiveMapping[key.charAt(0).toUpperCase() + key.slice(1)] = value;
+      // Add mixed case variations for common patterns
+      if (key.includes(' ')) {
+        const words = key.split(' ');
+        const titleCase = words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        comprehensiveMapping[titleCase] = value;
+        const upperCase = words.map(word => word.toUpperCase()).join(' ');
+        comprehensiveMapping[upperCase] = value;
+      }
+    });
+
+    // Add direct mappings for exact province names in all cases
+    PROVINCES.forEach(province => {
+      comprehensiveMapping[province.toLowerCase()] = province;
+      comprehensiveMapping[province.toUpperCase()] = province;
+      comprehensiveMapping[province] = province; // Already correct case
+    });
+
+    return comprehensiveMapping;
   };
+
+  const PROVINCE_MAPPING = createProvinceMapping();
   const [selectedProvince, setSelectedProvince] = useState(PROVINCES[0]);
 
   const addProvincialProducer = (provinceName: string) => {
