@@ -1850,18 +1850,7 @@ export class SupabaseAuctionDataService {
         indicators: await this.calculateIndicatorsWithChanges(auction, seasonIndicatorTotalsResult),
         benchmarks: await this.calculateBenchmarksWithChanges(auction),
         trends: await this.generateSeasonTrendData(auction.season_id),
-        yearly_average_prices: [
-          {
-            label: 'Certified Wool Avg Price (YTD)',
-            value: auction.certified_sa_c_kg_clean ? (parseFloat(auction.certified_sa_c_kg_clean) / 100) : 0,
-            unit: 'ZAR/kg'
-          },
-          {
-            label: 'All - Merino Wool Avg Price (YTD)',
-            value: auction.all_merino_sa_c_kg_clean ? (parseFloat(auction.all_merino_sa_c_kg_clean) / 100) : 0,
-            unit: 'ZAR/kg'
-          }
-        ],
+        yearly_average_prices: await this.calculateSeasonAveragePrices(auction.season_id),
         province_avg_prices: [],
         insights: marketInsightResult.success ? marketInsightResult.data?.market_insights_text : '',
         top_sales: [] // Empty array for top_sales as it's derived from provincial_producers
@@ -1924,6 +1913,91 @@ export class SupabaseAuctionDataService {
     } catch (error) {
       console.error('Get previous auction error:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  // Calculate season-wide average prices for certified and merino wool
+  static async calculateSeasonAveragePrices(seasonId: string) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('auctions')
+        .select('certified_sa_c_kg_clean, all_merino_sa_c_kg_clean')
+        .eq('season_id', seasonId)
+        .eq('status', 'published')
+        .not('certified_sa_c_kg_clean', 'is', null)
+        .not('all_merino_sa_c_kg_clean', 'is', null);
+
+      if (error) {
+        console.error('Error fetching season average prices:', error);
+        return [
+          {
+            label: 'Certified Wool Avg Price (YTD)',
+            value: 0,
+            unit: 'ZAR/kg'
+          },
+          {
+            label: 'All - Merino Wool Avg Price (YTD)',
+            value: 0,
+            unit: 'ZAR/kg'
+          }
+        ];
+      }
+
+      if (!data || data.length === 0) {
+        return [
+          {
+            label: 'Certified Wool Avg Price (YTD)',
+            value: 0,
+            unit: 'ZAR/kg'
+          },
+          {
+            label: 'All - Merino Wool Avg Price (YTD)',
+            value: 0,
+            unit: 'ZAR/kg'
+          }
+        ];
+      }
+
+      // Calculate averages (convert from cents to Rands)
+      const certifiedSum = data.reduce((sum, auction) => sum + parseFloat(auction.certified_sa_c_kg_clean || '0'), 0);
+      const merinoSum = data.reduce((sum, auction) => sum + parseFloat(auction.all_merino_sa_c_kg_clean || '0'), 0);
+      
+      const certifiedAvg = certifiedSum / data.length / 100; // Convert cents to Rands
+      const merinoAvg = merinoSum / data.length / 100; // Convert cents to Rands
+
+      console.log('📊 Season Average Prices Calculated:', {
+        seasonId,
+        auctionCount: data.length,
+        certifiedAvg: certifiedAvg.toFixed(2),
+        merinoAvg: merinoAvg.toFixed(2)
+      });
+
+      return [
+        {
+          label: 'Certified Wool Avg Price (YTD)',
+          value: Math.round(certifiedAvg * 100) / 100, // Round to 2 decimal places
+          unit: 'ZAR/kg'
+        },
+        {
+          label: 'All - Merino Wool Avg Price (YTD)',
+          value: Math.round(merinoAvg * 100) / 100, // Round to 2 decimal places
+          unit: 'ZAR/kg'
+        }
+      ];
+    } catch (error) {
+      console.error('Error calculating season average prices:', error);
+      return [
+        {
+          label: 'Certified Wool Avg Price (YTD)',
+          value: 0,
+          unit: 'ZAR/kg'
+        },
+        {
+          label: 'All - Merino Wool Avg Price (YTD)',
+          value: 0,
+          unit: 'ZAR/kg'
+        }
+      ];
     }
   }
 

@@ -214,21 +214,21 @@ const ModernTrendChart: React.FC<{
               <div style="display: flex; align-items: center; margin-bottom: 4px;">
                 <div style="width: 8px; height: 8px; background: ${primaryColor}; border-radius: 50%; margin-right: 8px;"></div>
                 <span style="color: #64748b; font-size: 11px; margin-right: 8px;">${currentLabel}:</span>
-                <span style="color: ${primaryColor}; font-weight: 600; font-size: 12px;">${currentValue.toFixed(2)} ${currency}</span>
+                <span style="color: ${primaryColor}; font-weight: 600; font-size: 12px;">${currentValue?.toFixed(2) || 'N/A'} ${currency}</span>
               </div>
             ` : ''}
             ${previousValue !== null ? `
               <div style="display: flex; align-items: center; margin-bottom: 6px;">
                 <div style="width: 8px; height: 8px; background: ${secondaryColor}; border-radius: 50%; margin-right: 8px;"></div>
                 <span style="color: #64748b; font-size: 11px; margin-right: 8px;">${previousLabel}:</span>
-                <span style="color: ${secondaryColor}; font-weight: 600; font-size: 12px;">${previousValue.toFixed(2)} ${currency}</span>
+                <span style="color: ${secondaryColor}; font-weight: 600; font-size: 12px;">${previousValue?.toFixed(2) || 'N/A'} ${currency}</span>
               </div>
             ` : ''}
             ${currentValue !== null && previousValue !== null ? `
               <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
                 <span style="color: #64748b; font-size: 10px;">Change:</span>
                 <span style="color: ${isPositive ? '#10b981' : '#ef4444'}; font-weight: 600; font-size: 11px; margin-left: 4px;">
-                  ${isPositive ? '+' : ''}${difference.toFixed(2)} ${currency} (${isPositive ? '+' : ''}${percentage.toFixed(1)}%)
+                  ${isPositive ? '+' : ''}${difference?.toFixed(2) || '0.00'} ${currency} (${isPositive ? '+' : ''}${percentage?.toFixed(1) || '0.0'}%)
                 </span>
               </div>
             ` : ''}

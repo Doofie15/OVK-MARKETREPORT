@@ -10,6 +10,8 @@ const ALLOW_ORIGINS = [
   "http://localhost:4173", // Preview
   "http://127.0.0.1:5173",
   "http://192.168.1.100:5173", // Network testing
+  "http://localhost:3000", // Additional dev port
+  "http://127.0.0.1:3000",
   "*" // Allow all origins during development - remove in production
 ];
 
@@ -154,12 +156,25 @@ serve(async (req) => {
       return new Response("Method Not Allowed", { status: 405 });
     }
 
-    // Check origin
+    // Check origin (allow all during development)
     const origin = req.headers.get("origin") ?? "";
-    if (!ALLOW_ORIGINS.includes(origin)) {
+    const isDevelopment = Deno.env.get("ENVIRONMENT") === "development" || 
+                         origin.includes("localhost") || 
+                         origin.includes("127.0.0.1") ||
+                         ALLOW_ORIGINS.includes("*");
+    
+    if (!isDevelopment && !ALLOW_ORIGINS.includes(origin)) {
       console.log(`Blocked origin: ${origin}`);
       return new Response("Forbidden", { status: 403 });
     }
+
+    // Set CORS headers
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": isDevelopment ? "*" : origin,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
+    };
 
     // Parse request body
     let body;
@@ -274,7 +289,7 @@ serve(async (req) => {
       status: 200, 
       headers: { 
         "cache-control": "no-store",
-        "access-control-allow-origin": origin
+        ...corsHeaders
       } 
     });
 

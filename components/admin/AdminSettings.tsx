@@ -27,7 +27,7 @@ const AdminSettings: React.FC = () => {
     googleMapsApiKey: '',
     supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
     supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-    analyticsEnabled: true,
+    analyticsEnabled: localStorage.getItem('admin_analytics_enabled') !== 'false', // Default to enabled
     ipSalt: '',
     companyName: 'OVK Wool Market',
     companyEmail: '',
@@ -95,7 +95,7 @@ const AdminSettings: React.FC = () => {
       localStorage.setItem('admin_company_name', apiSettings.companyName);
       localStorage.setItem('admin_company_email', apiSettings.companyEmail);
       localStorage.setItem('admin_allowed_domains', JSON.stringify(apiSettings.allowedDomains));
-      localStorage.setItem('admin_analytics_enabled', apiSettings.analyticsEnabled.toString());
+      localStorage.setItem('admin_analytics_enabled', apiSettings.analyticsEnabled ? 'true' : 'false');
 
       // Try to save to Supabase (for persistence)
       const settingsPayload = {
@@ -121,8 +121,7 @@ const AdminSettings: React.FC = () => {
       // Update analytics configuration
       if (window.analytics) {
         window.analytics.updateConfig({
-          enabled: apiSettings.analyticsEnabled,
-          endpoint: '/api/analytics'
+          enabled: apiSettings.analyticsEnabled
         });
       }
 

@@ -41,10 +41,14 @@ class Analytics {
 
   constructor(config: Partial<AnalyticsConfig> = {}) {
     // Load settings from localStorage (set by admin)
-    const analyticsEnabled = localStorage.getItem('admin_analytics_enabled') === 'true';
+    // Default to enabled unless explicitly disabled by admin
+    const analyticsDisabled = localStorage.getItem('admin_analytics_enabled') === 'false';
+    const analyticsEnabled = !analyticsDisabled;
     
     this.config = {
-      functionUrl: '/api/analytics',
+      functionUrl: import.meta.env.VITE_APP_ENV === 'development' 
+        ? 'https://gymdertakhxjmfrmcqgp.supabase.co/functions/v1/ingest-analytics'
+        : '/api/analytics',
       respectDNT: true,
       debug: import.meta.env.VITE_APP_ENV === 'development',
       sessionKey: 'ovk_analytics_session_id',
@@ -53,8 +57,8 @@ class Analytics {
       ...config
     };
 
-    // Don't initialize if analytics is disabled
-    if (!this.config.enabled && !import.meta.env.VITE_APP_ENV === 'development') {
+    // Don't initialize if analytics is explicitly disabled by admin
+    if (!this.config.enabled) {
       console.log('OVK Analytics disabled by admin settings');
       return;
     }
@@ -139,7 +143,8 @@ class Analytics {
           body: blob,
           keepalive: true,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
           }
         }).catch(error => {
           if (this.config.debug) {
@@ -424,6 +429,28 @@ class Analytics {
   }
 
   /**
+   * Update analytics configuration (called when admin changes settings)
+   */
+  updateConfig(newConfig: Partial<AnalyticsConfig>): void {
+    const wasEnabled = this.config.enabled;
+    this.config = { ...this.config, ...newConfig };
+    
+    if (newConfig.enabled !== undefined) {
+      if (newConfig.enabled && !wasEnabled) {
+        // Re-initialize if enabling
+        this.sessionId = this.getOrCreateSessionId();
+        this.setupInitialTracking();
+        this.setupEventListeners();
+        console.log('OVK Analytics re-enabled');
+      } else if (!newConfig.enabled && wasEnabled) {
+        // Clean up if disabling
+        this.destroy();
+        console.log('OVK Analytics disabled');
+      }
+    }
+  }
+
+  /**
    * Destroy the analytics instance
    */
   destroy(): void {
@@ -437,6 +464,11 @@ class Analytics {
 
 // Create singleton instance
 export const analytics = new Analytics();
+
+// Make analytics available globally for admin settings
+if (typeof window !== 'undefined') {
+  (window as any).analytics = analytics;
+}
 
 // React hook for easy usage
 export function useAnalytics() {
