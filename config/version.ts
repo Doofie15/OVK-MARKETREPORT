@@ -13,7 +13,7 @@ export interface VersionInfo {
 }
 
 export const VERSION_CONFIG: VersionInfo = {
-  version: '1.2.1',
+  version: '1.2.2',
   buildDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
   buildNumber: generateBuildNumber(),
   environment: import.meta.env.PROD ? 'production' : 'development',
@@ -24,7 +24,7 @@ export const VERSION_CONFIG: VersionInfo = {
     'Enhanced UI/UX',
     'Mobile responsive design'
   ],
-  gitCommit: '443dbae4e5e21863b16f41f61dd2a4663b47b230'
+  gitCommit: '3205af739a8172f60a14bdcee2bb75ab22c3f42e'
 };
 
 function generateBuildNumber(): string {
