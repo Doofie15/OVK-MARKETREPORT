@@ -110,22 +110,13 @@ async function updateCacheBustingFiles(newVersion) {
   // Update index.html with new version parameters
   let indexContent = fs.readFileSync(INDEX_FILE, 'utf8');
   
-  // Update CSS link
-  indexContent = indexContent.replace(
-    /href="\/index\.css\?v=[^"]*"/,
-    `href="/index.css?v=${newVersion}"`
-  );
-  
-  // Update script src
-  indexContent = indexContent.replace(
-    /src="\/index\.tsx\?v=[^"]*"/,
-    `src="/index.tsx?v=${newVersion}"`
-  );
+  // Note: CSS and JS files are handled by Vite's automatic hashing
+  // We only need to update the cache buster script version
   
   // Update cache-bust-version meta tag
   indexContent = indexContent.replace(
-    /content="[^"]*"/,
-    `content="${newVersion}"`
+    /<meta name="cache-bust-version" content="[^"]*" \/>/,
+    `<meta name="cache-bust-version" content="${newVersion}" />`
   );
   
   // Update cache buster script version

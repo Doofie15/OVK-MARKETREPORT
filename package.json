@@ -29,7 +29,7 @@
     "dev": "npx vite",
     "dev:network": "npx vite --host 0.0.0.0",
     "build": "npx vite build",
-    "build:netlify": "npm run version:patch && npm run build",
+    "build:netlify": "npm run build",
     "preview": "npx vite preview",
     "preview:network": "npx vite preview --host 0.0.0.0",
     "version:patch": "node scripts/update-version.js patch",
